@@ -1,0 +1,116 @@
+name: FGO Research
+
+on:
+  push:
+    branches:
+      - 'claude/fgo-problem-research-**'
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Tests - Julia ${{ matrix.julia-version }}
+    runs-on: ubuntu-latest
+    permissions: # needed for julia-actions/cache to delete old caches
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        julia-version: ['1']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.julia-version }}
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - uses: julia-actions/julia-runtest@v1
+  benchmark:
+    name: Flt1003 FGO benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions: # actions: cache eviction; contents: commit MC result CSVs back
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Render FGO geographic tracks & position-error plots
+        run: julia --project=. research/fgo_tracks.jl
+        env:
+          GKSwstype: '100'
+      - name: Run FGO benchmark (real SGL Flt1003 data)
+        run: julia --project=. research/fgo_benchmark.jl
+        env:
+          GKSwstype: '100'
+      - name: Run FGO sensor-error factor ablation (simulated flight)
+        run: julia --project=. research/fgo_sensor_ablation.jl
+        env:
+          GKSwstype: '100'
+      - name: Compare vs online EKF+TL+NN family (paper baseline, Flt1007)
+        run: julia --project=. research/paper_baseline.jl
+        env:
+          GKSwstype: '100'
+      - name: Reproduce paper's online EKF+TL+NN cold start (Flt1007)
+        run: julia --project=. research/paper_impl.jl
+        env:
+          GKSwstype: '100'
+      - name: Observability collapse index (joint compensation + navigation)
+        run: julia --project=. research/observability.jl
+        env:
+          GKSwstype: '100'
+      - name: Observability predictor test (EKF DRMS vs basis ρ²)
+        run: julia --project=. research/observability_ekf.jl
+        env:
+          GKSwstype: '100'
+      - name: FGO breadth (window FGO vs EKF-online across lines/flights/maps)
+        run: julia --project=. research/fgo_breadth.jl
+        env:
+          GKSwstype: '100'
+      - name: Monte-Carlo consistency & significance (NEES / DRMS CIs, simulated)
+        run: julia --project=. research/fgo_montecarlo.jl 30
+        env:
+          GKSwstype: '100'
+      - name: Window-length sweep on line 1007.06 (cold start)
+        run: julia --project=. research/fgo_winlen.jl
+        env:
+          GKSwstype: '100'
+      - name: Commit result CSVs back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f research/montecarlo_summary.csv research/montecarlo_nees.csv research/montecarlo_sigma.csv research/fgo_winlen_results.csv
+          if git diff --cached --quiet; then
+            echo "No Monte-Carlo CSVs to commit."
+          else
+            git commit -m "Add Monte-Carlo consistency result CSVs [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fgo-benchmark-results
+          path: |
+            research/fgo_benchmark_results.csv
+            research/fgo_sensor_ablation_results.csv
+            research/fgo_map_track.png
+            research/fgo_pos_error.png
+            research/fgo_zoom_track.png
+            research/paper_baseline_results.csv
+            research/paper_reference_values.csv
+            research/paper_impl_results.csv
+            research/observability_index.csv
+            research/observability_endogeneity.csv
+            research/observability_ekf.csv
+            research/fgo_breadth_results.csv
+            research/montecarlo_summary.csv
+            research/montecarlo_nees.csv
+            research/montecarlo_sigma.csv
+            research/fgo_winlen_results.csv
+          if-no-files-found: ignore

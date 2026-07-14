@@ -1,0 +1,14 @@
+.DS_Store
+*.bak
+**/_tmp_**
+LocalPreferences.toml
+Manifest.toml
+Overrides.toml
+data/
+dev/
+docs/build/
+docs/src/examples/
+examples/*.html
+examples/*.md
+maps/
+settings.json

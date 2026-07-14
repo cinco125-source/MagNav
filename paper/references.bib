@@ -1,0 +1,499 @@
+% References for the TAES manuscript.
+% NOTE: DOIs are included only where confidently known. Entries without a doi
+% field must be verified before submission (check_citations.py flags them NO-DOI,
+% a manual-check warning, not a fatal error). Do NOT invent DOIs.
+
+% ---------------------------------------------------------------------------
+% Magnetic-anomaly navigation
+% ---------------------------------------------------------------------------
+@article{canciani2016,
+  author  = {Canciani, Aaron and Raquet, John},
+  title   = {Absolute Positioning Using the {Earth}'s Magnetic Anomaly Field},
+  journal = {NAVIGATION: Journal of the Institute of Navigation},
+  volume  = {63},
+  number  = {2},
+  pages   = {111--126},
+  year    = {2016}
+}
+
+@article{canciani2017,
+  author  = {Canciani, Aaron and Raquet, John},
+  title   = {Airborne Magnetic Anomaly Navigation},
+  journal = {IEEE Transactions on Aerospace and Electronic Systems},
+  volume  = {53},
+  number  = {1},
+  pages   = {67--80},
+  year    = {2017}
+}
+
+@article{canciani2020,
+  author  = {Canciani, Aaron J.},
+  title   = {Magnetic Navigation on an {F-16} Aircraft Using Online
+             Calibration},
+  journal = {IEEE Transactions on Aerospace and Electronic Systems},
+  volume  = {58},
+  number  = {1},
+  pages   = {420--434},
+  year    = {2022}
+}
+
+@article{gnadt2020,
+  author  = {Gnadt, Albert R. and Belarge, Joseph and Canciani, Aaron and
+             Conger, Lauren and Curro, Joseph and Edelman, Alan and
+             Morales, Peter and Nielsen, Aaron P. and Ryan, Michael and
+             Wollaber, Allan},
+  title   = {Signal Enhancement for Magnetic Navigation Challenge Problem},
+  journal = {arXiv preprint},
+  eprint  = {2007.12158},
+  archivePrefix = {arXiv},
+  year    = {2020}
+}
+
+@phdthesis{gnadt2022,
+  author = {Gnadt, Albert R.},
+  title  = {Machine Learning-Enhanced Magnetic Calibration for Airborne
+            Magnetic Anomaly Navigation},
+  school = {Massachusetts Institute of Technology},
+  address = {Cambridge, MA},
+  year   = {2022}
+}
+
+@article{hager2026,
+  author  = {Hager, Antonia and Nebendahl, Sven and Klushyn, Alexej and
+             Krauser, Jasper and Bryne, Torleiv H. and Johansen, Tor Arne},
+  title   = {Airborne Magnetic Anomaly Navigation with
+             Neural-Network-Augmented Online Calibration},
+  journal = {arXiv preprint arXiv:2603.08265},
+  eprint  = {2603.08265},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  year    = {2026}
+}
+
+% ---------------------------------------------------------------------------
+% Aeromagnetic (Tolles--Lawson) compensation
+% ---------------------------------------------------------------------------
+@techreport{tolles1950,
+  author      = {Tolles, W. E. and Lawson, J. D.},
+  title       = {Magnetic Compensation of {MH-1A} Aircraft},
+  institution = {Airborne Instruments Laboratory},
+  number      = {Report 1},
+  year        = {1950}
+}
+
+@article{leliak1961,
+  author  = {Leliak, Paul},
+  title   = {Identification and Evaluation of Magnetic-Field Sources of
+             Magnetic Airborne Detector Equipped Aircraft},
+  journal = {IRE Transactions on Aerospace and Navigational Electronics},
+  volume  = {ANE-8},
+  number  = {3},
+  pages   = {95--105},
+  year    = {1961}
+}
+
+@article{bickel1979,
+  author  = {Bickel, S. H.},
+  title   = {Small Signal Compensation of Magnetic Fields Resulting from
+             Aircraft Maneuvers},
+  journal = {IEEE Transactions on Aerospace and Electronic Systems},
+  volume  = {AES-15},
+  number  = {4},
+  pages   = {518--525},
+  year    = {1979}
+}
+
+@article{williams1993,
+  author  = {Williams, P. M.},
+  title   = {Aeromagnetic Compensation Using Neural Networks},
+  journal = {Neural Computing \& Applications},
+  volume  = {1},
+  number  = {3},
+  pages   = {207--214},
+  year    = {1993}
+}
+
+@article{noriega2015,
+  author  = {Noriega, Gerardo},
+  title   = {Aeromagnetic Compensation in Gradiometry---Performance, Model
+             Stability, and Robustness},
+  journal = {IEEE Geoscience and Remote Sensing Letters},
+  volume  = {12},
+  number  = {1},
+  pages   = {117--121},
+  year    = {2015}
+}
+
+% ---------------------------------------------------------------------------
+% Terrain / geophysical map-matching navigation
+% ---------------------------------------------------------------------------
+@inproceedings{golden1980,
+  author    = {Golden, James P.},
+  title     = {Terrain Contour Matching ({TERCOM}): A Cruise Missile Guidance
+               Aid},
+  booktitle = {Image Processing for Missile Guidance, Proc. SPIE},
+  volume    = {238},
+  pages     = {10--18},
+  year      = {1980}
+}
+
+@article{hostetler1983,
+  author  = {Hostetler, Larry and Andreas, Ronald},
+  title   = {Nonlinear {Kalman} Filtering Techniques for Terrain-Aided
+             Navigation},
+  journal = {IEEE Transactions on Automatic Control},
+  volume  = {28},
+  number  = {3},
+  pages   = {315--323},
+  year    = {1983}
+}
+
+@article{nordlund2009,
+  author  = {Nordlund, Per-Johan and Gustafsson, Fredrik},
+  title   = {Marginalized Particle Filter for Accurate and Reliable
+             Terrain-Aided Navigation},
+  journal = {IEEE Transactions on Aerospace and Electronic Systems},
+  volume  = {45},
+  number  = {4},
+  pages   = {1385--1399},
+  year    = {2009}
+}
+
+@inproceedings{anonsen2006,
+  author    = {Anonsen, Kjetil B. and Hallingstad, Oddvar},
+  title     = {Terrain Aided Underwater Navigation Using Point Mass and
+               Particle Filters},
+  booktitle = {IEEE/ION Position, Location, and Navigation Symposium (PLANS)},
+  pages     = {1027--1035},
+  year      = {2006}
+}
+
+@phdthesis{bergman1999,
+  author = {Bergman, Niclas},
+  title  = {Recursive {Bayesian} Estimation: Navigation and Tracking
+            Applications},
+  school = {Link\"{o}ping University},
+  address = {Link\"{o}ping, Sweden},
+  year   = {1999}
+}
+
+@article{gustafsson2002,
+  author  = {Gustafsson, Fredrik and Gunnarsson, Fredrik and Bergman, Niclas
+             and Forssell, Urban and Jansson, Jonas and Karlsson, Rickard and
+             Nordlund, Per-Johan},
+  title   = {Particle Filters for Positioning, Navigation, and Tracking},
+  journal = {IEEE Transactions on Signal Processing},
+  volume  = {50},
+  number  = {2},
+  pages   = {425--437},
+  year    = {2002}
+}
+
+% ---------------------------------------------------------------------------
+% Estimation, filtering, and inertial navigation
+% ---------------------------------------------------------------------------
+@article{kalman1960,
+  author  = {Kalman, Rudolph E.},
+  title   = {A New Approach to Linear Filtering and Prediction Problems},
+  journal = {Journal of Basic Engineering},
+  volume  = {82},
+  number  = {1},
+  pages   = {35--45},
+  year    = {1960}
+}
+
+@article{wang2020,
+  author  = {Wang, He and Du, Changping and Wang, Haidong and Xia, Mingyao and
+             Peng, Xiang and Guo, Hong},
+  title   = {Aeromagnetic Compensation With Suppressing Heading Error of the
+             Scalar Atomic Magnetometer},
+  journal = {IEEE Geoscience and Remote Sensing Letters},
+  volume  = {17},
+  number  = {7},
+  pages   = {1134--1138},
+  year    = {2020}
+}
+
+@article{hager2026b,
+  author  = {Hager, Antonia and Bryne, Torleiv H. and Juki\'{c}, Mia},
+  title   = {Scalar and Vector Airborne Platform Calibration Using Quantum and
+             Classical Magnetometers and Inertial Sensors},
+  journal = {arXiv preprint arXiv:2605.04951},
+  eprint  = {2605.04951},
+  archivePrefix = {arXiv},
+  year    = {2026}
+}
+
+@article{rauch1965,
+  author  = {Rauch, H. E. and Tung, F. and Striebel, C. T.},
+  title   = {Maximum Likelihood Estimates of Linear Dynamic Systems},
+  journal = {AIAA Journal},
+  volume  = {3},
+  number  = {8},
+  pages   = {1445--1450},
+  year    = {1965}
+}
+
+@article{julier2004,
+  author  = {Julier, Simon J. and Uhlmann, Jeffrey K.},
+  title   = {Unscented Filtering and Nonlinear Estimation},
+  journal = {Proceedings of the IEEE},
+  volume  = {92},
+  number  = {3},
+  pages   = {401--422},
+  year    = {2004}
+}
+
+@article{barrau2017,
+  author  = {Barrau, Axel and Bonnabel, Silv\`{e}re},
+  title   = {The Invariant Extended {Kalman} Filter as a Stable Observer},
+  journal = {IEEE Transactions on Automatic Control},
+  volume  = {62},
+  number  = {4},
+  pages   = {1797--1812},
+  year    = {2017}
+}
+
+@book{groves2013,
+  author    = {Groves, Paul D.},
+  title     = {Principles of {GNSS}, Inertial, and Multisensor Integrated
+               Navigation Systems},
+  edition   = {2nd},
+  publisher = {Artech House},
+  address   = {Boston, MA},
+  year      = {2013}
+}
+
+@book{titterton2004,
+  author    = {Titterton, David H. and Weston, John L.},
+  title     = {Strapdown Inertial Navigation Technology},
+  edition   = {2nd},
+  publisher = {Institution of Engineering and Technology},
+  year      = {2004}
+}
+
+@book{farrell2008,
+  author    = {Farrell, Jay A.},
+  title     = {Aided Navigation: {GPS} with High Rate Sensors},
+  publisher = {McGraw-Hill},
+  year      = {2008}
+}
+
+@book{barshalom2001,
+  author    = {Bar-Shalom, Yaakov and Li, X.-Rong and Kirubarajan, Thiagalingam},
+  title     = {Estimation with Applications to Tracking and Navigation},
+  publisher = {John Wiley \& Sons},
+  year      = {2001}
+}
+
+% ---------------------------------------------------------------------------
+% Factor graphs, smoothing and mapping, visual--inertial estimation
+% ---------------------------------------------------------------------------
+@article{kschischang2001,
+  author  = {Kschischang, Frank R. and Frey, Brendan J. and Loeliger, Hans-Andrea},
+  title   = {Factor Graphs and the Sum-Product Algorithm},
+  journal = {IEEE Transactions on Information Theory},
+  volume  = {47},
+  number  = {2},
+  pages   = {498--519},
+  year    = {2001}
+}
+
+@article{dellaert2017,
+  author  = {Dellaert, Frank and Kaess, Michael},
+  title   = {Factor Graphs for Robot Perception},
+  journal = {Foundations and Trends in Robotics},
+  volume  = {6},
+  number  = {1-2},
+  pages   = {1--139},
+  year    = {2017}
+}
+
+@techreport{dellaert2012,
+  author      = {Dellaert, Frank},
+  title       = {Factor Graphs and {GTSAM}: A Hands-on Introduction},
+  institution = {Georgia Institute of Technology},
+  number      = {GT-RIM-CP\&R-2012-002},
+  year        = {2012}
+}
+
+@article{dellaert2006,
+  author  = {Dellaert, Frank and Kaess, Michael},
+  title   = {Square Root {SAM}: Simultaneous Localization and Mapping via
+             Square Root Information Smoothing},
+  journal = {The International Journal of Robotics Research},
+  volume  = {25},
+  number  = {12},
+  pages   = {1181--1203},
+  year    = {2006}
+}
+
+@article{kaess2008,
+  author  = {Kaess, Michael and Ranganathan, Ananth and Dellaert, Frank},
+  title   = {{iSAM}: Incremental Smoothing and Mapping},
+  journal = {IEEE Transactions on Robotics},
+  volume  = {24},
+  number  = {6},
+  pages   = {1365--1378},
+  year    = {2008}
+}
+
+@article{kaess2012,
+  author  = {Kaess, Michael and Johannsson, Hordur and Roberts, Richard and
+             Ila, Viorela and Leonard, John J. and Dellaert, Frank},
+  title   = {{iSAM2}: Incremental Smoothing and Mapping Using the {Bayes} Tree},
+  journal = {The International Journal of Robotics Research},
+  volume  = {31},
+  number  = {2},
+  pages   = {216--235},
+  year    = {2012}
+}
+
+@article{eustice2006,
+  author  = {Eustice, Ryan M. and Singh, Hanumant and Leonard, John J.},
+  title   = {Exactly Sparse Delayed-State Filters for View-Based {SLAM}},
+  journal = {IEEE Transactions on Robotics},
+  volume  = {22},
+  number  = {6},
+  pages   = {1100--1114},
+  year    = {2006}
+}
+
+@article{grisetti2010,
+  author  = {Grisetti, Giorgio and K\"{u}mmerle, Rainer and Stachniss, Cyrill
+             and Burgard, Wolfram},
+  title   = {A Tutorial on Graph-Based {SLAM}},
+  journal = {IEEE Intelligent Transportation Systems Magazine},
+  volume  = {2},
+  number  = {4},
+  pages   = {31--43},
+  year    = {2010}
+}
+
+@inproceedings{kummerle2011,
+  author    = {K\"{u}mmerle, Rainer and Grisetti, Giorgio and Strasdat, Hauke
+               and Konolige, Kurt and Burgard, Wolfram},
+  title     = {{g2o}: A General Framework for Graph Optimization},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  pages     = {3607--3613},
+  year      = {2011}
+}
+
+@inproceedings{triggs2000,
+  author    = {Triggs, Bill and McLauchlan, Philip F. and Hartley, Richard I.
+               and Fitzgibbon, Andrew W.},
+  title     = {Bundle Adjustment---A Modern Synthesis},
+  booktitle = {Vision Algorithms: Theory and Practice},
+  pages     = {298--372},
+  year      = {2000}
+}
+
+@article{forster2017,
+  author  = {Forster, Christian and Carlone, Luca and Dellaert, Frank and
+             Scaramuzza, Davide},
+  title   = {On-Manifold Preintegration for Real-Time Visual--Inertial
+             Odometry},
+  journal = {IEEE Transactions on Robotics},
+  volume  = {33},
+  number  = {1},
+  pages   = {1--21},
+  year    = {2017}
+}
+
+@article{qin2018,
+  author  = {Qin, Tong and Li, Peiliang and Shen, Shaojie},
+  title   = {{VINS-Mono}: A Robust and Versatile Monocular Visual-Inertial
+             State Estimator},
+  journal = {IEEE Transactions on Robotics},
+  volume  = {34},
+  number  = {4},
+  pages   = {1004--1020},
+  year    = {2018}
+}
+
+@article{leutenegger2015,
+  author  = {Leutenegger, Stefan and Lynen, Simon and Bosse, Michael and
+             Siegwart, Roland and Furgale, Paul},
+  title   = {Keyframe-Based Visual--Inertial Odometry Using Nonlinear
+             Optimization},
+  journal = {The International Journal of Robotics Research},
+  volume  = {34},
+  number  = {3},
+  pages   = {314--334},
+  year    = {2015}
+}
+
+@article{sibley2010,
+  author  = {Sibley, Gabe and Matthies, Larry and Sukhatme, Gaurav},
+  title   = {Sliding Window Filter with Application to Planetary Landing},
+  journal = {Journal of Field Robotics},
+  volume  = {27},
+  number  = {5},
+  pages   = {587--608},
+  year    = {2010}
+}
+
+@article{indelman2013,
+  author  = {Indelman, Vadim and Williams, Stephen and Kaess, Michael and
+             Dellaert, Frank},
+  title   = {Information Fusion in Navigation Systems via Factor Graph Based
+             Incremental Smoothing},
+  journal = {Robotics and Autonomous Systems},
+  volume  = {61},
+  number  = {8},
+  pages   = {721--738},
+  year    = {2013}
+}
+
+% ---------------------------------------------------------------------------
+% Robust estimation
+% ---------------------------------------------------------------------------
+@article{huber1964,
+  author  = {Huber, Peter J.},
+  title   = {Robust Estimation of a Location Parameter},
+  journal = {The Annals of Mathematical Statistics},
+  volume  = {35},
+  number  = {1},
+  pages   = {73--101},
+  year    = {1964}
+}
+
+@inproceedings{sunderhauf2012,
+  author    = {S\"{u}nderhauf, Niko and Protzel, Peter},
+  title     = {Switchable Constraints for Robust Pose Graph {SLAM}},
+  booktitle = {IEEE/RSJ International Conference on Intelligent Robots and
+               Systems (IROS)},
+  pages     = {1879--1884},
+  year      = {2012}
+}
+
+@inproceedings{agarwal2013,
+  author    = {Agarwal, Pratik and Tipaldi, Gian Diego and Spinello, Luciano
+               and Stachniss, Cyrill and Burgard, Wolfram},
+  title     = {Robust Map Optimization Using Dynamic Covariance Scaling},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  pages     = {62--69},
+  year      = {2013}
+}
+
+@article{lathrop2024,
+  author  = {Lathrop, Frederic W. and Taylor, Clark N. and Nielsen, Aaron P.},
+  title   = {Magnetic Sensor Compensation Utilizing Factor Graph Estimation},
+  journal = {IEEE Sensors Journal},
+  volume  = {24},
+  number  = {15},
+  pages   = {23711--23722},
+  year    = {2024},
+  doi     = {10.1109/JSEN.2024.3416618}
+}
+
+@article{nerrise2024,
+  author        = {Nerrise, Favour and Sosanya, Andrew Sosa and Neary, Patrick},
+  title         = {Physics-Informed Calibration of Aeromagnetic Compensation in
+                   Magnetic Navigation Systems using Liquid Time-Constant Networks},
+  journal       = {arXiv preprint},
+  eprint        = {2401.09631},
+  archivePrefix = {arXiv},
+  note          = {NeurIPS 2023 Machine Learning and the Physical Sciences Workshop},
+  year          = {2024}
+}
