@@ -25,8 +25,8 @@ and reproducible simulations.
 | `research/fgo_benchmark.jl` | 181 | real SGL **Flt1003** DRMS benchmark across all methods. |
 | `research/paper_baseline.jl` | — | line 1007.06: our FGO-online (static + sliding-window TL) vs Hager et al. (2026) cited DRMS. |
 | `research/paper_impl.jl` | — | **re-runs** the paper's online EKF+TL+NN (`ekf_online_nn`) cold start on line 1007.06 — a genuine reproduced baseline (Mag 4 40.0 m, Mag 5 17.5 m). |
-| `research/fgo_breadth.jl` | — | **breadth**: window FGO vs causal EKF-online on 5 lines / 3 flights / 2 maps, cold-start cabin mags (§2b). The paper reports the 4 navigation/survey lines (8 cases, FGO best of 3 on 8/8) and sets aside the 14-min calibration line 1006.08. Baselines: weak (online-TL EKF) + strong (EKF+TL+NN); NN-free. |
-| `research/fgo_montecarlo.jl` | — | **consistency & significance**: 30-seed simulation Monte-Carlo (fixed sim trajectory, per-seed INS-error + clean-measurement re-draw) of EKF vs batch FGO. Reports DRMS mean±95% CI (FGO 7.4±1.6 vs EKF 9.3±1.3 m) and per-axis 2-DOF position ANEES (FGO 1.54, EKF 1.11; ideal 2 → both conservative, neither over-confident). Real lines are single-realization so MC is simulation-only. Outputs `montecarlo_{summary,nees,sigma}.csv`. |
+| `research/fgo_breadth.jl` | — | **breadth**: window FGO vs causal EKF-online on 5 lines / 3 flights / 2 maps, cold-start cabin mags (§2b). The paper reports the 4 navigation/survey lines (8 cases, FGO best of 4 on 8/8) and sets aside the 14-min calibration line 1006.08. Baselines: weak (online-TL EKF) + strong (EKF+TL+NN) + fair particle filter (MPF+TL); NN-free. |
+| `research/fgo_montecarlo.jl` | — | **consistency & significance**: 30-seed simulation Monte-Carlo (fixed sim trajectory, per-seed INS-error + clean-measurement re-draw) of EKF vs the marginalized particle filter (MPF) vs batch FGO on the clean/compensated sensor. Reports DRMS mean±95% CI (FGO 1.4±0.2, EKF 4.1±0.4, MPF 4.9±0.8 m) and per-axis 2-DOF position ANEES (FGO 1.57, EKF 1.72 — both conservative; MPF 59.8 — its particle covariance is badly over-confident under particle depletion). Real lines are single-realization so MC is simulation-only. Outputs `montecarlo_{summary,nees,sigma}.csv`. |
 | `research/fgo_sensor_ablation.jl` | 154 | factorial sensor-error ablation with injected-truth recovery. |
 | `research/fgo_tracks.jl` | 131 | geographic map+track and position-error figures. |
 | `.github/workflows/fgo_research.yml` | — | CI: test suite + all three research scripts on every push. |
@@ -79,25 +79,28 @@ Mag 4 / Mag 5. No neural network anywhere — the only difference is causal EKF 
 batch/window smoothing, so a consistent FGO advantage isolates the factor-graph
 formulation itself. DRMS [m] after a 10-min warm-up (`research/fgo_breadth.jl`):
 
-Two causal baselines — weak (online-TL EKF) and strong (reimplemented EKF+TL+NN,
-same recipe as `paper_impl.jl`) — vs the NN-free FGO window. DRMS [m] after a
-10-min warm-up (`research/fgo_breadth.jl`):
+Three baselines — weak (online-TL EKF), strong (reimplemented EKF+TL+NN, same
+recipe as `paper_impl.jl`), and a fair particle filter (**MPF+TL**: the
+marginalized/Rao-Blackwellized PF already in MagNav.jl, extended to carry the
+Tolles-Lawson coefficients in its conditionally-linear-Gaussian block,
+`research/mpf_online.jl`) — vs the NN-free FGO window. DRMS [m] after a 10-min
+warm-up (`research/fgo_breadth.jl`); ✗ = diverged beyond the 10 km cutoff:
 
-| flight | line | map | mag | INS | EKF-online | EKF+TL+NN | **FGO window** |
-|---|---|---|---|---:|---:|---:|---:|
-| Flt1003 | 1003.02 | Eastern | Mag 4 | 124 | **41626 ✗** | 99.1 | **42.6** |
-| Flt1003 | 1003.02 | Eastern | Mag 5 | 124 | 28.1 | 33.8 | **21.7** |
-| Flt1003 | 1003.08 | Renfrew | Mag 4 | 272 | **off-map ✗** | 46.4 | **26.1** |
-| Flt1003 | 1003.08 | Renfrew | Mag 5 | 272 | 21.1 | 18.8 | **12.4** |
-| Flt1006 | 1006.08 | Eastern | Mag 4 | 198 | **17179 ✗** | 1371 | **193.9** |
-| Flt1006 | 1006.08 | Eastern | Mag 5 | 198 | 117.5 | **34.6** | 122.0 |
-| Flt1007 | 1007.02 | Eastern | Mag 4 | 121 | **35482 ✗** | 114.8 | **38.6** |
-| Flt1007 | 1007.02 | Eastern | Mag 5 | 121 | 31.6 | 29.3 | **14.5** |
-| Flt1007 | 1007.06 | Renfrew | Mag 4 | 318 | 46.7 | 42.2 | **32.7** |
-| Flt1007 | 1007.06 | Renfrew | Mag 5 | 318 | 17.8 | 17.8 | **13.8** |
+| flight | line | map | mag | INS | EKF-online | EKF+TL+NN | MPF+TL | **FGO window** |
+|---|---|---|---|---:|---:|---:|---:|---:|
+| Flt1003 | 1003.02 | Eastern | Mag 4 | 124 | **41626 ✗** | 99.1 | **✗** | **42.6** |
+| Flt1003 | 1003.02 | Eastern | Mag 5 | 124 | 28.1 | 29.5 | **✗** | **21.7** |
+| Flt1003 | 1003.08 | Renfrew | Mag 4 | 272 | **off-map ✗** | 46.6 | **✗** | **26.1** |
+| Flt1003 | 1003.08 | Renfrew | Mag 5 | 272 | 21.1 | 20.7 | **✗** | **12.4** |
+| Flt1006 | 1006.08 | Eastern | Mag 4 | 198 | **17179 ✗** | 952 | **✗** | **193.9** |
+| Flt1006 | 1006.08 | Eastern | Mag 5 | 198 | 117.5 | **108.3** | 793.7 | 122.0 |
+| Flt1007 | 1007.02 | Eastern | Mag 4 | 121 | **35482 ✗** | 130.0 | **✗** | **38.6** |
+| Flt1007 | 1007.02 | Eastern | Mag 5 | 121 | 31.6 | 30.4 | **✗** | **14.5** |
+| Flt1007 | 1007.06 | Renfrew | Mag 4 | 318 | 46.7 | 48.9 | **✗** | **32.7** |
+| Flt1007 | 1007.06 | Renfrew | Mag 5 | 318 | 17.8 | 18.3 | **✗** | **13.8** |
 
 **EKF+TL+NN diverged on 0 cases (the NN keeps the causal filter bounded), yet the
-NN-free FGO window is best of the three on all 8 counted cases** (the four
+NN-free FGO window is best of the four on all 8 counted cases** (the four
 navigation/survey lines 1007.06, 1007.02, 1003.02, 1003.08). The only case where it
 is not best, 1006.08 Mag 5, is on the 14-min calibration line 1006.08 (Flt1006),
 which the paper sets aside and does not tabulate. The plain EKF-online **diverges to tens of km** (41626 /
@@ -107,8 +110,18 @@ over each window, so early
 navigation is protected by calibration that only becomes observable later, which a
 one-pass causal filter cannot do. FGO even beats the compensated-stinger EKF on
 several lines (e.g. 1003.08 Mag 5 12.4 vs 17.7; 1007.06 Mag 5 13.8 vs 20.0).
-Honest caveat: on the short 14-min line (Flt1006 1006.08) both methods are weak
-and FGO wins only on Mag 4 — short lines carry little map information for either.
+
+**The particle filter does not rescue the cold start.** MPF+TL — a genuine
+Bayesian estimator, not a linearized filter — **diverges past 10 km on 9 of 10
+cases**, and on the sole line where it stays finite (1006.08 Mag 5) it is 794 m,
+far worse than every other method. Its per-particle map-matching cannot recover
+from a cold-start TL that only becomes observable later: the marginalized block
+updates the coefficients recursively but never re-linearizes past epochs, so the
+early-flight interference is baked into the trajectory just as it is for the
+causal EKF. This isolates the mechanism — the FGO advantage is the batch/window
+**re-smoothing**, not merely "using a Bayesian filter." Honest caveat: on the
+short 14-min line (Flt1006 1006.08) every method is weak and FGO wins only on
+Mag 4 — short lines carry little map information for any estimator.
 
 ---
 
@@ -273,8 +286,12 @@ features — which is exactly what every FGO result here uses.
 - **Breadth** ✅ addressed in §2b (4 counted navigation/survey lines + 1 set-aside
   calibration line, 3 flights, 2 maps); still worth extending to Monte-Carlo
   statistics and the full SGL line set.
-- **Baselines**: add MPF and a reproduction of the grid/point-mass MMSE estimator
-  for a like-for-like comparison.
+- **Baselines** ✅ MPF added: a marginalized/Rao-Blackwellized particle filter,
+  extended to carry the Tolles-Lawson coefficients (MPF+TL), now runs as a fair
+  Bayesian baseline in both studies — DRMS-competitive with the EKF but
+  over-confident on the clean sim (ANEES ≈ 60, §MC) and divergent on 9/10
+  cold-start cabin-mag lines (§2b). Still open: a grid/point-mass MMSE estimator
+  for a like-for-like map-matching comparison.
 - **Short lines**: the 14-min line (Flt1006 1006.08) is hard for every method —
   characterize the map-information floor vs line length.
 - **Observability**: turn the qualitative sweet-spot / exogeneity findings
