@@ -20,15 +20,18 @@ os.makedirs(OUT, exist_ok=True)
 
 def fig_breadth():
     """Table IV as a grouped log-scale bar chart: two causal baselines
-    (weak online-TL EKF, strong EKF+TL+NN) vs the NN-free FGO window."""
+    (weak online-TL EKF, strong EKF+TL+NN) vs the NN-free FGO window. The
+    marginalized-particle-filter baseline (MPF+TL) diverges past 10 km on every
+    counted case, so it is reported in the table but not plotted here."""
     C_WEAK = "#9aa4b2"   # weak baseline (online-TL EKF), muted gray
     rows = [  # the four counted lines: FF (Flt1007) then SV (Flt1003).
         # The calibration line 1006.08 is set aside (see text) and not shown.
+        # Numbers match Table IV / research/fgo_breadth_results.csv (committed CI run).
         # (label, EKF-online, EKF+TL+NN, FGO-win); None->div, "err"->off-map
-        ("1007.06  M4  (FF)", 46.7, 42.2, 32.7), ("1007.06  M5  (FF)", 17.8, 17.8, 13.8),
-        ("1007.02  M4  (FF)", None, 114.8, 38.6), ("1007.02  M5  (FF)", 31.6, 29.3, 14.5),
-        ("1003.02  M4  (SV)", None, 99.1, 42.6), ("1003.02  M5  (SV)", 28.1, 33.8, 21.7),
-        ("1003.08  M4  (SV)", "err", 46.4, 26.1), ("1003.08  M5  (SV)", 21.1, 18.8, 12.4),
+        ("1007.06  M4  (FF)", 46.7, 48.8, 32.7), ("1007.06  M5  (FF)", 17.8, 18.3, 13.8),
+        ("1007.02  M4  (FF)", None, 130.0, 38.6), ("1007.02  M5  (FF)", 31.6, 30.4, 14.5),
+        ("1003.02  M4  (SV)", None, 101.0, 42.6), ("1003.02  M5  (SV)", 28.1, 29.5, 21.7),
+        ("1003.08  M4  (SV)", "err", 46.6, 26.1), ("1003.08  M5  (SV)", 21.1, 20.7, 12.4),
     ]
     labels = [r[0] for r in rows]
     y = np.arange(len(rows))[::-1]

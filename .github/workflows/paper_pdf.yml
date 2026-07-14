@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - 'claude/fgo-problem-research-**'
+      - 'claude/continued-work-**'
     paths:
       - 'paper/**'
       - '.github/workflows/paper_pdf.yml'
