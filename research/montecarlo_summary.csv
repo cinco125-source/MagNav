@@ -1,3 +1,4 @@
 estimator,drms_mean,drms_ci95,drms_std,anees,anees_lo,anees_hi
-EKF (causal),3.72,0.37,1.04,1.604,1.984,2.016
-FGO (batch),1.43,0.26,0.72,1.898,1.984,2.016
+EKF (causal),4.1,0.4,1.12,1.721,1.984,2.016
+MPF (particle),4.94,0.75,2.1,59.755,1.984,2.016
+FGO (batch),1.39,0.18,0.5,1.572,1.984,2.016
