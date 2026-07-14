@@ -111,9 +111,9 @@ end
 # DRMS convenience wrapper mirroring ekf_tlnn_drms: returns Inf on divergence.
 function mpf_online_drms(traj, ins, mag, flux, itp, x0_TL, P0, Qd, R;
                          terms=[:permanent,:induced,:eddy,:bias], num_part=1000,
-                         warm=600.0, div_thresh=1e4)
+                         core::Bool=true, warm=600.0, div_thresh=1e4)
     fr = try
-        mpf_online(ins,mag,flux,itp,x0_TL,P0,Qd,R;terms=terms,num_part=num_part)
+        mpf_online(ins,mag,flux,itp,x0_TL,P0,Qd,R;terms=terms,num_part=num_part,core=core)
     catch e
         @warn("mpf_online failed",e); return Inf
     end

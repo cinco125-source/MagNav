@@ -108,7 +108,7 @@ for s = 1:N_MC
     try
         fe = run_filt(traj,ins,mag,itp,:ekf;P0=P0,Qd=Qd,R=R,core=false,run_crlb=false)
         fm = run_filt(traj,ins,mag,itp,:mpf;P0=P0,Qd=Qd,R=R,core=false,
-                      num_part=NUM_PART)
+                      num_part=NUM_PART,run_crlb=false)
         ff = run_filt(traj,ins,mag,itp,:fgo;P0=P0,Qd=Qd,R=R,core=false,run_crlb=false)
     catch e
         global nfail += 1; @warn("seed $s failed",e); continue
