@@ -8,10 +8,11 @@
 # Design notes (why these sensors):
 #  - fgo_sensor carries NO Tolles-Lawson chain, so on the uncompensated cabin
 #    mags (Mag 4/5) it would face the full platform field and fail like any
-#    TL-less filter. The fair real-data test is on the SGL-COMPENSATED sensors,
-#    where TL-able interference is already removed and what remains is map error
-#    plus genuine residual sensor error: Mag 1 (stinger OPM, best case) and
-#    Mag 3 (cabin OPM, compensated but with a larger non-TL remainder).
+#    TL-less filter. The fair real-data test is on the SGL-COMPENSATED sensor;
+#    SGL 2020 provides a compensated channel only for the stinger Mag 1
+#    (XYZ20 has mag_1_c; the cabin mags ship uncompensated only), so Mag 1 it is:
+#    TL-able interference is already removed and what remains is map error plus
+#    genuine residual sensor error.
 #  - Physics prediction, stated before running: gains should be small-to-null.
 #    For a body-axis OPM, cos(psi) equals a field direction cosine, so the
 #    n={1,2} heading harmonics and the hard-iron term lie (nearly) inside the
@@ -35,7 +36,7 @@ FOGM_SIG = 1.0
 FOGM_TAU = 600.0
 AXIS     = [1.0,0.0,0.0]   # OPM optical axis assumed body-x (as in the ablation)
 LINES    = [(:Flt1003,1003.02), (:Flt1007,1007.06)]
-SENSORS  = (:mag_1_c,:mag_3_c)
+SENSORS  = (:mag_1_c,)   # XYZ20's only compensated channel (stinger)
 flights  = unique(first.(LINES))
 
 df_dir    = joinpath(@__DIR__,"..","examples","dataframes")
@@ -67,10 +68,13 @@ function drms_ll(traj, lat, lon; warm=600.0)
     sqrt(mean(dn.^2 .+ de.^2))
 end
 
+# cumulative ablation to attribute any gain to its term
 # (name, n_harm, cal_bias, drift, dead_zone); n_harm=3 -> orders {1,2,4}
 CASES = [("plain fgo",        0,false,false,false),
          ("+heading {1,2,4}", 3,false,false,false),
-         ("full sensor model",3,true, true, true )]
+         ("+hard-iron bias",  3,true, false,false),
+         ("+drift",           3,true, true, false),
+         ("full (+dead zone)",3,true, true, true )]
 
 results = DataFrame(flight=Symbol[],line=Float64[],mag=String[],config=String[],
                     robust=String[],DRMS=Float64[],N=Int[],t=Float64[])

@@ -102,8 +102,12 @@ for (fl,line) in LINES
         (isfinite(sd) && sd > 1e-4) || continue     # constant/dead channel
         push!(chans,c); push!(cols,(v .- mu)./sd); push!(scales,sd)
     end
-    U = reduce(hcat,cols)                           # N x n_ch, unit-variance
     n_ch = length(chans)
+    if n_ch == 0
+        @warn("$fl $line: no valid current channels; skipping line")
+        continue
+    end
+    U = reduce(hcat,cols)                           # N x n_ch, unit-variance
 
     # field direction cosines in body frame for the (u,v,w)-modulated triplets
     Bt = sqrt.(flux.x.^2 .+ flux.y.^2 .+ flux.z.^2)
