@@ -79,6 +79,10 @@ jobs:
         run: julia --project=. research/fgo_current_corr.jl
         env:
           GKSwstype: '100'
+      - name: Sensor-error factors on real compensated sensors (Mag 1 / Mag 3)
+        run: julia --project=. research/fgo_sensor_real.jl
+        env:
+          GKSwstype: '100'
       - name: Monte-Carlo consistency & significance (NEES / DRMS CIs, simulated)
         run: julia --project=. research/fgo_montecarlo.jl 30
         env:
@@ -94,6 +98,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           for f in research/fgo_breadth_results.csv \
                    research/fgo_current_corr.csv research/fgo_current_corr_summary.csv \
+                   research/fgo_sensor_real_results.csv \
                    research/montecarlo_summary.csv research/montecarlo_nees.csv \
                    research/montecarlo_sigma.csv research/fgo_winlen_results.csv; do
             [ -f "$f" ] && git add -f "$f" || echo "skip missing $f"
@@ -124,6 +129,7 @@ jobs:
             research/fgo_breadth_results.csv
             research/fgo_current_corr.csv
             research/fgo_current_corr_summary.csv
+            research/fgo_sensor_real_results.csv
             research/montecarlo_summary.csv
             research/montecarlo_nees.csv
             research/montecarlo_sigma.csv
