@@ -1,0 +1,33 @@
+flight,line,mag,config,n_extra,DRMS,t
+Flt1003,1003.02,Mag 4,A TL only,0,42.6,82.89
+Flt1003,1003.02,Mag 4,B +cur RW,14,NaN,NaN
+Flt1003,1003.02,Mag 4,C +cur static,14,NaN,NaN
+Flt1003,1003.02,Mag 4,D +cur+triplets,23,NaN,NaN
+Flt1003,1003.02,Mag 5,A TL only,0,21.7,55.97
+Flt1003,1003.02,Mag 5,B +cur RW,14,NaN,NaN
+Flt1003,1003.02,Mag 5,C +cur static,14,NaN,NaN
+Flt1003,1003.02,Mag 5,D +cur+triplets,23,NaN,NaN
+Flt1003,1003.08,Mag 4,A TL only,0,26.1,73.67
+Flt1003,1003.08,Mag 4,B +cur RW,14,NaN,NaN
+Flt1003,1003.08,Mag 4,C +cur static,14,NaN,NaN
+Flt1003,1003.08,Mag 4,D +cur+triplets,23,NaN,NaN
+Flt1003,1003.08,Mag 5,A TL only,0,12.4,63.39
+Flt1003,1003.08,Mag 5,B +cur RW,14,NaN,NaN
+Flt1003,1003.08,Mag 5,C +cur static,14,NaN,NaN
+Flt1003,1003.08,Mag 5,D +cur+triplets,23,NaN,NaN
+Flt1007,1007.02,Mag 4,A TL only,0,38.6,59.76
+Flt1007,1007.02,Mag 4,B +cur RW,14,NaN,NaN
+Flt1007,1007.02,Mag 4,C +cur static,14,NaN,NaN
+Flt1007,1007.02,Mag 4,D +cur+triplets,23,NaN,NaN
+Flt1007,1007.02,Mag 5,A TL only,0,14.5,50.46
+Flt1007,1007.02,Mag 5,B +cur RW,14,NaN,NaN
+Flt1007,1007.02,Mag 5,C +cur static,14,NaN,NaN
+Flt1007,1007.02,Mag 5,D +cur+triplets,23,NaN,NaN
+Flt1007,1007.06,Mag 4,A TL only,0,32.7,81.69
+Flt1007,1007.06,Mag 4,B +cur RW,14,NaN,NaN
+Flt1007,1007.06,Mag 4,C +cur static,14,NaN,NaN
+Flt1007,1007.06,Mag 4,D +cur+triplets,23,NaN,NaN
+Flt1007,1007.06,Mag 5,A TL only,0,13.8,74.44
+Flt1007,1007.06,Mag 5,B +cur RW,14,NaN,NaN
+Flt1007,1007.06,Mag 5,C +cur static,14,NaN,NaN
+Flt1007,1007.06,Mag 5,D +cur+triplets,23,NaN,NaN

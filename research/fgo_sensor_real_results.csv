@@ -1,0 +1,21 @@
+flight,line,mag,config,robust,DRMS,N,t
+Flt1003,1003.02,Mag 1,plain fgo,none,15.1,37841,37.93
+Flt1003,1003.02,Mag 1,"+heading {1,2,4}",none,14.9,37841,20.76
+Flt1003,1003.02,Mag 1,+hard-iron bias,none,14.8,37841,24.65
+Flt1003,1003.02,Mag 1,+drift,none,13.9,37841,25.79
+Flt1003,1003.02,Mag 1,full (+dead zone),none,13.3,37841,25.7
+Flt1003,1003.02,Mag 1,plain fgo,huber,14.7,37841,18.96
+Flt1003,1003.02,Mag 1,"+heading {1,2,4}",huber,14.5,37841,20.87
+Flt1003,1003.02,Mag 1,+hard-iron bias,huber,14.2,37841,24.88
+Flt1003,1003.02,Mag 1,+drift,huber,13.8,37841,26.03
+Flt1003,1003.02,Mag 1,full (+dead zone),huber,12.7,37841,26.17
+Flt1007,1007.06,Mag 1,plain fgo,none,19.1,52401,26.4
+Flt1007,1007.06,Mag 1,"+heading {1,2,4}",none,18.9,52401,29.65
+Flt1007,1007.06,Mag 1,+hard-iron bias,none,18.7,52401,32.38
+Flt1007,1007.06,Mag 1,+drift,none,20.6,52401,33.93
+Flt1007,1007.06,Mag 1,full (+dead zone),none,19.0,52401,33.76
+Flt1007,1007.06,Mag 1,plain fgo,huber,17.4,52401,26.11
+Flt1007,1007.06,Mag 1,"+heading {1,2,4}",huber,18.6,52401,30.07
+Flt1007,1007.06,Mag 1,+hard-iron bias,huber,18.7,52401,32.49
+Flt1007,1007.06,Mag 1,+drift,huber,19.3,52401,33.54
+Flt1007,1007.06,Mag 1,full (+dead zone),huber,21.6,52401,33.77
