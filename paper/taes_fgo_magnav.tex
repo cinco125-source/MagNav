@@ -1094,7 +1094,7 @@ rather than tabulate it: it is only \SI{14}{\minute} long, so the \SI{10}{\minut
 warm-up leaves a \SI{4}{\minute} window over which none of the DRMS values is
 reliable, and its low map-information floor (the Remark in
 Section~\ref{sec:observability}) makes every method weak. It reproduces the same causal-EKF divergence, but we draw no
-accuracy conclusion from it: in particular the NN's \SI{105.2}{\meter} on its Mag~5,
+accuracy conclusion from it: in particular the NN's \SI{108.3}{\meter} on its Mag~5,
 against \SIrange{117}{122}{\meter} for the TL-only EKF and window, is not evidence of
 an NN accuracy advantage on a window this short.
 
@@ -1131,11 +1131,11 @@ aside (see text).}
  & & & alt & & EKF & EKF+ & MPF & FGO \\
 Line & Purp. & Map & [km] & Mag & online & TL+NN & +TL & win \\
 \midrule
-1007.06 & FF & R & 0.4 & 4 & 46.7 & 48.8 & div. & \textbf{32.7} \\
+1007.06 & FF & R & 0.4 & 4 & 46.7 & 48.9 & div. & \textbf{32.7} \\
 1007.06 & FF & R & 0.4 & 5 & 17.8 & 18.3 & div. & \textbf{13.8} \\
 1007.02 & FF & E & 0.8 & 4 & div. & 130.0 & div. & \textbf{38.6} \\
 1007.02 & FF & E & 0.8 & 5 & 31.6 & 30.4 & div. & \textbf{14.5} \\
-1003.02 & SV & E & 0.4 & 4 & div. & 101.0 & div. & \textbf{42.6} \\
+1003.02 & SV & E & 0.4 & 4 & div. & 99.1 & div. & \textbf{42.6} \\
 1003.02 & SV & E & 0.4 & 5 & 28.1 & 29.5 & div. & \textbf{21.7} \\
 1003.08 & SV & R & 0.4 & 4 & err. & 46.6 & div. & \textbf{26.1} \\
 1003.08 & SV & R & 0.4 & 5 & 21.1 & 20.7 & div. & \textbf{12.4} \\

@@ -88,15 +88,15 @@ warm-up (`research/fgo_breadth.jl`); ✗ = diverged beyond the 10 km cutoff:
 
 | flight | line | map | mag | INS | EKF-online | EKF+TL+NN | MPF+TL | **FGO window** |
 |---|---|---|---|---:|---:|---:|---:|---:|
-| Flt1003 | 1003.02 | Eastern | Mag 4 | 124 | **41626 ✗** | 101.0 | **✗** | **42.6** |
+| Flt1003 | 1003.02 | Eastern | Mag 4 | 124 | **41626 ✗** | 99.1 | **✗** | **42.6** |
 | Flt1003 | 1003.02 | Eastern | Mag 5 | 124 | 28.1 | 29.5 | **✗** | **21.7** |
 | Flt1003 | 1003.08 | Renfrew | Mag 4 | 272 | **off-map ✗** | 46.6 | **✗** | **26.1** |
 | Flt1003 | 1003.08 | Renfrew | Mag 5 | 272 | 21.1 | 20.7 | **✗** | **12.4** |
-| Flt1006 | 1006.08 | Eastern | Mag 4 | 198 | **17179 ✗** | 1174 | **✗** | **193.9** |
-| Flt1006 | 1006.08 | Eastern | Mag 5 | 198 | 117.5 | **105.2** | 793.7 | 122.0 |
+| Flt1006 | 1006.08 | Eastern | Mag 4 | 198 | **17179 ✗** | 952 | **✗** | **193.9** |
+| Flt1006 | 1006.08 | Eastern | Mag 5 | 198 | 117.5 | **108.3** | 793.7 | 122.0 |
 | Flt1007 | 1007.02 | Eastern | Mag 4 | 121 | **35482 ✗** | 130.0 | **✗** | **38.6** |
 | Flt1007 | 1007.02 | Eastern | Mag 5 | 121 | 31.6 | 30.4 | **✗** | **14.5** |
-| Flt1007 | 1007.06 | Renfrew | Mag 4 | 318 | 46.7 | 48.8 | **✗** | **32.7** |
+| Flt1007 | 1007.06 | Renfrew | Mag 4 | 318 | 46.7 | 48.9 | **✗** | **32.7** |
 | Flt1007 | 1007.06 | Renfrew | Mag 5 | 318 | 17.8 | 18.3 | **✗** | **13.8** |
 
 **EKF+TL+NN diverged on 0 cases (the NN keeps the causal filter bounded), yet the
