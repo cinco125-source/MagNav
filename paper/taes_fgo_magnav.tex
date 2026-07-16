@@ -626,7 +626,8 @@ $\boldsymbol{\beta}_t$ may only absorb signal that is not collinear with the
 map gradient $\mathbf{g}_t$, so genuine map information is not silently explained
 away as interference. The trade it makes, a higher compensation residual than the
 network in exchange for navigation robustness, is quantified with the cold-start
-results in Section~\ref{sec:results}-C.
+results in Section~\ref{sec:results}-C, and the account itself is checked against
+the recorded platform-current channels in Section~\ref{sec:results}-D.
 
 \begin{figure*}[t]
 \centering
@@ -1249,7 +1250,18 @@ still stays bounded on all eight counted cases (e.g.\ \SI{66.3}{\meter} on
 1003.02/Mag~4 where the causal filter reads \SI{41626}{\meter}, refined to
 \SI{42.6}{\meter} by Huber), so the robustness comes from the windowed
 relinearization of Section~\ref{sec:method}-A, and the kernel buys accuracy, not
-survival. What the window adds is that it reaches the same bounded
+survival. The recorded platform currents let us check the absorption account of
+Section~\ref{sec:method}-A directly on line 1003.02: the fourteen onboard current
+channels linearly explain \SIrange{28}{39}{\percent} of the raw cabin interference
+(strobe lights, cabin fuel pump, and INS heater lead), but only
+\SIrange{2}{6}{\percent} of the post-fit windowed-FGO residual, so the
+current-aligned component is almost entirely absorbed by the time-varying
+$\boldsymbol{\beta}_t$ and $S_t$; and the Huber-down-weighted epochs concentrate
+$2.6$--$3.6\times$ on current-switching activity, with strobe switching alone
+correlating at $0.55$ with the residual magnitude on Mag~5, confirming that the
+kernel attenuates precisely the transients the linear states cannot track. These
+are instantaneous linear regressions, hence lower bounds on the current
+contribution. What the window adds is that it reaches the same bounded
 regime without the network, its online-training machinery, or the verification
 burden that comes with it. The second is about accuracy, where the window is the
 best of the four on all eight full-length cases. This margin is real, but it should
