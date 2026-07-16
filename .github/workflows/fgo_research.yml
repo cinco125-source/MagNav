@@ -75,6 +75,10 @@ jobs:
         run: julia --project=. research/fgo_breadth.jl
         env:
           GKSwstype: '100'
+      - name: Current-channel alignment of the non-TL remainder (line 1003.02)
+        run: julia --project=. research/fgo_current_corr.jl
+        env:
+          GKSwstype: '100'
       - name: Monte-Carlo consistency & significance (NEES / DRMS CIs, simulated)
         run: julia --project=. research/fgo_montecarlo.jl 30
         env:
@@ -89,6 +93,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           for f in research/fgo_breadth_results.csv \
+                   research/fgo_current_corr.csv research/fgo_current_corr_summary.csv \
                    research/montecarlo_summary.csv research/montecarlo_nees.csv \
                    research/montecarlo_sigma.csv research/fgo_winlen_results.csv; do
             [ -f "$f" ] && git add -f "$f" || echo "skip missing $f"
@@ -117,6 +122,8 @@ jobs:
             research/observability_endogeneity.csv
             research/observability_ekf.csv
             research/fgo_breadth_results.csv
+            research/fgo_current_corr.csv
+            research/fgo_current_corr_summary.csv
             research/montecarlo_summary.csv
             research/montecarlo_nees.csv
             research/montecarlo_sigma.csv
