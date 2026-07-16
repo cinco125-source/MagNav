@@ -114,10 +114,17 @@ signal-degraded environments that increasingly define aerospace and defense
 operations. This has renewed interest in passive, self-contained references that
 draw on natural geophysical signatures of the Earth. Among these, the crustal
 magnetic-anomaly field is attractive: it is globally available, temporally stable
-over the mission horizon, difficult to deny or spoof, and observable with a
-lightweight scalar magnetometer~\cite{canciani2016,canciani2017}. The same idea
-underlies terrain-referenced and gravity-referenced navigation, where an onboard
-measurement is matched against a stored geophysical map to bound inertial
+over the mission horizon, and observable with a lightweight scalar
+magnetometer~\cite{canciani2016,canciani2017}. It is also inherently hard to deny.
+Denial of a satellite signal exploits the far-field radio link, whose power falls
+off only as the inverse square of range, so a modest transmitter jams or spoofs a
+receiver from far away; a magnetic anomaly, by contrast, is a near-field source
+whose dipole field decays as the inverse cube of distance, so counterfeiting a
+credible anomaly at a moving aircraft would demand an impractically large or close
+field source~\cite{qctrl2025}. % TODO: add \cite{trn2025} (IEEE Xplore 11079836) once its metadata is supplied
+The same map-matching idea underlies
+terrain-referenced and gravity-referenced navigation, where an onboard measurement
+is matched against a stored geophysical map to bound inertial
 drift~\cite{golden1980,hostetler1983,nordlund2009}; magnetic-anomaly navigation is
 distinguished by the ubiquity and fine spatial structure of the crustal field and by
 the maturity of airborne magnetic surveying. These properties make it a candidate
@@ -135,52 +142,70 @@ navigation, with no neural network.}
 \label{fig:concept}
 \end{figure*}
 
-% P2: Scope Narrowing -- the problem, stated generally
+% P2a: Maturity of the field, and the two distinct deployment obstacles
 Magnetic-anomaly navigation (MagNav) estimates aircraft position by matching the
-measured scalar magnetic field against a surveyed anomaly map, yielding an
-absolute fix that bounds inertial drift~\cite{canciani2017}. Its central obstacle
-is not the map but the aircraft itself: the platform's own permanent and induced
-magnetization and its eddy-current fields perturb the scalar measurement by
-hundreds of nanotesla, comparable to or larger than the anomaly signal being
-matched, so the aircraft field must be compensated before map matching can
-recover position. This aircraft-field problem is intrinsic to MagNav and
-independent of any particular airframe; it is most acute for magnetometers
-mounted inside the cabin, close to avionics and current-carrying structure,
-rather than on a wingtip stinger boom that holds the sensor away from the platform
-field.
+measured scalar field against a surveyed anomaly map, yielding an absolute fix that
+bounds inertial drift~\cite{canciani2017}. The idea has matured from feasibility
+study to flight demonstration: recursive Bayesian map matching, from the extended
+Kalman filter to grid and particle estimators, was characterized on flight
+data~\cite{canciani2016,canciani2017} and flown on an F-16~\cite{canciani2020}, and
+recent multi-hour fixed-wing trials over thousands of kilometres report
+metre-to-decametre accuracy with quantum magnetometers~\cite{qctrl2025}. As the
+estimators have matured, attention has moved to the inputs they rely on, and a
+consensus is forming that the pacing requirement for operational deployment is a
+sufficiently accurate, uncertainty-aware anomaly map~\cite{angappan2026}. Two
+obstacles, in fact, separate these demonstrations from routine use, and they are
+distinct: the reference map on the ground and the aircraft's own field in the air.
+The map is a survey-and-data problem, pursued elsewhere~\cite{angappan2026}; this
+paper addresses the second.
 
-% P3: Technical Background
+% P2b: The aircraft-field compensation problem
+The platform's own permanent and induced magnetization and its eddy-current fields
+perturb the scalar measurement by hundreds of nanotesla, comparable to or larger
+than the anomaly signal being matched, so the aircraft field must be compensated
+before map matching can recover position. This aircraft-field problem is intrinsic
+to MagNav and independent of any particular airframe; it is most acute for
+magnetometers mounted inside the cabin, close to avionics and current-carrying
+structure, rather than on a wingtip stinger boom that holds the sensor away from the
+platform field.
+
+% P3: Technical Background -- two orthogonal difficulties, mostly attacked offline
 Aeromagnetic compensation is classically handled by the Tolles--Lawson (TL)
-model~\cite{tolles1950}, which regresses the interference onto sixteen
-attitude-dependent terms (permanent, induced, and eddy-current) formed from a
-three-axis fluxgate magnetometer. The coefficients are conventionally identified
-on a dedicated high-altitude calibration flight of prescribed maneuvers, where the
-anomaly signal is negligible and the interference dominates. Many operational
-scenarios, however, admit no such calibration flight: the coefficients drift with
-temperature and configuration, and a survey may begin with no prior calibration at
-all. In this cold-start regime the compensation coefficients must be learned
-online and jointly with navigation, from the same measurements used to fix
-position, a coupling that makes both estimation and its analysis substantially
-harder than the calibrated case.
+model~\cite{tolles1950,leliak1961,bickel1979}, a regression of the interference onto
+sixteen attitude-dependent terms (permanent, induced, and eddy-current) formed from a
+three-axis fluxgate magnetometer. It faces two difficulties that are easy to conflate
+but are in fact orthogonal. The first is \emph{temporal}: the coefficients are
+conventionally identified on a dedicated high-altitude calibration flight of
+prescribed maneuvers, yet many operational scenarios admit none, and the coefficients
+drift with temperature and configuration. In this cold-start regime they must be
+estimated online and jointly with navigation, from the same measurements that fix
+position, a coupling that makes both estimation and its analysis substantially harder
+than the calibrated case. The second is \emph{representational}: however well its
+coefficients are fit, the linear TL basis cannot span interference from platform
+currents and other non-rigid, non-attitude sources, which contribute a large fraction
+of the field on cabin-mounted sensors~\cite{gnadt2020,gnadt2022}. One difficulty is
+about identifying a known model class in time; the other is about that class being
+too small.
 
-A public benchmark has made these difficulties concrete and measurable: the Signal
-Enhancement for Magnetic Navigation (SGL~2020) challenge dataset~\cite{gnadt2020},
-comprising flight-grade INS, multiple onboard magnetometers (both wingtip-stinger
-and cabin-mounted) and high-resolution anomaly maps, which has catalyzed most
-recent work on the problem. A second difficulty, prominent precisely on its cabin
-magnetometers, is that the linear TL basis does not span the true interference:
-platform currents and other non-rigid, non-attitude sources contribute a large
-fraction of the field that no set of Tolles--Lawson
-coefficients can represent~\cite{gnadt2022}. This has motivated a line of
-learning-augmented compensation on this dataset: neural-network heading-error and
-denoising models~\cite{williams1993,gnadt2022}, physics-informed
-liquid-time-constant networks~\cite{nerrise2024}, and the online EKF+TL+NN whose
-residual network mops up exactly this un-modeled remainder~\cite{hager2026}. The
-scalar optically-pumped magnetometers used for the cabin channels add their own
-orientation-dependent errors (heading error and equatorial dead
-zones~\cite{hager2026b,wang2020}) on top of the platform field. How to absorb the
-non-TL remainder without a neural network is one of the questions this paper
-addresses.
+A public benchmark has made both concrete: the Signal Enhancement for Magnetic
+Navigation (SGL~2020) challenge dataset~\cite{gnadt2020}, with flight-grade INS,
+wingtip-stinger and cabin-mounted magnetometers, and high-resolution anomaly maps.
+Most work on it attacks the two difficulties \emph{offline}: the TL coefficients by a
+batch calibration flight, and the representational gap by learned models fit offline
+on logged data---neural-network heading-error and denoising
+compensators~\cite{williams1993,gnadt2022}, physics-informed liquid-time-constant
+networks~\cite{nerrise2024}, and model-stability studies of the regression in
+gradiometry~\cite{noriega2015}. The exception most relevant here is the online
+EKF+TL+NN of~\cite{hager2026}, which carries an online-trained residual network
+inside the filter to mop up the un-modeled remainder, and is, to our knowledge, the
+strongest reported cold-start result on the benchmark. On top of the platform field,
+the scalar optically-pumped magnetometers used for the cabin channels add their own
+orientation-dependent errors---heading error and equatorial dead
+zones~\cite{hager2026b,wang2020}. This paper takes on the \emph{temporal} difficulty
+fully---online, joint estimation of a time-varying compensation---and the
+physically structured part of the representational one, namely the scalar-sensor
+errors; the unstructured, current-driven remainder that a network is designed to
+absorb is left outside its scope.
 
 % P4: Cluster A -- Bayesian filtering / map matching
 Recursive Bayesian filtering is the standard machinery for map-matching
@@ -268,32 +293,30 @@ condition for when position and compensation can be separated at all. This paper
 supplies all three.
 
 % P7: Proposed approach + contributions
-In this work we cast online Tolles--Lawson compensation as a set of time-varying
-variables in a factor graph and solve the joint compensation-and-navigation
-problem as a fixed-lag sliding-window smoother (Fig.~\ref{fig:concept}). The
-per-window relinearization
-supplies the time-varying compensation that the competing method obtains from an
-online network, and deferring commitment over the window removes the causal
-filter's failure mode. We are explicit about scope: for the linear--Gaussian INS
-error model the batch MAP estimate on the factor-graph chain equals the
-Rauch--Tung--Striebel (RTS) smoother~\cite{rauch1965}, so smoothing per se is not
-the contribution; the joint windowed estimation of a time-varying compensation is.
+In this work we cast magnetic-anomaly navigation as a factor graph and, within it,
+carry the online Tolles--Lawson coefficients as time-varying variables, solving the
+joint compensation-and-navigation problem as a fixed-lag sliding-window smoother
+(Fig.~\ref{fig:concept}). Making the compensation a set of graph variables that the
+window relinearizes is what lets it adapt along the flight, and deferring commitment
+over the window is what lets late-arriving calibration correct early navigation. We
+are explicit about scope: for the linear--Gaussian INS error model the batch MAP
+estimate on the factor-graph chain equals the Rauch--Tung--Striebel (RTS)
+smoother~\cite{rauch1965}, so smoothing per se is not the contribution---the joint,
+windowed estimation of a time-varying compensation is.
 The paper makes the following contributions:
 \begin{enumerate}
-  \item \textbf{Neural-network-free online compensation.} We formulate online
-        Tolles--Lawson compensation as a chain of time-varying variables in a
-        fixed-lag sliding-window factor graph and solve navigation and
-        compensation jointly. The per-window relinearization supplies the same
-        time-varying compensation that the competing method draws from an online
-        network, while deferring commitment over the window removes the causal
-        filter's cold-start failure mode. The result is an estimator that, on the
-        uncompensated cabin magnetometers, matches or beats the online EKF+TL+NN
-        of~\cite{hager2026} without any learned component (Section~\ref{sec:method},
-        Table~\ref{tab:1007}). We are deliberate about what is and is not claimed:
-        for the linear--Gaussian error model the batch estimate equals the RTS
-        smoother, so smoothing per se is not the contribution: the joint,
-        windowed estimation of a time-varying compensation together with
-        the robustness it buys at cold start is.
+  \item \textbf{Factor-graph MagNav with joint online compensation.} We give, to our
+        knowledge, the first formulation of magnetic-anomaly navigation as
+        factor-graph (batch MAP) estimation, and carry the online Tolles--Lawson
+        coefficients as time-varying variables of a fixed-lag sliding-window graph so
+        that navigation and compensation are estimated jointly. The per-window
+        relinearization makes the compensation adapt along the flight---the role a
+        learned online model plays in the competing filter---while the graph keeps
+        every quantity an explicit, physically interpretable state
+        (Section~\ref{sec:method}). We are deliberate about what is claimed: for the
+        linear--Gaussian error model the batch estimate equals the RTS smoother, so
+        smoothing per se is not the contribution; the joint, windowed estimation of a
+        time-varying compensation is.
   \item \textbf{Exact joint-observability condition.} We prove a necessary and
         sufficient linear-algebraic condition under which the aircraft position
         and the compensation coefficients are jointly observable from the
@@ -303,17 +326,6 @@ The paper makes the following contributions:
         gradient). From it we derive a concrete exogeneity design rule for
         choosing compensation features that a filter tuned by trial and error
         cannot see (Section~\ref{sec:observability}).
-  \item \textbf{Reimplemented baseline and multi-line breadth study.} We
-        reimplement, rather than merely cite, the online EKF+TL+NN result of
-        \cite{hager2026} and place it head-to-head with the proposed smoother, a
-        weak online-TL EKF, and a marginalized particle filter carrying the TL
-        coefficients, on eight cold-start cases spanning four long lines, two
-        flights, and two anomaly maps. The study isolates exactly what the neural
-        network buys (it keeps the causal filter bounded where online TL alone and
-        the particle filter both diverge) and what it does not (on every full-length
-        navigation line the NN-free smoother is the most accurate of the four),
-        giving a like-for-like comparison that the literature has lacked
-        (Section~\ref{sec:results}).
   \item \textbf{Physical sensor-error factors.} We add physically motivated
         optically-pumped-magnetometer error terms: a harmonic heading error carried
         as extra graph variables, and a dead-zone attenuation handled as a
@@ -322,6 +334,18 @@ The paper makes the following contributions:
         model terms that a position-only estimator cannot represent, and they let
         the graph absorb structured sensor error that would otherwise leak into the
         position estimate (Section~\ref{sec:method}, Table~\ref{tab:sensor}).
+  \item \textbf{Cold-start capability, validated against a reproduced baseline.}
+        Deferring commitment over the window lets the estimator stay bounded from a
+        cold start with no calibration flight and no learned component. To measure
+        this fairly we reimplement, rather than merely cite, the online EKF+TL+NN
+        of~\cite{hager2026} and compare it, a weak online-TL EKF, and a marginalized
+        particle filter carrying the TL coefficients against the proposed smoother on
+        the uncompensated cabin magnetometers, across eight cold-start cases spanning
+        four lines, two flights, and two maps. The comparison isolates what the
+        network buys (it keeps the causal filter bounded where online TL alone and
+        the particle filter diverge) from what it does not (on every full-length line
+        the smoother is the most accurate of the four), a like-for-like evaluation the
+        literature has lacked (Section~\ref{sec:results}).
 \end{enumerate}
 
 % P8: Organization
