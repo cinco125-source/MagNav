@@ -83,6 +83,10 @@ jobs:
         run: julia --project=. research/fgo_sensor_real.jl
         env:
           GKSwstype: '100'
+      - name: Current-augmented compensation basis (cold start, 4 lines)
+        run: julia --project=. research/fgo_current_basis.jl
+        env:
+          GKSwstype: '100'
       - name: Monte-Carlo consistency & significance (NEES / DRMS CIs, simulated)
         run: julia --project=. research/fgo_montecarlo.jl 30
         env:
@@ -96,11 +100,15 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          for f in research/fgo_breadth_results.csv \
-                   research/fgo_current_corr.csv research/fgo_current_corr_summary.csv \
+          # NOTE: fgo_breadth_results.csv and montecarlo_{nees,sigma}.csv are
+          # deliberately NOT committed back: the EKF+TL+NN column and the MPF NEES
+          # trace carry run-to-run floating-point wiggle, and re-committing them on
+          # every run churned the branch. The paper pins the committed versions;
+          # fresh copies are still uploaded as artifacts on every run.
+          for f in research/fgo_current_corr.csv research/fgo_current_corr_summary.csv \
                    research/fgo_sensor_real_results.csv \
-                   research/montecarlo_summary.csv research/montecarlo_nees.csv \
-                   research/montecarlo_sigma.csv research/fgo_winlen_results.csv; do
+                   research/fgo_current_basis_results.csv research/fgo_current_gamma.csv \
+                   research/montecarlo_summary.csv research/fgo_winlen_results.csv; do
             [ -f "$f" ] && git add -f "$f" || echo "skip missing $f"
           done
           if git diff --cached --quiet; then
@@ -130,6 +138,8 @@ jobs:
             research/fgo_current_corr.csv
             research/fgo_current_corr_summary.csv
             research/fgo_sensor_real_results.csv
+            research/fgo_current_basis_results.csv
+            research/fgo_current_gamma.csv
             research/montecarlo_summary.csv
             research/montecarlo_nees.csv
             research/montecarlo_sigma.csv
