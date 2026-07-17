@@ -481,14 +481,18 @@ $\mathbf{w}^{\beta}_t\sim\mathcal{N}(\mathbf{0},\mathbf{Q}^{\beta})$.
 The three models couple through a single scalar stream: the same measurement $z_t$
 must simultaneously fix position through the map term $h(\mathbf{p}_t)$ and
 identify the compensation $\mathbf{A}_t^{\top}\boldsymbol{\beta}_t$. We take the
-maximum-a-posteriori (MAP) estimate of Problem~\ref{prob:joint}. By the Markov structure of the
-dynamics~\eqref{eq:dyn}, the coefficient random walk, and the memoryless
-measurement~\eqref{eq:meas}, the joint posterior factorizes as
+maximum-a-posteriori (MAP) estimate of Problem~\ref{prob:joint}. Because the
+dynamics are Markov and each measurement depends only on the current state, the
+posterior splits into one factor per piece of information: a prior, one dynamics
+factor per step for each of the two chains, and one measurement factor per epoch,
 \begin{equation}
-p(\boldsymbol{\chi}_{1:N}\!\mid\! z_{1:N})\propto
-p(\boldsymbol{\chi}_1)\!\prod_{t=1}^{N-1}\!p(\mathbf{x}_{t+1}\!\mid\!\mathbf{x}_t)\,
-p(\boldsymbol{\beta}_{t+1}\!\mid\!\boldsymbol{\beta}_t)\!\prod_{t=1}^{N}\!
-p(z_t\!\mid\!\boldsymbol{\chi}_t).
+\begin{aligned}
+p(\boldsymbol{\chi}_{1:N}\mid z_{1:N})\;\propto\;
+p(\boldsymbol{\chi}_1)
+&\prod_{t=1}^{N-1} p(\mathbf{x}_{t+1}\mid\mathbf{x}_t)\,
+p(\boldsymbol{\beta}_{t+1}\mid\boldsymbol{\beta}_t)\\[-2pt]
+&\;\times\prod_{t=1}^{N} p(z_t\mid\boldsymbol{\chi}_t).
+\end{aligned}
 \label{eq:factorization}
 \end{equation}
 This factorization \emph{is} a factor graph~\cite{kschischang2001,dellaert2017}: a
@@ -509,11 +513,14 @@ J(\boldsymbol{\chi})=\;&\lVert\boldsymbol{\chi}_1-\boldsymbol{\chi}_0\rVert^2_{\
 \end{aligned}
 \label{eq:cost}
 \end{equation}
-with measurement residual $r_t(\boldsymbol{\chi}_t)=z_t-h(\mathbf{p}_t)-
-\mathbf{A}_t^{\top}\boldsymbol{\beta}_t-S_t$ and $\rho$ a possibly robust kernel;
-the prior term anchors both blocks of $\boldsymbol{\chi}_1=(\mathbf{x}_1,
-\boldsymbol{\beta}_1)$, at cold start with $\boldsymbol{\beta}$-block
-$\mathbf{P}_0^{\beta}$ (Table~\ref{tab:params}).
+Its four terms are, in order, the prior, the INS dynamics, the compensation
+random walk, and the measurement misfit under a possibly robust kernel $\rho$;
+the measurement residual is what the model cannot yet explain,
+$r_t(\boldsymbol{\chi}_t)=z_t-h(\mathbf{p}_t)-
+\mathbf{A}_t^{\top}\boldsymbol{\beta}_t-S_t$. The prior anchors both blocks of
+$\boldsymbol{\chi}_1=(\mathbf{x}_1,\boldsymbol{\beta}_1)$, at cold start with a
+diffuse $\boldsymbol{\beta}$-block $\mathbf{P}_0^{\beta}$
+(Table~\ref{tab:params}).
 We make the standard modeling assumptions of aided inertial
 navigation~\cite{groves2013,barshalom2001}.
 \begin{assumption}\label{as:model}
@@ -767,12 +774,11 @@ held fixed, the minimizer of~\eqref{eq:cost} equals the Rauch--Tung--Striebel (R
 smoother estimate over the window.
 \end{lemma}
 \begin{IEEEproof}
-With $\rho$ quadratic and $\boldsymbol{\beta}$ fixed, \eqref{eq:cost} is a positive-%
-definite quadratic in the Gaussian chain $\{\mathbf{x}_t\}$, so its minimizer is the
-posterior mean $\mathbb{E}[\mathbf{x}_{1:N}\mid z_{1:N}]$. For a linear--Gaussian
-state-space model that conditional mean is exactly what the forward Kalman recursion
-followed by the backward RTS recursion computes~\cite{rauch1965}; the two therefore
-coincide. \end{IEEEproof}
+With $\rho$ quadratic and $\boldsymbol{\beta}$ fixed, \eqref{eq:cost} is the
+negative log-density of a linear--Gaussian chain, so its minimizer is the posterior
+mean---which is precisely what the forward Kalman pass followed by the backward RTS
+pass computes~\cite{rauch1965}.
+\end{IEEEproof}
 
 Lemma~\ref{lem:rts} does double duty. Practically, it licenses the fast
 iterated-RTS implementation used for the joint TL problem, and we verify the QR and
@@ -829,32 +835,12 @@ $\mathbf{G}\,\delta\mathbf{p}\neq\mathbf{0}$ is reproduced exactly by a
 compensation change.
 \end{proposition}
 
-\begin{IEEEproof}
-Two joint states $(\delta\mathbf{p},\delta\boldsymbol{\beta})$ and
-$(\delta\mathbf{p}',\delta\boldsymbol{\beta}')$ produce identical noise-free
-predictions iff
-$\mathbf{G}(\delta\mathbf{p}-\delta\mathbf{p}')=\boldsymbol{\Psi}(\delta\boldsymbol{\beta}'-\delta\boldsymbol{\beta})$,
-i.e.\ iff
-$[\,\mathbf{G}\;\;\boldsymbol{\Psi}\,]
-[(\delta\mathbf{p}-\delta\mathbf{p}')^{\top}\;(\delta\boldsymbol{\beta}-\delta\boldsymbol{\beta}')^{\top}]^{\top}=\mathbf{0}$.
-The unobservable subspace is therefore exactly
-$\ker[\,\mathbf{G}\;\;\boldsymbol{\Psi}\,]$, and the joint state is observable iff
-$[\,\mathbf{G}\;\;\boldsymbol{\Psi}\,]$ has full column rank; the first statement
-follows by taking $\delta\boldsymbol{\beta}'$ free and $\delta\mathbf{p}'=\mathbf{0}$.
-For the three-condition equivalence: if (i) fails, take
-$\delta\mathbf{p}\in\ker\mathbf{G}\setminus\{\mathbf{0}\}$, giving the kernel
-element $(\delta\mathbf{p},\mathbf{0})$; if (ii) fails, take
-$\delta\boldsymbol{\beta}\in\ker\boldsymbol{\Psi}\setminus\{\mathbf{0}\}$, giving
-$(\mathbf{0},\delta\boldsymbol{\beta})$; if (iii) fails, take
-$\mathbf{G}\,\delta\mathbf{p}=\boldsymbol{\Psi}\,\delta\boldsymbol{\beta}\neq\mathbf{0}$,
-giving $(\delta\mathbf{p},-\delta\boldsymbol{\beta})$. Conversely, let
-$(\delta\mathbf{p},\delta\boldsymbol{\beta})\neq(\mathbf{0},\mathbf{0})$ lie in the
-kernel, so $\mathbf{G}\,\delta\mathbf{p}=-\boldsymbol{\Psi}\,\delta\boldsymbol{\beta}$.
-If $\mathbf{G}\,\delta\mathbf{p}=\mathbf{0}$ then either
-$\delta\mathbf{p}\neq\mathbf{0}$ violates (i) or
-$\delta\boldsymbol{\beta}\neq\mathbf{0}$ violates (ii); if
-$\mathbf{G}\,\delta\mathbf{p}\neq\mathbf{0}$ it is a nonzero shared direction,
-violating (iii).
+\begin{IEEEproof}[Proof sketch]
+Two joint states are indistinguishable exactly when their difference lies in
+$\ker[\,\mathbf{G}\;\;\boldsymbol{\Psi}\,]$, so observability is full column
+rank of the stacked matrix; sorting the kernel elements by whether
+$\mathbf{G}\,\delta\mathbf{p}$ vanishes yields conditions (i)--(iii). The full
+proof is in Appendix~\ref{app:proof}.
 \end{IEEEproof}
 
 \begin{corollary}[Exogeneity]\label{cor:exo}
@@ -1496,6 +1482,35 @@ South Korea, as a professor. His research interests include spacecraft guidance,
 attitude dynamics and control, unmanned aerial vehicle flight dynamics and control,
 and flight control system design.
 \end{biography}
+
+\section{Proof of Proposition~\ref{prop:obs}}\label{app:proof}
+Two joint states $(\delta\mathbf{p},\delta\boldsymbol{\beta})$ and
+$(\delta\mathbf{p}',\delta\boldsymbol{\beta}')$ produce identical noise-free
+predictions iff
+$\mathbf{G}(\delta\mathbf{p}-\delta\mathbf{p}')=\boldsymbol{\Psi}(\delta\boldsymbol{\beta}'-\delta\boldsymbol{\beta})$,
+i.e.\ iff
+$[\,\mathbf{G}\;\;\boldsymbol{\Psi}\,]
+[(\delta\mathbf{p}-\delta\mathbf{p}')^{\top}\;(\delta\boldsymbol{\beta}-\delta\boldsymbol{\beta}')^{\top}]^{\top}=\mathbf{0}$.
+The unobservable subspace is therefore exactly
+$\ker[\,\mathbf{G}\;\;\boldsymbol{\Psi}\,]$, and the joint state is observable iff
+$[\,\mathbf{G}\;\;\boldsymbol{\Psi}\,]$ has full column rank; the first statement
+of the proposition follows by taking $\delta\boldsymbol{\beta}'$ free and
+$\delta\mathbf{p}'=\mathbf{0}$.
+
+For the three-condition equivalence: if (i) fails, take
+$\delta\mathbf{p}\in\ker\mathbf{G}\setminus\{\mathbf{0}\}$, giving the kernel
+element $(\delta\mathbf{p},\mathbf{0})$; if (ii) fails, take
+$\delta\boldsymbol{\beta}\in\ker\boldsymbol{\Psi}\setminus\{\mathbf{0}\}$, giving
+$(\mathbf{0},\delta\boldsymbol{\beta})$; if (iii) fails, take
+$\mathbf{G}\,\delta\mathbf{p}=\boldsymbol{\Psi}\,\delta\boldsymbol{\beta}\neq\mathbf{0}$,
+giving $(\delta\mathbf{p},-\delta\boldsymbol{\beta})$. Conversely, let
+$(\delta\mathbf{p},\delta\boldsymbol{\beta})\neq(\mathbf{0},\mathbf{0})$ lie in the
+kernel, so $\mathbf{G}\,\delta\mathbf{p}=-\boldsymbol{\Psi}\,\delta\boldsymbol{\beta}$.
+If $\mathbf{G}\,\delta\mathbf{p}=\mathbf{0}$ then either
+$\delta\mathbf{p}\neq\mathbf{0}$ violates (i) or
+$\delta\boldsymbol{\beta}\neq\mathbf{0}$ violates (ii); if
+$\mathbf{G}\,\delta\mathbf{p}\neq\mathbf{0}$ it is a nonzero shared direction,
+violating (iii). \hfill$\blacksquare$
 
 \bibliographystyle{IEEEtaes}
 \bibliography{references}
