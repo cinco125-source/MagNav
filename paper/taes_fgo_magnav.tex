@@ -73,8 +73,7 @@ tuned online EKF+TL+NN baseline, which the neural network keeps bounded, without
 neural network. A simulation Monte-Carlo
 confirms that the reported covariance is consistent and never over-confident. We
 also give an exact linear condition for the joint observability of compensation and
-navigation, from which an exogeneity design rule for the compensation features
-follows.
+navigation.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -328,12 +327,10 @@ The paper makes the following contributions:
   \item \textbf{Exact joint-observability condition.} We prove a necessary and
         sufficient linear-algebraic condition under which the aircraft position
         and the compensation coefficients are jointly observable from the
-        scalar magnetometer, separating three distinct failure modes (an
-        unexcited trajectory, a rank-deficient compensation basis, and the
-        subtle one, a compensation subspace that is confounded with the anomaly
-        gradient). From it we derive a concrete exogeneity design rule for
-        choosing compensation features that a filter tuned by trial and error
-        cannot see (Section~\ref{sec:observability}).
+        scalar magnetometer, separating three distinct failure modes---an
+        unexcited trajectory, a rank-deficient compensation basis, and the subtle
+        one, a compensation subspace confounded with the anomaly gradient
+        (Section~\ref{sec:observability}).
   \item \textbf{Cold-start capability, validated against a reproduced baseline.}
         Deferring commitment over the window lets the estimator stay bounded from a
         cold start with no calibration flight and no learned component. To measure
@@ -848,39 +845,17 @@ $\mathbf{G}\,\delta\mathbf{p}$ vanishes yields conditions (i)--(iii). The full
 proof is in Appendix~\ref{app:proof}.
 \end{IEEEproof}
 
-\begin{remark}[Exogeneity design rule]\label{cor:exo}
-When every compensation feature is exogenous---$\mathbf{A}_t$ a function of aircraft
-attitude and the fluxgate alone, so $\boldsymbol{\Psi}$ does not depend on the
-estimated position---confounding (iii) can fail only if a $\boldsymbol{\Psi}$ column
-happens to coincide with the map-gradient time series, never by construction.
-Enlarging such a basis can slow the coefficient estimate through (ii) but adds no
-structural coupling to position. This is the rule behind every estimator in
-Section~\ref{sec:results}: keep the basis exogenous.
-\end{remark}
-
-The residual risk for an exogenous basis is exactly that coincidence of the flown
-attitude history with the local map gradient---plausible, for instance, when turns
-always occur at the same map features---and one expects (iii) to hold for
-trajectories and maps in general position once the trajectory excites enough
-position directions. We state this as an expectation, not a theorem: formalizing
-``general position'' for real flight paths is beyond this paper, and
-Section~\ref{sec:results} shows that scalar proxies for the intersection are
-unreliable in practice.
-
-\begin{remark}[Endogenous features cancel the position channel]\label{rem:endo}
-An endogenous feature breaks the model's premise rather than condition (iii). If a
-compensation feature is itself a function of position---the measured scalar $z_t$
-is the canonical example---then $\boldsymbol{\Psi}$ is no longer a known
-parameter, and the linearization must charge the feature's own position sensitivity
-to the state. For the scalar reading that sensitivity is exactly the map gradient,
-$\partial z_t/\partial\mathbf{p}=\mathbf{g}_t$, so with fitted coefficient
-$\beta_z$ on that feature the effective position row of the measurement becomes
-$(1-\beta_z)\,\mathbf{g}_t$: as the regression drives $\beta_z\!\to\!1$, the fit
-residual shrinks while the measurement loses its position information entirely.
-This collapse is observed empirically in Section~\ref{sec:baseline}: the fit
-residual stays small while the position drifts to kilometres. It is why the scalar
-magnetometer must be excluded from any compensation basis.
-\end{remark}
+Condition (iii) is the operative one in practice. Conditions (i) and (ii) are
+routine to check; the confounding of position with compensation, by contrast,
+depends on the joint geometry of the flight path and the local map gradient, and it
+can fail only through coincidence of the flown attitude history with that
+gradient---plausible, for instance, when turns always occur at the same map features.
+One expects (iii) to hold for trajectories and maps in general position, but the
+condition is non-constructive: it yields no reliable scalar screening statistic, and
+in our experiments correlation-based proxies for the intersection (in-sample basis
+$R^2$, out-of-sample prediction, gradient-alignment indices) did not generalize
+across estimators or lines. We report that as a negative result, not a predictive
+test.
 
 \begin{remark}[TL rank deficiency as gauge freedom]\label{rem:gauge}
 Condition (ii) fails, or very nearly fails, for the classical TL basis itself: with
@@ -898,23 +873,13 @@ Separability of position from compensation is governed by (iii) alone and is
 unaffected.
 \end{remark}
 
-Proposition~\ref{prop:obs} is exact but non-constructive: it does not yield a
-reliable scalar screening statistic, and in our experiments correlation-based
-proxies for the intersection (in-sample basis $R^2$, out-of-sample prediction, and
-gradient-alignment indices) did not generalize across estimators or lines. The
-actionable consequence is the exogeneity rule (Remark~\ref{cor:exo}), which every
-estimator in Section~\ref{sec:results} follows.
-
 \begin{remark}\label{rem:floor}
 The condition is geometric: it depends on the ranges of $\mathbf{G}$ and
 $\boldsymbol{\Psi}$ over the window, hence on the flight path and the local map
-gradient. It explains two failure modes seen in
-practice. First, over a locally flat map $\mathbf{G}\!\approx\!\mathbf{0}$ and
-condition (i) fails: position is unobservable regardless of the
-compensation, a map-information floor that bounds every estimator, and that we
-observe on the shortest line in Section~\ref{sec:results}. Second, an endogenous
-feature cancels the position channel by the mechanism of Remark~\ref{rem:endo}, so
-the compensator silently absorbs the map signal.
+gradient. It explains the dominant failure mode seen in practice: over a locally
+flat map $\mathbf{G}\!\approx\!\mathbf{0}$ and condition (i) fails, so position is
+unobservable regardless of the compensation---a map-information floor that bounds
+every estimator, which we observe on the shortest line in Section~\ref{sec:results}.
 \end{remark}
 
 \section{The Online EKF+TL+NN Baseline}\label{sec:baseline}
@@ -928,20 +893,30 @@ in~\cite{hager2026}. We baseline against the reference implementation, tuned by
 us for a stable cold start; we do not claim to reproduce the specific extended
 filter of~\cite{hager2026}.
 
-A naive port diverged, and three fixes, each addressing an independently diagnosed
-failure, were needed. (i)~We remove the large constant offset from the regression
-target and initialize the network output bias to it, because the raw offset
-($-1724\,\mathrm{nT}$ on Mag~4, $+310\,\mathrm{nT}$ on Mag~5) otherwise drives the
-network bias to $\sim\!5\times10^{4}$\,nT and the filter to \texttt{NaN}. (ii)~We
-restrict the network inputs to the attitude-derived TL basis, because feeding the
-scalar magnetometer creates an endogenous feature and collapses horizontal position
-by the cancellation of Remark~\ref{rem:endo}. (iii)~We inflate the measurement
-variance and the coefficient process noise through the warm-up, when the
-compensation is still grossly wrong, then relax them.
+We run this reference filter on its standard attitude-derived TL features. The one
+substantive adaptation a cold start forces is initialization, since there is no
+calibration flight to warm-start from, and a naive port that skips it diverges: the
+raw uncompensated offset ($-1724\,\mathrm{nT}$ on Mag~4, $+310\,\mathrm{nT}$ on
+Mag~5) drives the network output bias to $\sim\!5\times10^{4}\,\mathrm{nT}$ and the
+filter to \texttt{NaN} within seconds. We therefore initialize the network output
+normalization data-drivenly from the first five minutes of onboard interference, and
+set the NN-weight covariance by hand as an explicit adaptation-rate knob rather than
+through the package's training-data warm start.
+
+We keep the uncompensated scalar out of the feature set---the standard choice here,
+and one the observability analysis makes mandatory. A position-dependent input has
+sensitivity $\partial z_t/\partial\mathbf{p}=\mathbf{g}_t$, so a fitted coefficient
+$\beta_z$ turns the effective position row into $(1-\beta_z)\mathbf{g}_t$; as
+$\beta_z\!\to\!1$ the network quietly absorbs the map signal while the residual stays
+small and horizontal position drifts to kilometres---condition (iii) of
+Proposition~\ref{prop:obs} failing by construction. The recent augmentation of the
+feature set with that scalar~\cite{hager2026} avoids this only by freezing the
+network after its transient; ours keeps learning, where the endogenous input would
+be fatal.
 
 The tuned filter carries the permanent TL group and a single-hidden-layer
 network of eight units on that group (\num{41} network-weight states), with a FOGM
-$(\sigma,\tau)=(\SI{3}{\nano\tesla},\SI{180}{\second})$ and post-warm-up measurement
+$(\sigma,\tau)=(\SI{3}{\nano\tesla},\SI{180}{\second})$ and measurement
 variance $12^2\,\mathrm{nT}^2$. It reaches \num{40.0}/\SI{17.5}{\meter} on Mag~4/5
 (Table~\ref{tab:1007}), consistent with the cold-start operating points published
 for this lineage on this line~\cite{gnadt2022,hager2026}. All numbers compared in
@@ -1243,10 +1218,7 @@ this benchmark. Table~\ref{tab:compare} places the estimator families along the 
 that matter for cold-start compensation.
 
 The observability condition of Section~\ref{sec:observability} accounts for the
-pattern. The endogeneity cancellation (Remark~\ref{rem:endo}) is why the scalar
-magnetometer had to be excluded from the network inputs for the baseline to
-converge, and exogeneity (Remark~\ref{cor:exo}) is why the attitude-only TL
-basis stays safe at any dimension. The map-information floor
+pattern. The map-information floor
 (Remark~\ref{rem:floor}) is why the short calibration line 1006.08 is hard for every method, since
 there is little independent map gradient to exploit over its brief window, and it is
 the reason we set that line aside. The condition is geometric and predictive only
@@ -1373,9 +1345,8 @@ jointly with navigation. The Tolles--Lawson coefficients enter the graph as
 time-varying variables of a fixed-lag sliding-window smoother, so the compensation
 adapts along the flight and late-arriving calibration information corrects early
 navigation states, the mechanism a one-pass causal filter lacks; and a
-necessary-and-sufficient joint-observability condition, with its exogeneity rule
-and endogeneity cancellation, states when position and compensation can be
-separated at all. On real SGL~2020 data the estimator stays bounded from a cold
+necessary-and-sufficient joint-observability condition states when position and
+compensation can be separated at all. On real SGL~2020 data the estimator stays bounded from a cold
 start on all eight full-length cabin-magnetometer cases, where both the plain
 online-TL EKF and a marginalized particle filter diverge, and it is more accurate
 on every such case than the tuned online EKF+TL+NN baseline, with no neural network
@@ -1407,7 +1378,8 @@ These limitations set the agenda for further work: extending the evaluation to t
 full SGL line set and a grid or point-mass baseline; making the graph extensions
 robust enough to claim---sensor-error states on a campaign whose sensor hardware
 and mounting are documented, and current-telemetry regressors with principled
-channel scaling and gating, both of which the exogeneity rule already sanctions;
+channel scaling and gating, both of which stay within the attitude-derived,
+position-independent basis the observability condition requires;
 testing a low-excitation operational cruise; and sharpening the geometric
 observability condition into a quantitative identifiability screen. None of these qualifications affects the central and
 reproducible finding: carrying the compensation as time-varying variables of a
