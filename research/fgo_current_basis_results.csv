@@ -1,33 +1,33 @@
 flight,line,mag,config,n_extra,DRMS,t
-Flt1003,1003.02,Mag 4,A TL only,0,42.6,82.89
-Flt1003,1003.02,Mag 4,B +cur RW,14,NaN,NaN
-Flt1003,1003.02,Mag 4,C +cur static,14,NaN,NaN
-Flt1003,1003.02,Mag 4,D +cur+triplets,23,NaN,NaN
-Flt1003,1003.02,Mag 5,A TL only,0,21.7,55.97
-Flt1003,1003.02,Mag 5,B +cur RW,14,NaN,NaN
-Flt1003,1003.02,Mag 5,C +cur static,14,NaN,NaN
-Flt1003,1003.02,Mag 5,D +cur+triplets,23,NaN,NaN
-Flt1003,1003.08,Mag 4,A TL only,0,26.1,73.67
-Flt1003,1003.08,Mag 4,B +cur RW,14,NaN,NaN
-Flt1003,1003.08,Mag 4,C +cur static,14,NaN,NaN
-Flt1003,1003.08,Mag 4,D +cur+triplets,23,NaN,NaN
-Flt1003,1003.08,Mag 5,A TL only,0,12.4,63.39
-Flt1003,1003.08,Mag 5,B +cur RW,14,NaN,NaN
-Flt1003,1003.08,Mag 5,C +cur static,14,NaN,NaN
-Flt1003,1003.08,Mag 5,D +cur+triplets,23,NaN,NaN
-Flt1007,1007.02,Mag 4,A TL only,0,38.6,59.76
-Flt1007,1007.02,Mag 4,B +cur RW,14,NaN,NaN
-Flt1007,1007.02,Mag 4,C +cur static,14,NaN,NaN
-Flt1007,1007.02,Mag 4,D +cur+triplets,23,NaN,NaN
-Flt1007,1007.02,Mag 5,A TL only,0,14.5,50.46
-Flt1007,1007.02,Mag 5,B +cur RW,14,NaN,NaN
-Flt1007,1007.02,Mag 5,C +cur static,14,NaN,NaN
-Flt1007,1007.02,Mag 5,D +cur+triplets,23,NaN,NaN
-Flt1007,1007.06,Mag 4,A TL only,0,32.7,81.69
-Flt1007,1007.06,Mag 4,B +cur RW,14,NaN,NaN
-Flt1007,1007.06,Mag 4,C +cur static,14,NaN,NaN
-Flt1007,1007.06,Mag 4,D +cur+triplets,23,NaN,NaN
-Flt1007,1007.06,Mag 5,A TL only,0,13.8,74.44
-Flt1007,1007.06,Mag 5,B +cur RW,14,NaN,NaN
-Flt1007,1007.06,Mag 5,C +cur static,14,NaN,NaN
-Flt1007,1007.06,Mag 5,D +cur+triplets,23,NaN,NaN
+Flt1003,1003.02,Mag 4,A TL only,0,42.6,80.89
+Flt1003,1003.02,Mag 4,B +cur RW,14,101.9,87.7
+Flt1003,1003.02,Mag 4,C +cur static,14,70.2,88.23
+Flt1003,1003.02,Mag 4,D +cur+triplets,23,68.6,110.29
+Flt1003,1003.02,Mag 5,A TL only,0,21.7,47.07
+Flt1003,1003.02,Mag 5,B +cur RW,14,23.3,75.89
+Flt1003,1003.02,Mag 5,C +cur static,14,20.3,78.98
+Flt1003,1003.02,Mag 5,D +cur+triplets,23,20.0,100.82
+Flt1003,1003.08,Mag 4,A TL only,0,26.1,57.82
+Flt1003,1003.08,Mag 4,B +cur RW,14,38.5,94.26
+Flt1003,1003.08,Mag 4,C +cur static,14,25.2,99.22
+Flt1003,1003.08,Mag 4,D +cur+triplets,23,24.3,124.19
+Flt1003,1003.08,Mag 5,A TL only,0,12.4,56.32
+Flt1003,1003.08,Mag 5,B +cur RW,14,18.3,86.69
+Flt1003,1003.08,Mag 5,C +cur static,14,11.2,93.05
+Flt1003,1003.08,Mag 5,D +cur+triplets,23,11.1,120.89
+Flt1007,1007.02,Mag 4,A TL only,0,38.6,53.75
+Flt1007,1007.02,Mag 4,B +cur RW,14,59.7,77.22
+Flt1007,1007.02,Mag 4,C +cur static,14,72.4,86.81
+Flt1007,1007.02,Mag 4,D +cur+triplets,23,71.4,109.79
+Flt1007,1007.02,Mag 5,A TL only,0,14.5,43.27
+Flt1007,1007.02,Mag 5,B +cur RW,14,38.9,61.31
+Flt1007,1007.02,Mag 5,C +cur static,14,13.3,70.27
+Flt1007,1007.02,Mag 5,D +cur+triplets,23,13.2,89.37
+Flt1007,1007.06,Mag 4,A TL only,0,32.7,71.24
+Flt1007,1007.06,Mag 4,B +cur RW,14,37.0,112.36
+Flt1007,1007.06,Mag 4,C +cur static,14,27.2,115.96
+Flt1007,1007.06,Mag 4,D +cur+triplets,23,26.6,155.81
+Flt1007,1007.06,Mag 5,A TL only,0,13.8,67.23
+Flt1007,1007.06,Mag 5,B +cur RW,14,17.2,98.93
+Flt1007,1007.06,Mag 5,C +cur static,14,13.6,111.7
+Flt1007,1007.06,Mag 5,D +cur+triplets,23,13.3,146.05
