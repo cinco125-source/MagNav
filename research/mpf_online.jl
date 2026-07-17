@@ -65,14 +65,20 @@ function mpf_online(ins::MagNav.INS, meas, flux::MagNav.MagV, itp_mapS, x0_TL, P
         e = repeat(meas[t,:],1,np) - repeat(yhat(t)',ny,1)
         resid[:,t] = mean(e,dims=2)
 
-        # cold-start defense: with beta=0 the first residuals are hundreds of nT,
-        # which would collapse all particle weights to zero; inflate R during the
-        # warm-up so beta can converge before the map term drives the weights.
-        Rt = ((t-1)*dt < warm_infl) ? R .* R_gain : R
+        # cold-start defense: with beta=0 the first residuals are hundreds of nT.
+        # Two safeguards (both standard PF practice, added after review): the R
+        # inflation DECAYS geometrically instead of ending in a cliff, and the
+        # weight update is done in the log domain with a max-shift so a large
+        # common residual cannot underflow every particle simultaneously (only
+        # RELATIVE likelihoods matter).
+        gain = max(one(T2), T2(R_gain)^(1 - (t-1)*dt/(3*warm_infl)))
+        Rt = R .* gain
         V  = H*Pl*H' .+ Rt
+        logw = zeros(T2,np)
         for i = 1:ny
-            q = q.*exp.(-0.5*(e[i,:].*(1/V[i,i]).*e[i,:]))
+            logw .+= -0.5.*(e[i,:].*(1/V[i,i]).*e[i,:])
         end
+        q = q .* exp.(logw .- maximum(logw))
         if sum(q) > eps(T2)
             q = q/sum(q)
             for i = 1:nxn; x_out[i,t] = sum(q.*xn[i,:]); end

@@ -88,13 +88,17 @@ function mpf_online_nn(ins::MagNav.INS, meas, x_nn, m0, y_norms, P0, Qd, R;
         e = repeat(meas[t,:],1,np) - repeat(yhat',ny,1)
         resid[:,t] = mean(e,dims=2)
 
-        # cold-start defense (as in mpf_online): inflate R during warm-up so the
-        # first huge residuals do not collapse the particle weights
-        Rt = ((t-1)*dt < warm_infl) ? R .* R_gain : R
+        # cold-start defense (as in mpf_online, hardened): geometric decay of the
+        # R inflation (no cliff) and log-domain weights with a max-shift so a
+        # large common residual cannot underflow every particle at once.
+        gain = max(one(T2), T2(R_gain)^(1 - (t-1)*dt/(3*warm_infl)))
+        Rt = R .* gain
         V  = H*Pl*H' .+ Rt
+        logw = zeros(T2,np)
         for i = 1:ny
-            q = q.*exp.(-0.5*(e[i,:].*(1/V[i,i]).*e[i,:]))
+            logw .+= -0.5.*(e[i,:].*(1/V[i,i]).*e[i,:])
         end
+        q = q .* exp.(logw .- maximum(logw))
         if sum(q) > eps(T2)
             q = q/sum(q)
             for i = 1:nxn; x_out[i,t] = sum(q.*xn[i,:]); end
