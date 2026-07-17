@@ -196,7 +196,16 @@ batch calibration flight, and the representational gap by learned models fit off
 on logged data---neural-network heading-error and denoising
 compensators~\cite{williams1993,gnadt2022}, physics-informed liquid-time-constant
 networks~\cite{nerrise2024}, and model-stability studies of the regression in
-gradiometry~\cite{noriega2015}. The exception is the online NN-in-EKF line of work
+gradiometry~\cite{noriega2015}. Offline learning, however, presupposes exactly
+what the operational scenario lacks: a corpus of logged flights from the same
+aircraft, a reference-grade compensated sensor flying alongside to supply training
+targets, the computation to train on that corpus, and a willingness to retrain
+whenever the platform configuration or its magnetic state drifts. A compensator
+fit this way is specific to one airframe in one equipment state, and its accuracy
+in flight is bounded by how well the training corpus transfers to the day's
+conditions. We therefore treat the offline family as context rather than
+competition: every estimator compared in this paper starts, as ours does, from no
+prior flight data. The exception is the online NN-in-EKF line of work
 originated by Gnadt~\cite{gnadt2022}, which carries the TL coefficients and the
 weights of a residual network as filter states learned in flight, and which has
 recently been extended with an error-state formulation and a natural-gradient
