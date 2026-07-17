@@ -16,6 +16,8 @@ on:
       # active suite from re-running when only these change):
       - 'research/mpf_R_sweep.jl'
       - '.github/workflows/mpf_rsweep.yml'
+      - 'research/coldstart_trace.jl'
+      - '.github/workflows/coldstart_trace.yml'
       - '.github/workflows/fgo_research.yml'
   workflow_dispatch:
 

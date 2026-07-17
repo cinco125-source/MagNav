@@ -1,0 +1,55 @@
+name: Cold-start trace
+
+# Focused: dump the honest cold-start error trace (uncompensated Mag 4/5, online-TL
+# EKF vs fixed-lag FGO on line 1003.02) so make_figures.py can draw a real curve in
+# Fig. 1c instead of a cartoon. Runs only research/coldstart_trace.jl (~5 min) and
+# commits research/coldstart_trace.csv back. Triggers on that script's change plus
+# manual dispatch.
+
+on:
+  push:
+    branches:
+      - 'claude/continued-work-**'
+    paths:
+      - 'research/coldstart_trace.jl'
+      - '.github/workflows/coldstart_trace.yml'
+  workflow_dispatch:
+
+jobs:
+  trace:
+    name: Cold-start error trace
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Cold-start error trace
+        run: julia --project=. research/coldstart_trace.jl
+        env:
+          GKSwstype: '100'
+      - name: Commit result CSV back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f research/coldstart_trace.csv ] && git add -f research/coldstart_trace.csv || echo "no csv"
+          if git diff --cached --quiet; then
+            echo "No result CSV to commit."
+          else
+            git commit -m "Add cold-start error trace CSV [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coldstart-trace
+          path: research/coldstart_trace.csv
+          if-no-files-found: ignore
