@@ -6,14 +6,12 @@
 #   estimator:      EKF  | MPF                    | (window smoother = ours)
 #
 # The online columns exist (fgo_breadth.jl, mpf_nn.jl). This script fills the
-# remaining four cells on the counted lines x Mag 4/5:
-#   1) EKF, no compensation          -- the do-nothing anchor
-#   2) MPF, no compensation
-#   3) EKF + offline NN              -- Gnadt-style model :m1 trained on OTHER
-#   4) MPF + offline NN                 flights (Flt1002+Flt1006), y_type=:d
-#                                       (cabin interference vs compensated
-#                                       stinger), TL-A + current/voltage features,
-#                                       then frozen and applied cross-flight.
+# offline-NN cells on the counted lines x Mag 4/5:
+#   EKF + offline NN and MPF + offline NN -- Gnadt-style model :m1 trained on
+#   OTHER flights (Flt1002+Flt1006), y_type=:d (cabin interference vs compensated
+#   stinger), TL-A + current/voltage features, then frozen and applied
+#   cross-flight. (No-compensation anchors were dropped: they diverge trivially
+#   and add no information.)
 #
 # Outputs research/comp_grid_results.csv. Usage:
 #   julia --project=. research/comp_grid.jl
@@ -110,8 +108,7 @@ for (fl,line) in LINES
             mag_nn = mag .- y_hat
         catch e; @warn("comp_test failed $fl $line $tag",e) end
 
-        for (cell,z) in (("EKF none",mag),("MPF none",mag),
-                         ("EKF offNN",mag_nn),("MPF offNN",mag_nn))
+        for (cell,z) in (("EKF offNN",mag_nn),("MPF offNN",mag_nn))
             crms = any(isnan,z) ? NaN : sqrt(mean((z .- ref).^2))
             d = Inf
             try
