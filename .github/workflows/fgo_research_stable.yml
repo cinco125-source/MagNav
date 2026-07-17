@@ -1,0 +1,97 @@
+name: FGO Research (stable)
+
+# Completed studies whose numbers are settled. Run manually (workflow_dispatch)
+# when a re-verification is wanted; they no longer run on every push.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  stable:
+    name: Stable FGO studies
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Render FGO geographic tracks & position-error plots
+        run: julia --project=. research/fgo_tracks.jl
+        env:
+          GKSwstype: '100'
+      - name: Run FGO benchmark (real SGL Flt1003 data)
+        run: julia --project=. research/fgo_benchmark.jl
+        env:
+          GKSwstype: '100'
+      - name: Run FGO sensor-error factor ablation (simulated flight)
+        run: julia --project=. research/fgo_sensor_ablation.jl
+        env:
+          GKSwstype: '100'
+      - name: Compare vs online EKF+TL+NN family (paper baseline, Flt1007)
+        run: julia --project=. research/paper_baseline.jl
+        env:
+          GKSwstype: '100'
+      - name: Reproduce paper's online EKF+TL+NN cold start (Flt1007)
+        run: julia --project=. research/paper_impl.jl
+        env:
+          GKSwstype: '100'
+      - name: Observability collapse index (joint compensation + navigation)
+        run: julia --project=. research/observability.jl
+        env:
+          GKSwstype: '100'
+      - name: Observability predictor test (EKF DRMS vs basis ρ²)
+        run: julia --project=. research/observability_ekf.jl
+        env:
+          GKSwstype: '100'
+      - name: Current-channel alignment of the non-TL remainder (line 1003.02)
+        run: julia --project=. research/fgo_current_corr.jl
+        env:
+          GKSwstype: '100'
+      - name: Sensor-error factors on real compensated sensors (Mag 1 / Mag 3)
+        run: julia --project=. research/fgo_sensor_real.jl
+        env:
+          GKSwstype: '100'
+      - name: Current-augmented compensation basis (cold start, 4 lines)
+        run: julia --project=. research/fgo_current_basis.jl
+        env:
+          GKSwstype: '100'
+      - name: Monte-Carlo consistency & significance (NEES / DRMS CIs, simulated)
+        run: julia --project=. research/fgo_montecarlo.jl 30
+        env:
+          GKSwstype: '100'
+      - name: Window-length sweep on line 1007.06 (cold start)
+        run: julia --project=. research/fgo_winlen.jl
+        env:
+          GKSwstype: '100'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fgo-stable-results
+          path: |
+            research/fgo_benchmark_results.csv
+            research/fgo_sensor_ablation_results.csv
+            research/fgo_map_track.png
+            research/fgo_pos_error.png
+            research/fgo_zoom_track.png
+            research/paper_baseline_results.csv
+            research/paper_reference_values.csv
+            research/paper_impl_results.csv
+            research/observability_index.csv
+            research/observability_endogeneity.csv
+            research/observability_ekf.csv
+            research/fgo_current_corr.csv
+            research/fgo_current_corr_summary.csv
+            research/fgo_sensor_real_results.csv
+            research/fgo_current_basis_results.csv
+            research/fgo_current_gamma.csv
+            research/montecarlo_summary.csv
+            research/montecarlo_nees.csv
+            research/montecarlo_sigma.csv
+            research/fgo_winlen_results.csv
+          if-no-files-found: ignore

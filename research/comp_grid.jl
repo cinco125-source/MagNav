@@ -93,9 +93,16 @@ for (fl,line) in LINES
     ins   = get_ins(xyz,ind;N_zero_ll=1)
     (_,itp) = get_map_val(mapS,traj;return_itp=true)
     ref   = xyz.mag_1_c[ind]
+    flux  = xyz.flux_d(ind)
+    TERMS = [:permanent,:induced,:eddy,:bias]
+    nTL   = size(create_TL_A(flux;terms=TERMS),2)
     (P0,Qd,R) = create_model(traj.dt,traj.lat[1];init_pos_sigma=0.1,
         init_alt_sigma=1.0,init_vel_sigma=1.0,meas_var=MEAS_VAR,
         fogm_sigma=FOGM_SIG,fogm_tau=FOGM_TAU)
+    (P0t,Qdt,Rt) = create_model(traj.dt,traj.lat[1];init_pos_sigma=0.1,
+        init_alt_sigma=1.0,init_vel_sigma=1.0,meas_var=MEAS_VAR,
+        fogm_sigma=FOGM_SIG,fogm_tau=FOGM_TAU,vec_states=false,
+        TL_sigma=fill(1.0,nTL),P0_TL=Matrix(Diagonal(fill(1.0,nTL))))
     println("\n$fl $line ($mname)")
     for magsym in (:mag_4_uc,:mag_5_uc)
         mag = getfield(xyz,magsym)[ind]
@@ -108,12 +115,20 @@ for (fl,line) in LINES
             mag_nn = mag .- y_hat
         catch e; @warn("comp_test failed $fl $line $tag",e) end
 
-        for (cell,z) in (("EKF offNN",mag_nn),("MPF offNN",mag_nn))
+        for (cell,z) in (("EKF offNN",mag_nn),("MPF offNN",mag_nn),
+                         ("EKFonTL offNN",mag_nn))
             crms = any(isnan,z) ? NaN : sqrt(mean((z .- ref).^2))
             d = Inf
             try
                 if any(isnan,z)
                     d = NaN
+                elseif cell == "EKFonTL offNN"
+                    # user-proposed stack: offline NN strips the nonlinear bulk,
+                    # online TL tracks the time-varying residual during navigation
+                    fo = run_filt(traj,ins,z,itp,:ekf_online;P0=P0t,Qd=Qdt,R=Rt,
+                                  flux=flux,x0_TL=zeros(nTL),terms=TERMS,
+                                  core=true,run_crlb=false)
+                    d  = drms_ll(traj,fo.lat,fo.lon)
                 elseif startswith(cell,"EKF")
                     fo = run_filt(traj,ins,z,itp,:ekf;P0=P0,Qd=Qd,R=R,
                                   core=true,run_crlb=false)
