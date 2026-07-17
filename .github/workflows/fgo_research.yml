@@ -12,6 +12,11 @@ on:
     paths-ignore:
       - 'paper/**'
       - '**/*.md'
+      # focused one-off studies with their own dedicated workflow (keep the heavy
+      # active suite from re-running when only these change):
+      - 'research/mpf_R_sweep.jl'
+      - '.github/workflows/mpf_rsweep.yml'
+      - '.github/workflows/fgo_research.yml'
   workflow_dispatch:
 
 jobs:
