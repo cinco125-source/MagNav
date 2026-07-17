@@ -31,7 +31,7 @@
 
 \begin{document}
 
-\title{Factor-Graph Aeromagnetic Compensation for Airborne Magnetic-Anomaly Navigation}
+\title{Joint Aeromagnetic Compensation and Magnetic-Anomaly Navigation with a Fixed-Lag Factor Graph}
 
 \author{Jayden Dongwoo Lee}
 \affil{Korea Advanced Institute of Science and Technology, Daejeon, Korea}
@@ -52,7 +52,7 @@
 \editor{}
 \supplementary{}
 
-\markboth{LEE ET AL.}{FACTOR-GRAPH AEROMAGNETIC COMPENSATION FOR MAGNETIC-ANOMALY NAVIGATION}
+\markboth{LEE ET AL.}{JOINT AEROMAGNETIC COMPENSATION AND MAGNETIC-ANOMALY NAVIGATION}
 \maketitle
 
 \begin{abstract}
@@ -1328,7 +1328,10 @@ smoother. Accuracy is compared by DRMS in the text.}
 \includegraphics[width=0.98\columnwidth]{figs/fig_sigma.pdf}
 \caption{North and East position error within the estimator $\pm2\sigma$ bands
 (representative simulated run of the batch FGO; the envelope is the smoother's own
-reported uncertainty, so this checks credibility, not accuracy).}
+reported uncertainty, so this checks credibility, not accuracy). A calibrated
+Gaussian $\pm2\sigma$ band would be exceeded on ${\approx}5\%$ of epochs per axis;
+here the error approaches but never exits the band, the mildly conservative
+behaviour consistent with the ANEES below \num{2}.}
 \label{fig:sigma}
 \end{figure}
 
