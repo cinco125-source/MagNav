@@ -479,6 +479,7 @@ maximum-a-posteriori (MAP) estimate of Problem~\ref{prob:joint}. Because the
 dynamics are Markov and each measurement depends only on the current state, the
 posterior splits into one factor per piece of information: a prior, one dynamics
 factor per step for each of the two chains, and one measurement factor per epoch,
+\vspace{-4pt}
 \begin{equation}
 \begin{aligned}
 p(\boldsymbol{\chi}_{1:N}\mid z_{1:N})\;\propto\;
@@ -857,7 +858,7 @@ $R^2$, out-of-sample prediction, gradient-alignment indices) did not generalize
 across estimators or lines. We report that as a negative result, not a predictive
 test.
 
-\begin{remark}[TL rank deficiency as gauge freedom]\label{rem:gauge}
+\begin{remark}\label{rem:gauge}
 Condition (ii) fails, or very nearly fails, for the classical TL basis itself: with
 unit direction cosines the three induced diagonal columns sum to
 $B_t(u^2{+}v^2{+}w^2)=B_t$, which is collinear with the constant-bias column to the
