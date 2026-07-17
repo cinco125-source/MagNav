@@ -9,6 +9,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, Rectangle, FancyBboxPatch, Patch, FancyArrowPatch
+from matplotlib.offsetbox import TextArea, HPacker, AnnotationBbox
 
 from fig_style import (apply_style, despine, COL_W,
                        C_PROPOSED, C_BASE1, C_REF, C_ACCENT)
@@ -314,173 +315,166 @@ def fig_obs():
 
 
 def fig_pipeline():
-    """Double-column system architecture. One accent color (proposed blue),
-    neutral grays elsewhere; uniform box style; caption carries the title."""
-    fig, ax = plt.subplots(figsize=(7.0, 2.3))
-    ax.set_xlim(0, 15.2); ax.set_ylim(0, 5.0); ax.axis("off")
-    NEUT_FC, NEUT_EC, INK = "#f2f4f7", "#9aa4b2", "#1f2937"
+    """FGO concept (double column): sensors and the anomaly map feed a fixed-lag
+    factor graph that carries navigation and online compensation as variables and
+    is solved over a sliding window (detailed in Fig. 3), producing position and
+    compensation. One accent (proposed blue), neutral grays; schematic."""
+    INK, MUT, FAINT = "#1f2937", "#6b7280", "#aab2bd"
+    FCN = "#eef2f7"; BLUE, ORANGE = C_PROPOSED, C_BASE1
+    fig, ax = plt.subplots(figsize=(7.16, 2.35))
+    ax.set_xlim(0, 100); ax.set_ylim(0, 42); ax.axis("off")
 
-    def box(x, y, w, h, txt, fc=NEUT_FC, ec=NEUT_EC, fs=7.8, lw=0.9, tc=INK):
-        ax.add_patch(FancyBboxPatch((x, y), w, h,
-                     boxstyle="round,pad=0.035,rounding_size=0.09",
-                     fc=fc, ec=ec, lw=lw))
-        ax.text(x+w/2, y+h/2, txt, ha="center", va="center", fontsize=fs,
-                color=tc, zorder=5)
+    def box(x, y, w, h, txt, fc=FCN, ec=FAINT, fs=7.8, lw=1.0, tc=INK, ls="-"):
+        ax.add_patch(FancyBboxPatch((x-w/2, y-h/2), w, h,
+                     boxstyle="round,pad=0.2,rounding_size=1.2",
+                     fc=fc, ec=ec, lw=lw, ls=ls))
+        ax.text(x, y, txt, ha="center", va="center", fontsize=fs, color=tc, zorder=6)
 
-    def arrow(x0, y0, x1, y1, color="0.42", lw=1.1):
-        ax.add_patch(FancyArrowPatch((x0, y0), (x1, y1),
-                     arrowstyle="-|>", mutation_scale=9, lw=lw, color=color,
-                     shrinkA=2, shrinkB=2))
+    def arrow(x0, y0, x1, y1, color=MUT, lw=1.2):
+        ax.add_patch(FancyArrowPatch((x0, y0), (x1, y1), arrowstyle="-|>",
+                     mutation_scale=9, lw=lw, color=color, shrinkA=1, shrinkB=1))
 
-    # sensors (left)
-    box(0.1, 3.45, 2.5, 1.0, "INS / IMU\n$\\mathbf{f}^n,\\;\\mathbf{C}^n_b$")
-    box(0.1, 2.00, 2.5, 1.0, "3-axis fluxgate\n$\\mathbf{B}_t\\rightarrow\\mathbf{A}_t$")
-    box(0.1, 0.55, 2.5, 1.0, "scalar\nmagnetometer $z_t$")
+    # inputs (left)
+    box(11, 35, 19, 6.2, "INS / IMU\n$\\mathbf{f}^n,\\;\\mathbf{C}^n_b$")
+    box(11, 26, 19, 6.2, "3-axis fluxgate\n$\\mathbf{B}_t\\!\\rightarrow\\!\\mathbf{A}_t$")
+    box(11, 17, 19, 6.2, "scalar mag  $z_t$")
+    box(11, 8, 19, 6.0, "anomaly map $h(\\cdot)$", fc="white", ls=(0, (3, 2)))
 
-    # factor graph container (accent)
-    gx, gy, gw, gh = 3.6, 0.35, 5.0, 4.3
+    # center: fixed-lag factor graph concept
+    gx, gy, gw, gh = 31, 7, 33, 30
     ax.add_patch(FancyBboxPatch((gx, gy), gw, gh,
-                 boxstyle="round,pad=0.045,rounding_size=0.12",
-                 fc="white", ec=C_PROPOSED, lw=1.5))
-    ax.text(gx+gw/2, gy+gh-0.30, "factor graph (Fig.\u20092)", ha="center",
-            va="center", fontsize=8.2, color=C_PROPOSED)
-    box(gx+0.35, 3.00, gw-0.7, 0.72,
-        "process factors  $\\|\\mathbf{x}_{t+1}-\\mathbf{\\Phi}_t\\mathbf{x}_t\\|_{\\mathbf{Q}_t^{-1}}$",
-        fs=7.2)
-    box(gx+0.35, 2.12, gw-0.7, 0.72,
-        "TL chain  $\\boldsymbol{\\beta}_t$ random walk  $\\mathbf{Q}^{\\beta}$",
-        fs=7.2)
-    box(gx+0.35, 1.24, gw-0.7, 0.72,
-        "map-match  $\\rho(r_t/\\sqrt{R})$", fs=7.2)
-    box(gx+0.35, 0.52, gw-0.7, 0.58,
-        "sensor-error variables $\\boldsymbol{\\theta}$ (optional)", fs=6.8)
+                 boxstyle="round,pad=0.3,rounding_size=1.6",
+                 fc="white", ec=BLUE, lw=1.6))
+    ax.text(gx+gw/2, gy+gh-2.6, "fixed-lag factor graph", ha="center", va="center",
+            fontsize=8.2, color=BLUE, fontweight="bold")
+    ax.text(gx+gw/2, gy+gh-5.6, "nav + online compensation as variables",
+            ha="center", va="center", fontsize=6.0, color=MUT, style="italic")
+    xs = np.linspace(gx+7, gx+gw-4.5, 5)
+    ytop, ybot = gy+gh*0.44, gy+gh*0.23
+    ax.plot(xs, [ytop]*5, "-", color=BLUE, lw=1.0, zorder=4)
+    ax.plot(xs, [ybot]*5, "-", color=ORANGE, lw=1.0, zorder=4)
+    for cx in xs:
+        ax.plot([cx, cx], [ybot, ytop], "-", color=FAINT, lw=0.6, zorder=3)
+        ax.plot(cx, ytop, "o", ms=4.2, color=BLUE, zorder=5)
+        ax.plot(cx, ybot, "s", ms=3.8, color=ORANGE, zorder=5)
+    ax.text(gx+5.6, ytop, "$\\mathbf{x}_t$", ha="right", va="center", fontsize=7, color=BLUE)
+    ax.text(gx+5.6, ybot, "$\\boldsymbol{\\beta}_t$", ha="right", va="center", fontsize=7, color=ORANGE)
+    ax.text(gx+gw/2, gy+2.2, "sliding-window solve \u2014 detail in Fig.\u20093",
+            ha="center", va="center", fontsize=6.0, color=MUT)
 
-    # solver (accent fill)
-    box(9.35, 1.85, 2.75, 1.3,
-        "fixed-lag window\ncommit $L_w{-}L_o$\ncarry $(\\hat{\\boldsymbol{\\chi}},\\mathbf{P})$",
-        fc="#e7eff9", ec=C_PROPOSED, fs=7.0, lw=1.2, tc="#0a3355")
+    # right: window + outputs (side by side)
+    box(84, 30, 22, 7.5, "fixed-lag window\ncommit, carry $(\\hat{\\boldsymbol{\\chi}},\\mathbf{P})$",
+        fc="#e7eff9", ec=BLUE, tc="#0a3355", fs=7.0, lw=1.1)
+    box(77.5, 15, 12.5, 6.4, "position\n$\\hat{\\mathbf{p}}_t$", ec=BLUE, tc=BLUE, fs=7.6)
+    box(91.5, 15, 14.5, 6.4, "compensation\n$\\hat{\\boldsymbol{\\beta}}_t$", ec=ORANGE, tc=ORANGE, fs=7.6)
 
-    # outputs (neutral)
-    box(12.85, 2.95, 2.25, 1.0, "position $\\hat{\\mathbf{p}}_t$")
-    box(12.85, 1.05, 2.25, 1.0, "compensation $\\hat{\\boldsymbol{\\beta}}_t$")
+    # arrows in (horizontal into graph left edge)
+    for yy in (35, 26, 17):
+        arrow(20.5, yy, gx, yy)
+    arrow(20.5, 8, gx, 10.5)
+    arrow(gx+gw, gy+gh*0.5, 73, 30)
+    arrow(80, 26.2, 77.5, 18.3)
+    arrow(88, 26.2, 91.5, 18.3)
 
-    # map (neutral, dashed border = data source)
-    ax.add_patch(FancyBboxPatch((9.4, 0.18), 2.65, 1.05,
-                 boxstyle="round,pad=0.035,rounding_size=0.09",
-                 fc=NEUT_FC, ec=NEUT_EC, lw=0.9, ls=(0, (3, 2))))
-    ax.text(9.4+2.65/2, 0.18+1.05/2, "anomaly map $h(\\cdot)$\n(+ IGRF core)",
-            ha="center", va="center", fontsize=7.2, color=INK)
-
-    # arrows
-    arrow(2.60, 3.95, gx, 3.36)
-    arrow(2.60, 2.50, gx, 2.48)
-    arrow(2.60, 1.05, gx, 1.60)
-    arrow(gx+gw, 2.50, 9.40, 2.50)
-    arrow(12.05, 2.75, 12.85, 3.35)
-    arrow(12.05, 2.25, 12.85, 1.65)
-    arrow(9.85, 1.23, 9.05, 1.55)   # map -> map-match factor
     fig.savefig(os.path.join(OUT, "fig_pipeline.pdf"))
     plt.close(fig)
 
 
 def fig_concept():
-    """Graphical abstract of the study: (a) one scalar reading hides two
-    coupled unknowns; (b) a fixed-lag window estimates both jointly, using
-    future data to correct the past; (c) the payoff is bounded navigation
-    where a causal filter diverges. One accent color (proposed blue)."""
-    NEUT_FC, NEUT_EC, INK = "#f2f4f7", "#9aa4b2", "#1f2937"
-    fig, ax = plt.subplots(figsize=(7.0, 2.25))
-    ax.set_xlim(0, 15.6); ax.set_ylim(0, 5.0); ax.axis("off")
+    """Graphical abstract, three clean stages (schematic, no measured data):
+    (1) one scalar reading couples position with the aircraft field; (2) a
+    fixed-lag factor graph estimates both jointly, so later data corrects earlier
+    states; (3) the payoff is bounded cold-start navigation, no neural network.
+    Accent = proposed (blue); baseline = EKF (orange)."""
+    INK, MUT, FAINT = "#1f2937", "#6b7280", "#aab2bd"
+    FCN = "#eef2f7"; BLUE, ORANGE = C_PROPOSED, C_BASE1
+    fig, ax = plt.subplots(figsize=(7.16, 2.15))
+    ax.set_xlim(0, 100); ax.set_ylim(0, 40); ax.axis("off")
 
-    def box(x, y, w, h, txt, fc=NEUT_FC, ec=NEUT_EC, fs=7.4, lw=0.9, tc=INK):
-        ax.add_patch(FancyBboxPatch((x, y), w, h,
-                     boxstyle="round,pad=0.035,rounding_size=0.09",
+    def header(x, t):
+        ax.text(x, 39.6, t, ha="center", va="top", fontsize=7.3, color=INK,
+                fontweight="bold")
+
+    def pill(x, y, w, h, txt, ec=FAINT, fc=FCN, tc=INK, fs=8.0, lw=1.0):
+        ax.add_patch(FancyBboxPatch((x-w/2, y-h/2), w, h,
+                     boxstyle="round,pad=0.15,rounding_size=1.2",
                      fc=fc, ec=ec, lw=lw))
-        ax.text(x+w/2, y+h/2, txt, ha="center", va="center", fontsize=fs,
-                color=tc, zorder=5)
+        ax.text(x, y, txt, ha="center", va="center", fontsize=fs, color=tc, zorder=6)
 
-    def arrow(x0, y0, x1, y1, color="0.42", lw=1.2, style="-|>", ls="-"):
-        ax.add_patch(FancyArrowPatch((x0, y0), (x1, y1), arrowstyle=style,
-                     mutation_scale=9, lw=lw, color=color, ls=ls,
-                     shrinkA=3, shrinkB=3))
+    def chev(x):
+        ax.annotate("", xy=(x+2, 20), xytext=(x-2, 20),
+                    arrowprops=dict(arrowstyle="-|>", color=FAINT, lw=1.8))
 
-    def title(x, t):
-        ax.text(x, 4.86, t, ha="center", va="top", fontsize=7.7, color=INK)
+    # Stage 1: coupling
+    header(17, "one reading, two unknowns")
+    pill(16, 32, 28, 5.2, "scalar magnetometer  $z_t$", ec=INK, fc="white", fs=8.4)
+    parts = [("$z_t\\;=\\;$", INK), ("$h(\\mathbf{p}_t)$", BLUE),
+             ("$\\,+\\,$", INK), ("$\\mathbf{A}_t^{\\top}\\boldsymbol{\\beta}_t$", ORANGE),
+             ("$\\,+\\,\\eta_t$", MUT)]
+    boxes = [TextArea(s, textprops=dict(color=c, fontsize=8.6)) for s, c in parts]
+    ax.add_artist(AnnotationBbox(HPacker(children=boxes, align="baseline", pad=0, sep=1),
+                  (16, 24.2), frameon=False, xycoords="data", box_alignment=(0.5, 0.5)))
+    pill(7.8, 15, 13, 6.4, "position\n$\\mathbf{p}_t$", ec=BLUE, fc="white", tc=BLUE, fs=8)
+    pill(24.5, 15, 15.5, 6.4, "aircraft field\n$\\mathbf{A}_t^{\\top}\\boldsymbol{\\beta}_t$",
+         ec=ORANGE, fc="white", tc=ORANGE, fs=8)
+    ax.annotate("", xy=(9.5, 18.5), xytext=(13.5, 21.4),
+                arrowprops=dict(arrowstyle="-|>", color=BLUE, lw=1.3))
+    ax.annotate("", xy=(23, 18.5), xytext=(18.5, 21.4),
+                arrowprops=dict(arrowstyle="-|>", color=ORANGE, lw=1.3))
+    ax.text(16, 8.6, "coupled — no separate calibration", ha="center", va="center",
+            fontsize=6.8, color=MUT, style="italic")
 
-    # ===== Panel (a): one reading, two coupled unknowns =====
-    title(2.55, "(a) one scalar reading,\ntwo coupled unknowns")
-    box(0.95, 3.05, 3.15, 0.78, "scalar reading $z_t$", fc="white",
-        ec=INK, lw=1.1, fs=7.8)
-    box(0.15, 1.15, 2.15, 0.92, "position $\\mathbf{p}_t$\n(navigation)",
-        ec=C_PROPOSED, lw=1.2)
-    box(2.85, 1.15, 2.35, 0.92,
-        "aircraft field\n$\\mathbf{A}_t^{\\top}\\boldsymbol{\\beta}_t$",
-        ec=C_BASE1, lw=1.2)
-    arrow(2.05, 3.02, 1.35, 2.10, color=C_PROPOSED)
-    arrow(3.05, 3.02, 3.95, 2.10, color=C_BASE1)
-    ax.text(2.62, 0.62,
-            "$z_t=h(\\mathbf{p}_t)+\\mathbf{A}_t^{\\top}\\boldsymbol{\\beta}_t"
-            "+\\eta_t$", ha="center", va="center", fontsize=7.2, color=INK)
-    ax.text(2.62, 0.16, "both unknown, one measurement", ha="center",
-            va="center", fontsize=6.5, color="0.45", style="italic")
+    chev(34)
 
-    arrow(5.35, 2.6, 6.05, 2.6, color="0.5", lw=1.4)
-
-    # ===== Panel (b): joint estimate over a sliding window =====
-    title(8.15, "(b) estimate both jointly\nover a fixed-lag window")
-    wx, wy, ww, wh = 6.25, 1.30, 3.75, 2.15
+    # Stage 2: joint estimation over a window
+    header(55.5, "joint estimation on a fixed-lag graph")
+    wx, wy, ww, wh = 39.5, 11, 33, 20
     ax.add_patch(FancyBboxPatch((wx, wy), ww, wh,
-                 boxstyle="round,pad=0.05,rounding_size=0.12",
-                 fc="white", ec=C_PROPOSED, lw=1.5))
-    ax.add_patch(Rectangle((wx+0.14, wy+0.14), ww*0.62, wh-0.28,
-                 fc=C_PROPOSED, alpha=0.10, ec="none"))
-    ax.text(wx+ww*0.32, wy+wh-0.02, "commit", ha="center", va="bottom",
-            fontsize=6.6, color="#0a3355")
-    ax.text(wx+ww*0.80, wy+wh-0.02, "look-\nahead", ha="center", va="bottom",
-            fontsize=6.2, color="0.4")
-    # two chains inside: nav (blue) and compensation (orange)
-    xs = np.linspace(wx+0.45, wx+ww-0.45, 6)
+                 boxstyle="round,pad=0.25,rounding_size=1.4",
+                 fc="white", ec=MUT, lw=1.2))
+    ax.add_patch(Rectangle((wx+1.2, wy+1.2), ww*0.55, wh-2.4, fc=BLUE, alpha=0.08, ec="none"))
+    ax.text(wx+ww*0.30, wy+wh-1.2, "commit", ha="center", va="top", fontsize=6.6, color="#0a3355")
+    ax.text(wx+ww*0.80, wy+wh-1.2, "look-ahead", ha="center", va="top", fontsize=6.6, color=MUT)
+    xs = np.linspace(wx+5, wx+ww-4, 6)
+    ytop, ybot = wy+wh*0.60, wy+wh*0.30
+    ax.plot(xs, [ytop]*6, "-", color=BLUE, lw=1.1, zorder=4)
+    ax.plot(xs, [ybot]*6, "-", color=ORANGE, lw=1.1, zorder=4)
     for cx in xs:
-        ax.plot([cx], [wy+1.45], "o", ms=4.2, color=C_PROPOSED, zorder=6)
-        ax.plot([cx], [wy+0.55], "s", ms=4.0, color=C_BASE1, zorder=6)
-    ax.plot(xs, [wy+1.45]*6, "-", color=C_PROPOSED, lw=1.0, zorder=5)
-    ax.plot(xs, [wy+0.55]*6, "-", color=C_BASE1, lw=1.0, zorder=5)
-    ax.text(wx-0.06, wy+1.45, "nav", ha="right", va="center", fontsize=6.3,
-            color=C_PROPOSED)
-    ax.text(wx-0.06, wy+0.55, "comp.", ha="right", va="center", fontsize=6.3,
-            color=C_BASE1)
-    # future-corrects-past curved arrow
-    ax.add_patch(FancyArrowPatch((wx+ww-0.7, wy+1.0), (wx+0.7, wy+1.0),
-                 connectionstyle="arc3,rad=0.45", arrowstyle="-|>",
-                 mutation_scale=9, lw=1.0, color="0.4"))
-    ax.text(wx+ww*0.5, wy+0.06, "future data corrects the past",
-            ha="center", va="center", fontsize=6.3, color="0.45",
-            style="italic")
+        ax.plot([cx, cx], [ybot, ytop], "-", color=FAINT, lw=0.6, zorder=3)
+        ax.plot(cx, ytop, "o", ms=5, color=BLUE, zorder=5)
+        ax.plot(cx, ybot, "s", ms=4.6, color=ORANGE, zorder=5)
+    ax.text(wx+3.0, ytop, "nav", ha="right", va="center", fontsize=6.6, color=BLUE)
+    ax.text(wx+3.0, ybot, "comp.", ha="right", va="center", fontsize=6.6, color=ORANGE)
+    ax.add_patch(FancyArrowPatch((xs[-1], (ytop+ybot)/2+1.4), (xs[1], (ytop+ybot)/2+1.4),
+                 connectionstyle="arc3,rad=0.4", arrowstyle="-|>", mutation_scale=8,
+                 lw=1.0, color=MUT))
+    ax.text(wx+ww*0.5, wy+1.3, "later data corrects earlier states", ha="center",
+            va="bottom", fontsize=6.6, color=MUT, style="italic")
 
-    arrow(10.15, 2.6, 10.85, 2.6, color="0.5", lw=1.4)
+    chev(75.5)
 
-    # ===== Panel (c): bounded navigation =====
-    title(13.2, "(c) bounded navigation,\nno neural network")
-    px, py, pw, ph = 11.15, 1.15, 3.9, 2.05
-    ax.add_patch(Rectangle((px, py), pw, ph, fc="white", ec=NEUT_EC, lw=0.9))
+    # Stage 3: payoff
+    header(89, "bounded cold start, no NN")
+    px, py, pw, ph = 80.5, 11, 17.5, 18
+    ax.add_patch(Rectangle((px, py), pw, ph, fc="white", ec=FAINT, lw=0.9))
     tt = np.linspace(0, 1, 100)
-    # causal filter: grows and diverges
-    div = py + 0.18 + (ph-0.2) * (tt**1.7) * 1.35
-    div = np.clip(div, py, py+ph)
-    ax.plot(px+0.12+tt*(pw-0.24), div, "--", color=C_BASE1, lw=1.5)
-    # proposed: bounded, low
-    prop = py + 0.30 + 0.16*np.sin(tt*9) + 0.05
-    ax.plot(px+0.12+tt*(pw-0.24), prop, "-", color=C_PROPOSED, lw=2.0)
-    ax.annotate("online-TL EKF\n(cold start)", (px+pw*0.40, py+ph*0.90),
-                fontsize=6.3, color=C_BASE1, ha="center", va="center")
-    ax.annotate("proposed", (px+pw*0.66, py+0.30), fontsize=6.6,
-                color=C_PROPOSED, ha="center", va="bottom")
+    ekf = py + 1.2 + (ph+4) * tt**2.3
+    ax.plot(px+1.2+tt*(pw-2.4), np.clip(ekf, py, py+ph), "--", color=ORANGE, lw=1.5)
+    ax.annotate("", xy=(px+1.2+(pw-2.4)*0.90, py+ph),
+                xytext=(px+1.2+(pw-2.4)*0.84, py+ph-2.6),
+                arrowprops=dict(arrowstyle="-|>", color=ORANGE, lw=1.2))
+    fgo = py + 2.8 - 0.7*np.cos(tt*3.2)*np.exp(-tt*1.8)
+    ax.plot(px+1.2+tt*(pw-2.4), fgo, "-", color=BLUE, lw=2.0)
+    ax.text(px+pw*0.50, py+ph-1.2, "online-TL EKF", ha="center", va="top",
+            fontsize=6.3, color=ORANGE)
+    ax.text(px+pw-1.2, py+3.4, "proposed", ha="right", va="bottom",
+            fontsize=6.5, color=BLUE)
     ax.annotate("", xy=(px+pw, py), xytext=(px, py),
-                arrowprops=dict(arrowstyle="-|>", lw=0.9, color="0.5"))
-    ax.text(px+pw-0.05, py-0.16, "time", ha="right", va="top", fontsize=6.3,
-            color="0.45")
-    ax.text(px-0.12, py+ph*0.5, "error", ha="right", va="center",
-            fontsize=6.3, color="0.45", rotation=90)
+                arrowprops=dict(arrowstyle="-|>", color=MUT, lw=0.9))
+    ax.annotate("", xy=(px, py+ph), xytext=(px, py),
+                arrowprops=dict(arrowstyle="-|>", color=MUT, lw=0.9))
+    ax.text(px+pw-0.5, py-0.8, "time", ha="right", va="top", fontsize=6.2, color=MUT)
+    ax.text(px-0.6, py+ph-0.3, "error", ha="right", va="top", fontsize=6.2, color=MUT, rotation=90)
 
     fig.savefig(os.path.join(OUT, "fig_concept.pdf"))
     plt.close(fig)
