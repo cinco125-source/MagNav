@@ -69,7 +69,7 @@ two flights and two maps, spanning free-flight navigation and survey
 missions, the smoother is the best of four
 cold-start estimators on every full-length line (\num{8} of \num{8} cases): it stays bounded where a plain
 online-TL EKF and a marginalized particle filter both diverge, and it beats a
-reimplemented EKF+TL+NN, which the neural network keeps bounded, without using a
+tuned online EKF+TL+NN baseline, which the neural network keeps bounded, without using a
 neural network. A simulation Monte-Carlo
 confirms that the reported covariance is consistent and never over-confident. We
 also give an exact linear condition for the joint observability of compensation and
@@ -196,10 +196,12 @@ batch calibration flight, and the representational gap by learned models fit off
 on logged data---neural-network heading-error and denoising
 compensators~\cite{williams1993,gnadt2022}, physics-informed liquid-time-constant
 networks~\cite{nerrise2024}, and model-stability studies of the regression in
-gradiometry~\cite{noriega2015}. The exception most relevant here is the online
-EKF+TL+NN of~\cite{hager2026}, which carries an online-trained residual network
-inside the filter to mop up the un-modeled remainder, and is, to our knowledge, the
-strongest reported cold-start result on the benchmark. This paper takes on the
+gradiometry~\cite{noriega2015}. The exception is the online NN-in-EKF line of work
+originated by Gnadt~\cite{gnadt2022}, which carries the TL coefficients and the
+weights of a residual network as filter states learned in flight, and which has
+recently been extended with an error-state formulation and a natural-gradient
+interpretation~\cite{hager2026}; this lineage holds, to our knowledge, the
+strongest reported cold-start results on the benchmark. This paper takes on the
 \emph{temporal} difficulty fully---online, joint estimation of a time-varying
 compensation. The representational gap it does not model term-by-term: instead of a
 learned remainder, the estimator absorbs what the TL basis misses structurally,
@@ -241,9 +243,10 @@ been studied in gradiometry~\cite{noriega2015}, and machine-learning-enhanced
 calibration has recently been applied to the SGL benchmark~\cite{gnadt2022}. Most
 relevant here, a residual neural network (NN) has been added on top of an online TL
 model, carried inside an EKF and trained online, to capture interference the linear
-basis misses~\cite{hager2026}; this reaches good cold-start accuracy on the SGL~2020
-cabin magnetometers and is, to our knowledge, the strongest reported cold-start
-result on that benchmark. Nevertheless, the network requires a carefully
+basis misses---introduced with Gnadt's online models~\cite{gnadt2022} and recently
+extended in~\cite{hager2026}; this reaches good cold-start accuracy on the SGL~2020
+cabin magnetometers and holds, to our knowledge, the strongest reported cold-start
+results on that benchmark. Nevertheless, the network requires a carefully
 engineered online-training design to remain stable, adds opaque parameters whose
 behavior is hard to certify, and, being embedded in an EKF, inherits the same
 causal, commit-online limitation as the filters above.
@@ -328,8 +331,9 @@ The paper makes the following contributions:
   \item \textbf{Cold-start capability, validated against a reproduced baseline.}
         Deferring commitment over the window lets the estimator stay bounded from a
         cold start with no calibration flight and no learned component. To measure
-        this fairly we reimplement, rather than merely cite, the online EKF+TL+NN
-        of~\cite{hager2026} and compare it, a weak online-TL EKF, and a marginalized
+        this fairly we run, rather than merely cite, the online EKF+TL+NN lineage
+        of~\cite{gnadt2022,hager2026}---its reference implementation, tuned for a
+        stable cold start---and compare it, a weak online-TL EKF, and a marginalized
         particle filter carrying the TL coefficients against the proposed smoother on
         the uncompensated cabin magnetometers, across eight cold-start cases spanning
         four lines, two flights, and two maps. The comparison isolates what the
@@ -345,7 +349,7 @@ Section~\ref{sec:background} states the INS error model, the measurement, and th
 batch MAP problem. Section~\ref{sec:method} develops the sliding-window smoother
 and the compensation factors. Section~\ref{sec:observability}
 establishes the observability condition. Section~\ref{sec:baseline} describes the
-reimplemented EKF+TL+NN baseline, and Section~\ref{sec:results} reports and
+online EKF+TL+NN baseline, and Section~\ref{sec:results} reports and
 interprets the experiments. Section~\ref{sec:conclusion} concludes and states the
 limitations.
 
@@ -602,7 +606,8 @@ relinearization, with the kernel as an accuracy refinement.
 \smallskip\noindent\textbf{Absorbing the non-Tolles--Lawson remainder.}
 On this dataset the cabin interference is dominated by platform currents and other
 sources the attitude-only TL basis $\mathbf{A}_t$ cannot span, and the online
-EKF+TL+NN of~\cite{hager2026} devotes a neural network precisely to this remainder.
+EKF+TL+NN lineage~\cite{gnadt2022,hager2026} devotes a neural network precisely to
+this remainder.
 The proposed graph carries no network; instead three of the factors above combine
 to absorb the remainder as a structured, robust regression problem. The
 random-walk factor~(iii) makes $\boldsymbol{\beta}_t$ time-varying: writing
@@ -873,9 +878,9 @@ $\partial z_t/\partial\mathbf{p}=\mathbf{g}_t$, so with fitted coefficient
 $\beta_z$ on that feature the effective position row of the measurement becomes
 $(1-\beta_z)\,\mathbf{g}_t$: as the regression drives $\beta_z\!\to\!1$, the fit
 residual shrinks while the measurement loses its position information entirely.
-This is the collapse observed empirically in Section~\ref{sec:baseline}, where the
-residual stays small as the position drifts to kilometres, and it is why the scalar
-magnetometer must be excluded from any compensation basis, learned or linear.
+This collapse is observed empirically in Section~\ref{sec:baseline}: the fit
+residual stays small while the position drifts to kilometres. It is why the scalar
+magnetometer must be excluded from any compensation basis.
 \end{remark}
 
 \begin{remark}[TL rank deficiency as gauge freedom]\label{rem:gauge}
@@ -910,18 +915,19 @@ condition (i) fails: position is unobservable regardless of the
 compensation, a map-information floor that bounds every estimator, and that we
 observe on the shortest line in Section~\ref{sec:results}. Second, an endogenous
 feature cancels the position channel by the mechanism of Remark~\ref{rem:endo}, so
-the compensator silently absorbs the map signal; excluding such features
-(Section~\ref{sec:baseline}) is necessary for the baseline to converge.
+the compensator silently absorbs the map signal.
 \end{remark}
 
-\section{Reimplemented Online EKF+TL+NN Baseline}\label{sec:baseline}
-To compare against~\cite{hager2026} on equal footing we reimplement, rather than
-merely cite, its online EKF+TL+NN cold start. The filter augments the Pinson error
-state with the online TL coefficients $\boldsymbol{\beta}$ and the weights of a
-small feed-forward network, all propagated as EKF states and updated online
-against~\eqref{eq:meas}. Since neither the network architecture nor the training
-design of~\cite{hager2026} is released, ours reproduces the published design
-principles rather than the exact filter.
+\section{The Online EKF+TL+NN Baseline}\label{sec:baseline}
+The strongest causal competitor is the online NN-in-EKF lineage: the filter
+augments the Pinson error state with the online TL coefficients
+$\boldsymbol{\beta}$ and the weights of a small feed-forward network, all
+propagated as EKF states and updated online against~\eqref{eq:meas}. The lineage
+originates with Gnadt, whose MagNav.jl package provides its reference
+implementation~\cite{gnadt2022}, and was recently extended
+in~\cite{hager2026}. We baseline against the reference implementation, tuned by
+us for a stable cold start; we do not claim to reproduce the specific extended
+filter of~\cite{hager2026}.
 
 A naive port diverged, and three fixes, each addressing an independently diagnosed
 failure, were needed. (i)~We remove the large constant offset from the regression
@@ -929,18 +935,17 @@ target and initialize the network output bias to it, because the raw offset
 ($-1724\,\mathrm{nT}$ on Mag~4, $+310\,\mathrm{nT}$ on Mag~5) otherwise drives the
 network bias to $\sim\!5\times10^{4}$\,nT and the filter to \texttt{NaN}. (ii)~We
 restrict the network inputs to the attitude-derived TL basis, because feeding the
-scalar magnetometer creates the endogenous feature of the Remark above and collapses
-horizontal position (Corollary~\ref{cor:exo}). (iii)~We inflate the measurement
+scalar magnetometer creates an endogenous feature and collapses horizontal position
+by the cancellation of Remark~\ref{rem:endo}. (iii)~We inflate the measurement
 variance and the coefficient process noise through the warm-up, when the
 compensation is still grossly wrong, then relax them.
 
-The reimplemented filter carries the permanent TL group and a single-hidden-layer
+The tuned filter carries the permanent TL group and a single-hidden-layer
 network of eight units on that group (\num{41} network-weight states), with a FOGM
 $(\sigma,\tau)=(\SI{3}{\nano\tesla},\SI{180}{\second})$ and post-warm-up measurement
 variance $12^2\,\mathrm{nT}^2$. It reaches \num{40.0}/\SI{17.5}{\meter} on Mag~4/5
-(Table~\ref{tab:1007}), consistent with the cold-start operating point published
-for this line in~\cite{hager2026}---a functioning but not exact reimplementation,
-which we use as the baseline. All numbers compared in
+(Table~\ref{tab:1007}), consistent with the cold-start operating points published
+for this lineage on this line~\cite{gnadt2022,hager2026}. All numbers compared in
 Section~\ref{sec:results} are produced by our own runs, under one protocol.
 
 \section{Experiments and Results}\label{sec:results}
@@ -1042,13 +1047,13 @@ single coefficient vector over the whole line; it underfits the time-varying
 interference and degrades to \num{123.7}/\SI{68.1}{\meter}. Allowing the
 compensation to adapt with a \SI{5}{\minute} window recovers it to
 \num{37.0}/\SI{15.1}{\meter}, and the Huber kernel further trims transient outliers
-to \num{32.6}/\SI{14.2}{\meter}. Our reimplemented online EKF+TL+NN reaches
-\num{40.0}/\SI{17.5}{\meter} (Section~\ref{sec:baseline} validates the
-reimplementation against the published operating point). The window smoother beats
+to \num{32.6}/\SI{14.2}{\meter}. Our online EKF+TL+NN baseline reaches
+\num{40.0}/\SI{17.5}{\meter} (Section~\ref{sec:baseline} details the
+implementation and its relation to the published operating points). The window smoother beats
 the NN-augmented filter on both sensors---\SI{7.4}{\meter} on Mag~4 and
 \SI{3.3}{\meter} on Mag~5---without any neural network, using only the linear TL
 basis carried as graph variables. All compared numbers are our own runs under one
-protocol; 1007.06 is the line on which the reimplementation is anchored, and the
+protocol; 1007.06 is the line on which the baseline tuning is anchored, and the
 same baseline carries to the other lines in the breadth study
 (Table~\ref{tab:breadth}). We attribute the
 margin to the window look-ahead: the coefficients are identified from data on both
@@ -1084,7 +1089,7 @@ FGO-online, window \SI{2}{\minute} & 45.9 & 17.1 \\
 FGO-online, window \SI{5}{\minute} & 37.0 & 15.1 \\
 \textbf{FGO-online, window \SI{5}{\minute} + Huber} & \textbf{32.6} & \textbf{14.2} \\
 \midrule
-EKF+TL+NN, reimplemented~\cite{hager2026} & 40.0 & 17.5 \\
+EKF+TL+NN, online~\cite{gnadt2022,hager2026} & 40.0 & 17.5 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1093,7 +1098,7 @@ EKF+TL+NN, reimplemented~\cite{hager2026} & 40.0 & 17.5 \\
 \centering
 \includegraphics[width=0.98\columnwidth]{figs/fig_coldstart.pdf}
 \caption{Cold start on line 1007.06: NN-free fixed-lag window (left) versus the
-reimplemented EKF+TL+NN (right).}
+online EKF+TL+NN baseline (right).}
 \label{fig:coldstart}
 \end{figure}
 
@@ -1116,7 +1121,7 @@ work.
 Table~\ref{tab:breadth} runs the same cold-start TL model on four long lines
 spanning two flights and two maps, free-flight navigation legs (Flt1007) and
 survey traverses (Flt1003), grouped by purpose, against three
-baselines: the plain online-TL EKF, the reimplemented EKF+TL+NN of
+baselines: the plain online-TL EKF, the online EKF+TL+NN of
 Section~\ref{sec:baseline} (the strong causal method that a fair comparison
 demands), and a marginalized (Rao-Blackwellized) particle filter extended to carry
 the TL coefficients in its conditionally-linear-Gaussian block (MPF+TL), a genuine
@@ -1154,8 +1159,9 @@ what the dropped linear terms would have supplied directly. Second, and relatedl
 the network's extra online-learned states add estimation variance where the linear
 basis already suffices, a cost the NN-free window avoids. Both effects favor a
 linear compensation carried in a smoother over a learned one carried in a filter,
-on this benchmark. One caveat on provenance: the EKF+TL+NN is our reimplementation,
-matching the reported 1007.06 operating point to within a few metres
+on this benchmark. One caveat on provenance: the EKF+TL+NN is the lineage's
+reference implementation under our tuning, matching the reported 1007.06 operating
+points to within a few metres
 (Section~\ref{sec:baseline}), but the original's per-line numbers on the other
 lines are unpublished, so the comparison is against a faithful, not the
 authors', filter. Its cold-start trajectory is also numerically sensitive, so its
@@ -1229,7 +1235,7 @@ contribution. What the window adds is that it reaches the same bounded
 regime without the network, its online-training machinery, or the verification
 burden that comes with it. The second is about accuracy, where the window is the
 best of the four on all eight full-length cases. This margin is real, but it should
-be read with care, because our EKF+TL+NN is a reimplementation and part of its
+be read with care, because our EKF+TL+NN is a tuned reference implementation and part of its
 deficit is that its online-learned states add variance on the well-conditioned
 sensor, where the linear TL basis already suffices. The defensible reading is that a
 linear estimator with no network, given future context through the window, is enough
@@ -1261,7 +1267,7 @@ Estimator & data & state & Gauss. & latency \\
 \midrule
 Causal EKF~\cite{canciani2017} & \ding{55} & ($\sim$) & \ding{55} & \ding{51} \\
 Particle / grid filter~\cite{nordlund2009} & \ding{55} & \ding{55} & \ding{51} & \ding{51} \\
-Online EKF+TL+NN~\cite{hager2026} & \ding{55} & \ding{51} & ($\sim$) & \ding{51} \\
+Online EKF+TL+NN~\cite{gnadt2022,hager2026} & \ding{55} & \ding{51} & ($\sim$) & \ding{51} \\
 Batch FGO & \ding{51} & \ding{51} & \ding{51} & \ding{55} \\
 Proposed (fixed-lag FGO) & \ding{51} & \ding{51} & \ding{51} & \ding{51} \\
 \bottomrule
@@ -1373,7 +1379,7 @@ and endogeneity cancellation, states when position and compensation can be
 separated at all. On real SGL~2020 data the estimator stays bounded from a cold
 start on all eight full-length cabin-magnetometer cases, where both the plain
 online-TL EKF and a marginalized particle filter diverge, and it is more accurate
-on every such case than a reimplemented online EKF+TL+NN, with no neural network
+on every such case than the tuned online EKF+TL+NN baseline, with no neural network
 and no calibration flight. A simulation Monte-Carlo shows its reported covariance
 is consistent and conservative where the particle filter's is over-confident, and
 the recorded platform currents confirm the absorption mechanism: the current
