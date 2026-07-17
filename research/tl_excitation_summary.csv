@@ -1,0 +1,5 @@
+flight,line,n_win,smin_first,smin_median,first_excited_min,yaw_first_deg,yaw_median_deg
+Flt1003,1003.02,12,0.0,0.0,0.0,43.5,92.8
+Flt1003,1003.08,14,0.0,0.0,0.0,12.7,88.1
+Flt1007,1007.02,12,0.0,0.0,0.0,70.4,108.2
+Flt1007,1007.06,17,0.0,0.0,0.0,20.9,115.2
