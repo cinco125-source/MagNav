@@ -74,12 +74,12 @@ def fig_breadth():
 
 
 def fig_coldstart():
-    """Line 1007.06 head-to-head vs reproduced/published EKF+TL+NN."""
+    """Line 1007.06 head-to-head vs the reimplemented EKF+TL+NN (our runs only)."""
     methods = ["FGO\nbatch", "FGO\nwin 5", "FGO win 5\n+Huber",
-               "EKF+NN\n(repro.)", "EKF+NN\n(paper)"]
-    m4 = [123.7, 37.0, 32.6, 40.0, 37.0]
-    m5 = [68.1, 15.1, 14.2, 17.5, 14.0]
-    ours = [True, True, True, False, False]
+               "EKF+TL+NN\n(reimpl.)"]
+    m4 = [123.7, 37.0, 32.6, 40.0]
+    m5 = [68.1, 15.1, 14.2, 17.5]
+    ours = [True, True, True, False]
     x = np.arange(len(methods)); w = 0.38
     fig, ax = plt.subplots(figsize=(COL_W, 2.4))
     c = [C_PROPOSED if o else C_BASE1 for o in ours]

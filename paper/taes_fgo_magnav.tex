@@ -350,10 +350,33 @@ interprets the experiments. Section~\ref{sec:conclusion} concludes and states th
 limitations.
 
 \section{Problem Formulation}\label{sec:background}
-We first fix notation and state the estimation problem. Throughout, boldface
+Throughout, boldface
 lowercase denotes vectors and boldface uppercase matrices; $\mathcal{N}(\cdot,\cdot)$
 is the Gaussian density; and $\lVert\mathbf{v}\rVert^2_{\mathbf{M}}=
 \mathbf{v}^{\top}\mathbf{M}\mathbf{v}$ is the squared Mahalanobis norm.
+
+The situation this paper addresses is the cold start: an aircraft departs with an
+uncalibrated magnetometer installation, its INS error grows, and the only absolute
+position information is a scalar magnetic reading in which the map signal and the
+aircraft's own field are mixed. The estimation task is therefore joint from the
+outset---there is no separate calibration step whose output a navigator could
+consume:
+
+\begin{problem}[Joint compensation and navigation]\label{prob:joint}
+Given the scalar measurements $z_{1:N}$ (Section~\ref{sec:background}-B), the
+fluxgate regressor rows $\mathbf{A}_{1:N}$ (Section~\ref{sec:background}-C), the
+anomaly map $h$, the INS mechanization (Section~\ref{sec:background}-A), and the
+prior $(\hat{\boldsymbol{\chi}}_0,\mathbf{P}_0)$, estimate the joint trajectory
+$\boldsymbol{\chi}_{1:N}$ of navigation errors and compensation coefficients,
+$\boldsymbol{\chi}_t=(\mathbf{x}_t,\boldsymbol{\beta}_t)$.
+\end{problem}
+
+The rest of the section supplies the three models that make
+Problem~\ref{prob:joint} concrete---how the navigation error evolves
+(Section~\ref{sec:background}-A), what the scalar magnetometer measures
+(Section~\ref{sec:background}-B), and how the aircraft field enters it
+(Section~\ref{sec:background}-C)---and then casts the whole as maximum-a-posteriori
+estimation on a factor graph (Section~\ref{sec:background}-D).
 
 \begin{figure*}[t]
 \centering
@@ -441,23 +464,11 @@ we treat it as a time-varying state with a random-walk prior
 $\boldsymbol{\beta}_{t+1}=\boldsymbol{\beta}_t+\mathbf{w}^{\beta}_t$,
 $\mathbf{w}^{\beta}_t\sim\mathcal{N}(\mathbf{0},\mathbf{Q}^{\beta})$.
 
-\subsection{Joint estimation problem}
-The cold-start setting couples the two preceding models through a single scalar
-stream: the same measurement $z_t$ must simultaneously fix position through the map
-term $h(\mathbf{p}_t)$ and identify the compensation
-$\mathbf{A}_t^{\top}\boldsymbol{\beta}_t$. We therefore state the estimation task as
-one joint problem rather than a navigation problem preceded by a calibration step.
-
-\begin{problem}[Joint compensation and navigation]\label{prob:joint}
-Given the scalar measurements $z_{1:N}$ of~\eqref{eq:meas}, the fluxgate regressor
-rows $\mathbf{A}_{1:N}$ of~\eqref{eq:tlbasis}, the anomaly map $h$, the INS
-mechanization entering $\boldsymbol{\Phi}_t$, and the prior
-$(\hat{\boldsymbol{\chi}}_0,\mathbf{P}_0)$, estimate the joint trajectory
-$\boldsymbol{\chi}_{1:N}$ of navigation errors and compensation coefficients,
-$\boldsymbol{\chi}_t=(\mathbf{x}_t,\boldsymbol{\beta}_t)$.
-\end{problem}
-
-We take the maximum-a-posteriori (MAP) estimate. By the Markov structure of the
+\subsection{MAP estimation on the factor graph}
+The three models couple through a single scalar stream: the same measurement $z_t$
+must simultaneously fix position through the map term $h(\mathbf{p}_t)$ and
+identify the compensation $\mathbf{A}_t^{\top}\boldsymbol{\beta}_t$. We take the
+maximum-a-posteriori (MAP) estimate of Problem~\ref{prob:joint}. By the Markov structure of the
 dynamics~\eqref{eq:dyn}, the coefficient random walk, and the memoryless
 measurement~\eqref{eq:meas}, the joint posterior factorizes as
 \begin{equation}
@@ -927,9 +938,10 @@ The reimplemented filter carries the permanent TL group and a single-hidden-laye
 network of eight units on that group (\num{41} network-weight states), with a FOGM
 $(\sigma,\tau)=(\SI{3}{\nano\tesla},\SI{180}{\second})$ and post-warm-up measurement
 variance $12^2\,\mathrm{nT}^2$. It reaches \num{40.0}/\SI{17.5}{\meter} on Mag~4/5
-(Table~\ref{tab:1007}): inside the reported \SIrange{37}{58}{\meter} band on Mag~4,
-and \SIrange{2.5}{3.5}{\meter} above the reported \SIrange{14}{15}{\meter} on Mag~5.
-This is a functioning but not exact reimplementation, which we use as the baseline.
+(Table~\ref{tab:1007}), consistent with the cold-start operating point published
+for this line in~\cite{hager2026}---a functioning but not exact reimplementation,
+which we use as the baseline. All numbers compared in
+Section~\ref{sec:results} are produced by our own runs, under one protocol.
 
 \section{Experiments and Results}\label{sec:results}
 
@@ -1031,15 +1043,14 @@ interference and degrades to \num{123.7}/\SI{68.1}{\meter}. Allowing the
 compensation to adapt with a \SI{5}{\minute} window recovers it to
 \num{37.0}/\SI{15.1}{\meter}, and the Huber kernel further trims transient outliers
 to \num{32.6}/\SI{14.2}{\meter}. Our reimplemented online EKF+TL+NN reaches
-\num{40.0}/\SI{17.5}{\meter} (Section~\ref{sec:baseline} details how close this is
-to the reported operating point), while the reported TL-only EKF is weaker still on
-Mag~4. The window smoother beats the reimplemented NN-augmented filter on both
-sensors without any neural network, using only the linear TL basis carried
-as graph variables; against the values reported in~\cite{hager2026} it is
-\SI{4.4}{\meter} better on Mag~4 and \SI{0.2}{\meter} behind on Mag~5. This
-comparison against the published values is on the single line 1007.06, the only
-line~\cite{hager2026} reports; our reimplemented EKF+TL+NN carries the baseline to
-the other lines in the breadth study (Table~\ref{tab:breadth}). We attribute the
+\num{40.0}/\SI{17.5}{\meter} (Section~\ref{sec:baseline} validates the
+reimplementation against the published operating point). The window smoother beats
+the NN-augmented filter on both sensors---\SI{7.4}{\meter} on Mag~4 and
+\SI{3.3}{\meter} on Mag~5---without any neural network, using only the linear TL
+basis carried as graph variables. All compared numbers are our own runs under one
+protocol; 1007.06 is the line on which the reimplementation is anchored, and the
+same baseline carries to the other lines in the breadth study
+(Table~\ref{tab:breadth}). We attribute the
 margin to the window look-ahead: the coefficients are identified from data on both
 sides of each committed epoch, whereas the EKF must commit with past data only.
 
@@ -1074,8 +1085,6 @@ FGO-online, window \SI{5}{\minute} & 37.0 & 15.1 \\
 \textbf{FGO-online, window \SI{5}{\minute} + Huber} & \textbf{32.6} & \textbf{14.2} \\
 \midrule
 EKF+TL+NN, reimplemented~\cite{hager2026} & 40.0 & 17.5 \\
-EKF+TL+NN, reported~\cite{hager2026} & 37 & 14 \\
-EKF+TL-only, reported~\cite{hager2026} & 58 & 15 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1084,7 +1093,7 @@ EKF+TL-only, reported~\cite{hager2026} & 58 & 15 \\
 \centering
 \includegraphics[width=0.98\columnwidth]{figs/fig_coldstart.pdf}
 \caption{Cold start on line 1007.06: NN-free fixed-lag window (left) versus the
-reimplemented and reported EKF+TL+NN (right).}
+reimplemented EKF+TL+NN (right).}
 \label{fig:coldstart}
 \end{figure}
 
@@ -1306,8 +1315,11 @@ the safe direction in which to err.
 \centering
 \includegraphics[width=0.98\columnwidth]{figs/fig_consistency.pdf}
 \caption{Monte-Carlo position NEES versus time (EKF, marginalized particle filter,
-and batch FGO) with the \SI{95}{\percent} $\chi^2_2$ band; the EKF and FGO stay
-inside it while the particle filter sits far above (ideal \num{2}, dotted).}
+and batch FGO) with the \SI{95}{\percent} $\chi^2_2$ band (ideal \num{2}, dotted).
+NEES divides each estimator's error by its \emph{own} reported covariance, so a
+lower curve means a more conservative filter, not a more accurate one; the EKF's
+larger errors over its larger causal covariance can plot below the more accurate
+smoother. Accuracy is compared by DRMS in the text.}
 \label{fig:consistency}
 \end{figure}
 
@@ -1315,7 +1327,8 @@ inside it while the particle filter sits far above (ideal \num{2}, dotted).}
 \centering
 \includegraphics[width=0.98\columnwidth]{figs/fig_sigma.pdf}
 \caption{North and East position error within the estimator $\pm2\sigma$ bands
-(representative simulated FGO run).}
+(representative simulated run of the batch FGO; the envelope is the smoother's own
+reported uncertainty, so this checks credibility, not accuracy).}
 \label{fig:sigma}
 \end{figure}
 
