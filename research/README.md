@@ -299,4 +299,47 @@ features — which is exactly what every FGO result here uses.
 - **Sensor calibration**: rerun `fgo_sensor` with a wide-θ maneuver profile to
   convert the weak parameter recovery into clean recovery.
 
+## 8. Follow-up experiments (2026-07-17) and the paper-scope decision
+
+Three follow-ups probed how far the graph extensions carry on real data. All
+outputs are committed CSVs / CI artifacts.
+
+**8a. Current-channel mechanism check** (`fgo_current_corr.jl`, line 1003.02):
+the 14 recorded current channels linearly explain **28–39 %** of the raw cabin
+interference (strobe, fuel pump, INS heater lead) but only **2–6 %** of the
+post-fit windowed-FGO residual — the time-varying β + FOGM S absorb the
+current-aligned component almost entirely — and Huber down-weighting concentrates
+**2.6–3.6×** on current-switching epochs (strobe activity ↔ |residual| corr 0.55
+on Mag 5). Complete result; cited in the paper (§VI-C).
+
+**8b. Sensor-error factors on real data** (`fgo_sensor_real.jl`, compensated
+Mag 1, cumulative ablation): **mixed and line-dependent** — monotone improvement
+on 1003.02 (14.7 → 12.7 m, −14 %) but monotone degradation on 1007.06
+(17.4 → 21.6 m, +24 %). Interpretation: the OPM error terms are defined in the
+sensor–field angle ψ, which depends on an **assumed optical-axis orientation**
+(body-x here); SGL documents neither the axis nor the sensor's error datasheet,
+so blind application turns dead-zone weighting into an arbitrary attitude-dependent
+reweighting — helps by luck on one line geometry, hurts on another. Lesson:
+sensor-error factors need documented sensor metadata; not claimable on SGL.
+
+**8c. Current-augmented compensation basis** (`fgo_current_basis.jl`,
+`A_extra` = causally z-scored current channels, 4 counted lines × Mag 4/5):
+random-walk γ **fails 8/8** (validates the physics: coupling geometry is fixed →
+γ must be static); static γ and attitude-modulated triplets improve **6/8**
+(−5 to −19 %, e.g. 1007.06 Mag 4 32.7 → 26.6 m) but **fail 2/8 badly**
+(Eastern Mag 4 cases, +65–88 %). Root cause of the failures: causal first-10-min
+z-scoring explodes the scale of channels that are quiet during warm-up
+(γ̂ = −10 964 nT/A for the fuel pump on 1003.08 is the smoking gun); γ̂ cross-line
+replication is partial (com radio −186/−129/−85 nT/A: sign and order reproduce;
+switching channels do not). Promising but not robust — needs principled channel
+scaling/gating before it is claimable.
+
+**Paper-scope decision**: the manuscript now makes a single claim — cold-start
+aeromagnetic compensation as **joint estimation in a windowed factor graph** —
+with 8a kept as the real-data mechanism check. The simulated sensor-error factor
+study (§3 above) and 8b/8c are recorded here and in the code but removed from the
+paper's contribution list; the conclusion states the honest condition (documented
+sensor metadata; principled telemetry scaling) under which each extension becomes
+claimable. `src/fgo_sensor.jl` and all experiments remain in the repo.
+
 See the commit history on this branch for the full development trail.

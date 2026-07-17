@@ -199,14 +199,13 @@ networks~\cite{nerrise2024}, and model-stability studies of the regression in
 gradiometry~\cite{noriega2015}. The exception most relevant here is the online
 EKF+TL+NN of~\cite{hager2026}, which carries an online-trained residual network
 inside the filter to mop up the un-modeled remainder, and is, to our knowledge, the
-strongest reported cold-start result on the benchmark. On top of the platform field,
-the scalar optically-pumped magnetometers used for the cabin channels add their own
-orientation-dependent errors---heading error and equatorial dead
-zones~\cite{hager2026b,wang2020}. This paper takes on the \emph{temporal} difficulty
-fully---online, joint estimation of a time-varying compensation---and the
-physically structured part of the representational one, namely the scalar-sensor
-errors; the unstructured, current-driven remainder that a network is designed to
-absorb is left outside its scope.
+strongest reported cold-start result on the benchmark. This paper takes on the
+\emph{temporal} difficulty fully---online, joint estimation of a time-varying
+compensation. The representational gap it does not model term-by-term: instead of a
+learned remainder, the estimator absorbs what the TL basis misses structurally,
+through the time-varying coefficients, a colored disturbance state, and a robust
+kernel, and Section~\ref{sec:results} verifies against the recorded platform
+currents how much of the remainder this accounts for.
 
 % P4: Cluster A -- Bayesian filtering / map matching
 Recursive Bayesian filtering is the standard machinery for map-matching
@@ -287,11 +286,10 @@ factor-graph smoothing (cluster~C), which can defer commitment and estimate
 structured nuisance variables jointly, has not been applied to this problem, nor has
 anyone characterized when the joint problem is even observable. What is missing is
 an estimator that (i)~defers commitment so that late-arriving calibration
-information corrects early navigation states, (ii)~represents the compensation (and
-the physical sensor errors of the scalar magnetometer) as first-class,
-time-varying variables rather than a black box, and (iii)~comes with an explicit
-condition for when position and compensation can be separated at all. This paper
-supplies all three.
+information corrects early navigation states, (ii)~represents the compensation as
+first-class, time-varying variables rather than a black box, and (iii)~comes with
+an explicit condition for when position and compensation can be separated at all.
+This paper supplies all three.
 
 % P7: Proposed approach + contributions
 In this work we cast magnetic-anomaly navigation as a factor graph and, within it,
@@ -327,14 +325,6 @@ The paper makes the following contributions:
         gradient). From it we derive a concrete exogeneity design rule for
         choosing compensation features that a filter tuned by trial and error
         cannot see (Section~\ref{sec:observability}).
-  \item \textbf{Physical sensor-error factors.} We add physically motivated
-        optically-pumped-magnetometer error terms: a harmonic heading error carried
-        as extra graph variables, and a dead-zone attenuation handled as a
-        heteroscedastic reweighting of the scalar measurement. A controlled
-        cumulative ablation then shows which of them are load-bearing. These are
-        model terms that a position-only estimator cannot represent, and they let
-        the graph absorb structured sensor error that would otherwise leak into the
-        position estimate (Section~\ref{sec:method}, Table~\ref{tab:sensor}).
   \item \textbf{Cold-start capability, validated against a reproduced baseline.}
         Deferring commitment over the window lets the estimator stay bounded from a
         cold start with no calibration flight and no learned component. To measure
@@ -353,7 +343,7 @@ The paper makes the following contributions:
 The remainder of this paper is organized as follows.
 Section~\ref{sec:background} states the INS error model, the measurement, and the
 batch MAP problem. Section~\ref{sec:method} develops the sliding-window smoother
-and the compensation and sensor-error factors. Section~\ref{sec:observability}
+and the compensation factors. Section~\ref{sec:observability}
 establishes the observability condition. Section~\ref{sec:baseline} describes the
 reimplemented EKF+TL+NN baseline, and Section~\ref{sec:results} reports and
 interprets the experiments. Section~\ref{sec:conclusion} concludes and states the
@@ -369,7 +359,7 @@ is the Gaussian density; and $\lVert\mathbf{v}\rVert^2_{\mathbf{M}}=
 \centering
 \includegraphics[width=0.92\textwidth]{figs/fig_pipeline.pdf}
 \caption{Proposed estimator: the sensors feed a factor graph of navigation,
-online TL compensation, and optional sensor-error variables, solved over a
+online TL compensation, solved over a
 fixed-lag window.}
 \label{fig:pipeline}
 \end{figure*}
@@ -516,11 +506,10 @@ from the same evidence, and Section~\ref{sec:observability} characterizes when t
 joint problem is well-posed.
 
 \section{Method}\label{sec:method}
-The proposed estimator (Fig.~\ref{fig:pipeline}) represents navigation, online
-compensation, and optional sensor-error states as variables of a single factor
+The proposed estimator (Fig.~\ref{fig:pipeline}) represents navigation and online
+compensation as variables of a single factor
 graph, and solves it over a fixed-lag sliding window by robust Gauss--Newton. This
-section develops the factors, the windowing, the robust solver, and the
-sensor-error terms.
+section develops the factors, the windowing, and the robust solver.
 
 \subsection{Online TL coefficients as graph variables}
 We append the compensation coefficients $\boldsymbol{\beta}$ to the state, so the
@@ -561,8 +550,7 @@ factor families, drawn explicitly in Fig.~\ref{fig:graph}:
 \end{enumerate}
 The INS mechanization, the fluxgate (through $\mathbf{A}_t$), and the anomaly map
 (through $h$ and $\mathbf{g}_t$) enter as known factor parameters, not as
-estimated variables; the optional sensor-error variables $\boldsymbol{\theta}$ of
-Section~\ref{sec:method}-F attach to every measurement factor when enabled. Two
+estimated variables. Two
 implementation details: in the online estimator only the horizontal components of
 $\mathbf{g}_t$ are used (the vertical channel is baro-damped and the map is
 evaluated at survey altitude), whereas the batch validation of
@@ -597,7 +585,7 @@ mid-window, the residual attribution and the linearization points of the
 gate, keeps every measurement, merely down-weighting what the current model cannot
 yet explain. The breadth study isolates the two effects: the window alone, with no
 robust kernel, already stays bounded on every counted case
-(Section~\ref{sec:results}-D), so the load-bearing mechanism is the windowed
+(Section~\ref{sec:results}-C), so the load-bearing mechanism is the windowed
 relinearization, with the kernel as an accuracy refinement.
 
 \smallskip\noindent\textbf{Absorbing the non-Tolles--Lawson remainder.}
@@ -626,8 +614,8 @@ $\boldsymbol{\beta}_t$ may only absorb signal that is not collinear with the
 map gradient $\mathbf{g}_t$, so genuine map information is not silently explained
 away as interference. The trade it makes, a higher compensation residual than the
 network in exchange for navigation robustness, is quantified with the cold-start
-results in Section~\ref{sec:results}-C, and the account itself is checked against
-the recorded platform-current channels in Section~\ref{sec:results}-D.
+results in Section~\ref{sec:results}-C, where the account is also checked
+against the recorded platform-current channels.
 
 \begin{figure*}[t]
 \centering
@@ -635,7 +623,7 @@ the recorded platform-current channels in Section~\ref{sec:results}-D.
 \caption{Factor graph of one window: the 18-state INS error chain $\mathbf{x}_t$ and
 the time-varying TL chain $\boldsymbol{\beta}_t$, coupled by robust
 scalar-magnetometer factors. Dashed arrows are known factor parameters; the dashed
-node $\boldsymbol{\theta}$ holds the optional sensor-error variables.}
+node $\boldsymbol{\theta}$ holds optional extension variables.}
 \label{fig:graph}
 \end{figure*}
 
@@ -711,12 +699,12 @@ with a diffuse prior on $\boldsymbol{\beta}$ (large $\mathbf{P}_0$ block) so the
 start is not biased toward zero interference, and the FOGM disturbance state absorbs
 the initial mismatch while the coefficients converge; subsequent windows inherit the
 tight carried covariance and converge in a few Gauss--Newton iterations
-(typically $3$--$5$; Sec.~\ref{sec:results}-F). This
+(typically $3$--$5$; Sec.~\ref{sec:results}-E). This
 warm-start is why the per-window iteration count stays low despite the nonlinearity
 of the map term.
 
 \subsection{Robust kernel and reweighting}
-Map error, transient interference, and dead-zone measurements produce heavy-tailed
+Map error and transient interference produce heavy-tailed
 residuals that a quadratic cost over-weights. We use a Huber kernel~\cite{huber1964}
 \begin{equation}
 \rho(u)=\begin{cases}\tfrac12 u^2,& |u|\le\delta,\\
@@ -770,40 +758,7 @@ compensation the batch graph and a filter--smoother pass are equivalent, so noth
 here rests on ``smoothing beats filtering.'' What the graph adds beyond
 Lemma~\ref{lem:rts} is exactly what the lemma's hypotheses exclude: the jointly
 estimated, time-varying $\boldsymbol{\beta}$, the non-Gaussian robust kernel
-of~\eqref{eq:huber}, the sensor-error variables of Section~\ref{sec:method}-F, and
-the fixed-lag windowing that keeps latency bounded.
-
-\subsection{Physical sensor-error factors}
-The graph representation admits error states that a position-only grid or
-point-mass estimator cannot carry. Beyond TL we optionally augment
-$\boldsymbol{\chi}$ with three physically motivated scalar-magnetometer error
-variables, each appearing additively in the residual~\eqref{eq:resid}, plus one
-measurement re-weighting:
-\begin{enumerate}
-\item OPM heading error, modeled as the cosine-harmonic expansion of the
-optically-pumped (scalar-atomic) magnetometer in the sensor--field angle
-$\psi_t=\angle(\hat{\mathbf{e}},\mathbf{B}_t)$,
-$b^{\mathrm{hdg}}_t=\sum_{n\in\{1,2,4\}}c_n\cos(n\psi_t)$~\cite{hager2026b,wang2020},
-with coefficients $\{c_n\}$ as graph variables; the $n{=}1$ term is the vector
-light shift and $n{=}2$ the nonlinear Zeeman effect. Because $\psi_t$ is known
-from attitude and IGRF, the term is linear in $\{c_n\}$ and, as in the
-Tolles--Lawson case~\cite{wang2020}, enters the graph as an ordinary linear
-regressor;
-\item Hard-iron bias $b^{\mathrm{hi}}$, a constant offset variable;
-\item Linear drift $b^{\mathrm{dr}}_t=\gamma_0+\gamma_1 t$, capturing slow
-electronics drift;
-\item Dead-zone weight: not a graph variable but a heteroscedastic
-measurement information $R_t^{-1}=R^{-1}\max(|\cos\psi_t|,\epsilon)^2$
-($\epsilon{=}0.05$) that follows the OPM signal-amplitude collapse near the
-equatorial dead zone (field $\perp$ optical axis)~\cite{hager2026b} and
-de-weights those samples (a de-weighting any estimator could apply; it is
-included for completeness of the sensor model).
-\end{enumerate}
-The augmented residual is $r_t=z_t-h(\mathbf{p}_t)-\mathbf{A}_t^{\top}\boldsymbol{\beta}_t
--S_t-b^{\mathrm{hdg}}_t-b^{\mathrm{hi}}-b^{\mathrm{dr}}_t$. Each term is exogenous to
-position (Section~\ref{sec:observability}), so it can be identified without stealing
-map information; their observability is limited only by how much the flight excites
-the corresponding regressor (e.g.\ the heading harmonics need attitude variation).
+of~\eqref{eq:huber}, and the fixed-lag windowing that keeps latency bounded.
 
 \section{Observability of Joint Compensation and Navigation}
 \label{sec:observability}
@@ -992,7 +947,7 @@ task and are what prior work~\cite{gnadt2020,canciani2017,hager2026} reports;
 measurement flight (survey traverses at \SI{400}{} and \SI{800}{\meter});
 its lines 1003.02 and 1003.08 are straighter than the free-flight legs. Flt1006 is
 a calibration-maneuver flight, so we set its single short line aside
-(Section~\ref{sec:results}-D), and the map-building flights (Flt1004--1005) are not
+(Section~\ref{sec:results}-C), and the map-building flights (Flt1004--1005) are not
 used. Two honest points remain. First, none of these is a dedicated long,
 straight-and-level operational transit; the free-flight and survey legs carry more
 attitude variation, which stresses compensation but also aids TL
@@ -1304,55 +1259,6 @@ Proposed (fixed-lag FGO) & \ding{51} & \ding{51} & \ding{51} & \ding{51} \\
 \end{tabular}
 \end{table}
 
-\subsection{Sensor-error factors (simulation)}
-To exercise the sensor-error factors of Section~\ref{sec:method} we inject the
-optically-pumped-magnetometer error model of~\cite{hager2026b,wang2020} into a
-simulated flight (free-inertial reference \SI{31.1}{\meter}): a cosine-harmonic
-heading error at orders $\{1,2,4\}$ (\SI{7.6}{\nano\tesla} RMS), a fluxgate
-hard-iron bias, a linear drift, and the equatorial-dead-zone noise amplification
-$1/\max(|\cos\psi|,\epsilon)$. We then enable the corresponding graph variables
-cumulatively; Table~\ref{tab:sensor} reports the result. With no sensor-error
-states the estimate is worse than free inertial (\SI{42.9}{\meter}): the
-unmodeled error corrupts the map aiding, exactly the mechanism of
-Proposition~\ref{prop:obs}. Enabling all four factors reduces the error to
-\SI{6.2}{\meter}, an \SI{86}{\percent} reduction, monotone in this order. Because
-the factors are enabled cumulatively in a single order, Table~\ref{tab:sensor}
-attributes marginal gains only for that order: the largest single-step drop comes
-from the heading harmonics ($42.9\!\rightarrow\!18.9$\,m), followed by the
-dead-zone weighting ($\rightarrow\!15.5$\,m, now load-bearing because the injected
-dead-zone noise is heteroscedastic), the hard-iron bias
-($\rightarrow\!8.1$\,m), and the linear drift, whose rate the estimator recovers
-cleanly ($\hat{\gamma}_1\!=\!0.018$ versus a true $0.020$). The heading
-coefficients themselves are poorly identified ($\hat{c}_1\!=\!3.8$ versus a true
-$10$): level flight sweeps the sensor--field angle by only about
-\SI{12}{\degree}, so the harmonic regressor is barely excited, an observability
-property of the trajectory, consistent with the Remark of
-Section~\ref{sec:observability}, that a maneuvering flight would relieve, and the
-gain to navigation comes from the fitted combination over the observed angle
-range, not from the individual coefficients. The Huber kernel gives similar values
-(within \SI{2}{\meter}; it helps most at the dead-zone step). Two caveats bound
-this study: it is simulation-only, and the injected errors share the estimator's
-functional form, so it demonstrates that the graph formulation can carry and
-recover such states, not that these models capture real sensor behavior.
-
-\begin{table}[t]
-\caption{Sensor-error factors (simulation), enabled cumulatively; DRMS [m].
-Free-inertial \SI{31.1}{\meter}; non-robust solver (Huber within \SI{2}{\meter}).}
-\label{tab:sensor}
-\centering
-\begin{tabular}{lr}
-\toprule
-Graph variables enabled & DRMS \\
-\midrule
-none (map aiding only) & 42.9 \\
-$+$ heading harmonics $\{1,2,4\}$ & 18.9 \\
-$+$ dead-zone weight & 15.5 \\
-$+$ hard-iron bias & 8.1 \\
-\textbf{$+$ linear drift (full)} & \textbf{6.2} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
 \subsection{Consistency and statistical significance}
 Each real line provides a single physical realization, so its DRMS is a point
 estimate and its measurement noise cannot be resampled. To assess statistical
@@ -1372,7 +1278,7 @@ half-widths of \SI{0.2}{}, \SI{0.4}{}, and \SI{0.8}{\meter}. Even on this clean
 sensor the factor graph separates cleanly from both recursive baselines---its
 interval does not overlap theirs---while the EKF and the particle filter are
 statistically indistinguishable in accuracy. The larger cold-start separations are
-in Sections~\ref{sec:results}-C and \ref{sec:results}-D; the purpose of this study
+in Sections~\ref{sec:results}-B and \ref{sec:results}-C; the purpose of this study
 is consistency.
 
 For consistency we use the per-axis two-degree-of-freedom position NEES,
@@ -1430,11 +1336,10 @@ These same properties make the estimator compatible with real-time operation. It
 committed output lags real time by the overlap $L_o$, here \SI{90}{\second}, a
 latency that suits the map-aiding role, in which the INS supplies the high-rate
 solution and the smoother corrects it periodically, and that the designer trades
-against accuracy through $L_o$. The factor interface is modular, so the
-compensation, sensor-error, and map factors can be added or removed without touching
-the solver, and one implementation then covers the calibrated case with frozen
-coefficients, the cold-start case with adaptive coefficients, and the
-augmented-sensor case. Integrating it with an operational system amounts to feeding
+against accuracy through $L_o$. The factor interface is modular, so
+compensation and map factors can be added or removed without touching
+the solver, and one implementation then covers both the calibrated case with frozen
+coefficients and the cold-start case with adaptive coefficients. Integrating it with an operational system amounts to feeding
 the INS mechanization, fluxgate, and scalar magnetometer streams into the graph and
 reading back the corrected position at the commit rate. The main tuning burden is
 the two window parameters and the compensation process noise $\mathbf{Q}^{\beta}$,
@@ -1446,9 +1351,7 @@ estimation and used the formulation to solve the cold-start compensation problem
 jointly with navigation. The Tolles--Lawson coefficients enter the graph as
 time-varying variables of a fixed-lag sliding-window smoother, so the compensation
 adapts along the flight and late-arriving calibration information corrects early
-navigation states, the mechanism a one-pass causal filter lacks; physically
-modeled scalar-magnetometer error terms (heading harmonics, hard-iron bias, drift,
-and dead-zone reweighting) attach to the same graph as ordinary variables; and a
+navigation states, the mechanism a one-pass causal filter lacks; and a
 necessary-and-sufficient joint-observability condition, with its exogeneity rule
 and endogeneity cancellation, states when position and compensation can be
 separated at all. On real SGL~2020 data the estimator stays bounded from a cold
@@ -1457,17 +1360,22 @@ online-TL EKF and a marginalized particle filter diverge, and it is more accurat
 on every such case than a reimplemented online EKF+TL+NN, with no neural network
 and no calibration flight. A simulation Monte-Carlo shows its reported covariance
 is consistent and conservative where the particle filter's is over-confident, and
-a cumulative ablation shows the physical sensor-error factors recover most of an
-injected sensor-error budget.
+the recorded platform currents confirm the absorption mechanism: the current
+channels explain a third of the raw cabin interference but almost none of the
+post-fit residual.
 
 Several limitations bound the study. Each real line is a single physical
 realization, so its DRMS is a point estimate; the Monte-Carlo supplies
 distributional statements in simulation only. The baseline set, though it now
 spans a weak causal filter, the strongest reported causal method, and a particle
 filter, still lacks a grid or point-mass MMSE
-map-matcher~\cite{bergman1999,nordlund2009}. The sensor-error factors are
-validated against injected, model-matched errors in simulation, not against a
-physical optically-pumped magnetometer. And none of the SGL~2020 lines is a long,
+map-matcher~\cite{bergman1999,nordlund2009}. The compensation basis is
+attitude-only: physically structured sensor-error states (heading harmonics, dead
+zones) and direct regression of current telemetry are natural graph extensions, but
+our exploratory tests show that applying either blindly---without documented sensor
+hardware and orientation, or with na\"{\i}vely scaled telemetry---can help or hurt
+by tens of percent depending on the line, so neither is claimed here. And none of
+the SGL~2020 lines is a long,
 straight-and-level operational transit: the attitude content that stresses
 compensation also excites the TL regressor and aids its observability, so
 performance under the weak excitation of a pure cruise is not established here.
@@ -1475,12 +1383,12 @@ Short lines remain hard for every method, an information limit rather than an
 estimator one.
 
 These limitations set the agenda for further work: extending the evaluation to the
-full SGL line set and a grid or point-mass baseline; demonstrating the
-sensor-error factors on flight data with genuine optically-pumped-magnetometer
-heading error, with maneuvers wide enough to make the harmonic coefficients
-cleanly identifiable; testing a low-excitation operational cruise; and
-sharpening the geometric observability condition into a quantitative
-identifiability screen. None of these qualifications affects the central and
+full SGL line set and a grid or point-mass baseline; making the graph extensions
+robust enough to claim---sensor-error states on a campaign whose sensor hardware
+and mounting are documented, and current-telemetry regressors with principled
+channel scaling and gating, both of which the exogeneity rule already sanctions;
+testing a low-excitation operational cruise; and sharpening the geometric
+observability condition into a quantitative identifiability screen. None of these qualifications affects the central and
 reproducible finding: carrying the compensation as time-varying variables of a
 windowed factor graph is sufficient to survive the cold start and to match or beat
 an NN-augmented causal filter on this benchmark, with every estimated quantity a
