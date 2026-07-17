@@ -112,7 +112,7 @@ function fgo_online(lat, lon, alt, vn, ve, vd, fn, fe, fd, Cnb, meas,
                                  date=date,core=core,terms=terms,Bt_scale=Bt_scale,
                                  robust=robust,robust_c=robust_c,obs_gate=obs_gate,
                                  obs_gate_thresh=obs_gate_thresh,obs_gate_min=obs_gate_min,
-                                 n_iter=n_iter,tol=tol,silent=silent)
+                                 A_extra=A_extra,n_iter=n_iter,tol=tol,silent=silent)
     end
 
     N      = length(lat)
@@ -250,7 +250,7 @@ information; the committed means are unaffected).
 """
 function fgo_online_window(lat, lon, alt, vn, ve, vd, fn, fe, fd, Cnb, meas,
                            Bx, By, Bz, dt, itp_mapS, x0_TL, P0, Qd, R;
-                           win, overlap, kwargs...)
+                           win, overlap, A_extra = nothing, kwargs...)
     N     = length(lat)
     ny    = size(meas,2)
     nx    = size(P0,1)
@@ -276,9 +276,13 @@ function fgo_online_window(lat, lon, alt, vn, ve, vd, fn, fe, fd, Cnb, meas,
     while i0 <= N
         i1 = min(i0+Lw-1, N)
         S  = i0:i1
+        # extra compensation columns are per-epoch rows: slice them to the window
+        Ax = A_extra === nothing ? nothing :
+             (A_extra isa AbstractVector ? A_extra[S] : A_extra[S,:])
         res = fgo_online(lat[S],lon[S],alt[S],vn[S],ve[S],vd[S],fn[S],fe[S],fd[S],
                          Cnb[:,:,S],meas[S,:],Bx[S],By[S],Bz[S],dt,itp_mapS,
-                         x0_TL,P0_c,Qd,R; win=0.0,overlap=0.0,x0_prior=x0_pr, kwargs...)
+                         x0_TL,P0_c,Qd,R; win=0.0,overlap=0.0,x0_prior=x0_pr,
+                         A_extra=Ax, kwargs...)
 
         gc1 = (i1==N) ? N : min(i0+stride-1, N)   # committed global end
         lc1 = gc1-i0+1                            # local index of commit end

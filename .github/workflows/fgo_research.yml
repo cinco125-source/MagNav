@@ -32,7 +32,7 @@ jobs:
   benchmark:
     name: Flt1003 FGO benchmark
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     permissions: # actions: cache eviction; contents: commit MC result CSVs back
       actions: write
       contents: write
