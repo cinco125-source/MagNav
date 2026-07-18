@@ -354,8 +354,8 @@ The remainder of this paper is organized as follows.
 Section~\ref{sec:background} states the INS error model, the measurement, and the
 batch MAP problem. Section~\ref{sec:method} develops the sliding-window smoother
 and the compensation factors. Section~\ref{sec:observability}
-establishes the observability condition. Section~\ref{sec:baseline} describes the
-online EKF+TL+NN baseline, and Section~\ref{sec:results} reports and
+establishes the observability condition. Section~\ref{sec:results} describes the
+baselines and reports and
 interprets the experiments. Section~\ref{sec:conclusion} concludes and states the
 limitations.
 
@@ -474,7 +474,7 @@ maximum-a-posteriori (MAP) estimate of Problem~\ref{prob:joint}. Because the
 dynamics are Markov and each measurement depends only on the current state, the
 posterior splits into one factor per piece of information: a prior, one dynamics
 factor per step for each of the two chains, and one measurement factor per epoch,
-\vspace{-8pt}
+{\setlength{\abovedisplayskip}{2pt}\setlength{\abovedisplayshortskip}{2pt}%
 \begin{equation}
 \begin{aligned}
 p(\boldsymbol{\chi}_{1:N}\mid z_{1:N})\;\propto\;
@@ -484,7 +484,7 @@ p(\boldsymbol{\beta}_{t+1}\mid\boldsymbol{\beta}_t)\\[-2pt]
 &\;\times\prod_{t=1}^{N} p(z_t\mid\boldsymbol{\chi}_t).
 \end{aligned}
 \label{eq:factorization}
-\end{equation}
+\end{equation}}
 This factorization is a factor graph~\cite{kschischang2001,dellaert2017}: a
 bipartite graph whose variable nodes carry the unknowns and whose factor nodes carry
 the individual densities in~\eqref{eq:factorization}, each edge joining a factor to
@@ -877,46 +877,6 @@ unobservable regardless of the compensation, a map-information floor that bounds
 every estimator, which we observe on the shortest line in Section~\ref{sec:results}.
 \end{remark}
 
-\section{The Online EKF+TL+NN Baseline}\label{sec:baseline}
-The strongest causal competitor is the online NN-in-EKF lineage: the filter
-augments the Pinson error state with the online TL coefficients
-$\boldsymbol{\beta}$ and the weights of a small feed-forward network, all
-propagated as EKF states and updated online against~\eqref{eq:meas}. The lineage
-originates with Gnadt, whose MagNav.jl package provides its reference
-implementation~\cite{gnadt2022}, and was recently extended
-in~\cite{hager2026}. We baseline against the reference implementation, tuned by
-us for a stable cold start; we do not claim to reproduce the specific extended
-filter of~\cite{hager2026}.
-
-We run this reference filter on its standard attitude-derived TL features. The one
-substantive adaptation a cold start forces is initialization, since there is no
-calibration flight to warm-start from, and a naive port that skips it diverges: the
-raw uncompensated offset ($-1724\,\mathrm{nT}$ on Mag~4, $+310\,\mathrm{nT}$ on
-Mag~5) drives the network output bias to $\sim\!5\times10^{4}\,\mathrm{nT}$ and the
-filter to \texttt{NaN} within seconds. We therefore initialize the network output
-normalization data-drivenly from the first five minutes of onboard interference, and
-set the NN-weight covariance by hand as an explicit adaptation-rate knob rather than
-through the package's training-data warm start.
-
-We keep the uncompensated scalar out of the feature set, the standard choice here,
-and one the observability analysis makes mandatory. A position-dependent input has
-sensitivity $\partial z_t/\partial\mathbf{p}=\mathbf{g}_t$, so a fitted coefficient
-$\beta_z$ turns the effective position row into $(1-\beta_z)\mathbf{g}_t$; as
-$\beta_z\!\to\!1$ the network quietly absorbs the map signal while the residual stays
-small and horizontal position drifts to kilometres, condition (iii) of
-Proposition~\ref{prop:obs} failing by construction. The recent augmentation of the
-feature set with that scalar~\cite{hager2026} avoids this only by freezing the
-network after its transient; ours keeps learning, where the endogenous input would
-be fatal.
-
-The tuned filter carries the permanent TL group and a single-hidden-layer
-network of eight units on that group (\num{41} network-weight states), with a FOGM
-$(\sigma,\tau)=(\SI{3}{\nano\tesla},\SI{180}{\second})$ and measurement
-variance $12^2\,\mathrm{nT}^2$. It reaches \num{40.0}/\SI{17.5}{\meter} on Mag~4/5
-(Table~\ref{tab:1007}), consistent with the cold-start operating points published
-for this lineage on this line~\cite{gnadt2022,hager2026}. All numbers compared in
-Section~\ref{sec:results} are produced by our own runs, under one protocol.
-
 \section{Experiments and Results}\label{sec:results}
 
 \subsection{Dataset, maps, and protocol}
@@ -1005,6 +965,29 @@ agree to within \SI{1}{\meter}, an empirical check of Lemma~\ref{lem:rts}.
 inertial (DRMS in the legend).}
 \label{fig:poserr}
 \end{figure}
+
+\subsection{Baselines}\label{sec:baseline}
+The strong causal competitor is the online EKF+TL+NN lineage that augments the
+Pinson error state with the TL coefficients $\boldsymbol{\beta}$ and the weights of
+a small feed-forward network, all propagated as filter states and updated
+online~\cite{gnadt2022,hager2026}. We run its reference
+implementation~\cite{gnadt2022}, tuned by us for a stable cold start, and do not
+claim to reproduce the extended filter of~\cite{hager2026}. Cold start forces one
+substantive change: with no calibration flight to warm-start from, we initialize the
+network output normalization data-drivenly from the first five minutes of onboard
+interference; a naive port instead drives the network bias to
+$\sim\!5\times10^{4}$\,nT and the filter to \texttt{NaN}. We keep the uncompensated
+scalar out of the network inputs, as Proposition~\ref{prop:obs}(iii) requires: a
+position-dependent input carries sensitivity $\mathbf{g}_t$, so the network absorbs
+the map signal and position drifts while the residual stays small (the
+scalar-augmented variant~\cite{hager2026} escapes this only by freezing the network
+after its transient). The tuned filter uses the permanent TL group with an
+eight-unit hidden layer, a FOGM $(\sigma,\tau)=(\SI{3}{\nano\tesla},\SI{180}{\second})$,
+and measurement variance $12^2\,\mathrm{nT}^2$, reaching \num{40.0}/\SI{17.5}{\meter}
+on Mag~4/5 (Table~\ref{tab:1007}), consistent with published cold-start operating
+points~\cite{gnadt2022,hager2026}. We also compare a weak online-TL EKF and a
+marginalized particle filter carrying the TL coefficients; all numbers are our own
+runs under one protocol.
 
 \subsection{Cold-start line vs.\ online EKF+TL+NN}
 The central comparison is the cold start on uncompensated cabin magnetometers,
