@@ -18,6 +18,8 @@ on:
       - '.github/workflows/mpf_rsweep.yml'
       - 'research/coldstart_trace.jl'
       - '.github/workflows/coldstart_trace.yml'
+      - 'research/mpf_clean.jl'
+      - '.github/workflows/mpf_clean.yml'
       - '.github/workflows/fgo_research.yml'
   workflow_dispatch:
 

@@ -1,0 +1,99 @@
+##* MPF clean-signal control: is the RBPF sound, or under-powered?
+#
+# The MPF fails on the uncompensated cabin magnetometers. Is that because the PF
+# machinery is weak (too few particles / poor proposal), or because it is sensitive
+# to the residual measurement-model error (leftover interference)? This control runs
+# the SAME MPF on the COMPENSATED stinger mag_1_c, where the interference is already
+# removed, so the measurement matches the map. EKF and FGO on the same clean signal
+# are the reference. If MPF is bounded on mag_1_c but diverges on mag_5_uc, the
+# failure is sensitivity to residual interference, not the sampler itself.
+#
+# Usage: julia --project=. research/mpf_clean.jl
+
+using MagNav
+using CSV, DataFrames
+using LinearAlgebra, Statistics
+using Random: seed!
+seed!(33)
+
+include(joinpath(@__DIR__,"mpf_online.jl"))
+const MPF_NP = 300
+
+MEAS_VAR = 12.0^2
+FOGM_SIG = 3.0
+FOGM_TAU = 180.0
+TERMS    = [:permanent,:induced,:eddy,:bias]
+
+LINES = [(:Flt1003,1003.02), (:Flt1003,1003.08),
+         (:Flt1007,1007.02), (:Flt1007,1007.06)]
+flights = unique(first.(LINES))
+
+df_dir    = joinpath(@__DIR__,"..","examples","dataframes")
+df_flight = DataFrame(CSV.File(joinpath(df_dir,"df_flight.csv")))
+df_flight[!,:flight]   = Symbol.(df_flight[!,:flight])
+df_flight[!,:xyz_type] = Symbol.(df_flight[!,:xyz_type])
+df_flight[!,:xyz_file] = String.(df_flight[!,:xyz_file])
+for (i,fl) in enumerate(df_flight.flight)
+    fl in flights || continue
+    df_flight.xyz_file[i] = MagNav.sgl_2020_train(fl)
+end
+df_map = DataFrame(CSV.File(joinpath(df_dir,"df_map.csv")))
+df_map[!,:map_name] = Symbol.(df_map[!,:map_name])
+df_map[!,:map_file] = String.(df_map[!,:map_file])
+for (i,mn) in enumerate(df_map.map_name)
+    df_map.map_file[i] = MagNav.ottawa_area_maps(mn)
+end
+df_nav = DataFrame(CSV.File(joinpath(df_dir,"df_nav.csv")))
+df_nav[!,:flight]   = Symbol.(df_nav[!,:flight])
+df_nav[!,:map_name] = Symbol.(df_nav[!,:map_name])
+
+function drms(traj, lat, lon; warm=600.0)
+    m = (traj.tt .- traj.tt[1]) .>= warm
+    sqrt(mean(dlat2dn.(lat[m] .- traj.lat[m], traj.lat[m]).^2 .+
+              dlon2de.(lon[m] .- traj.lon[m], traj.lat[m]).^2))
+end
+
+results = DataFrame(flight=Symbol[],line=Float64[],signal=String[],method=String[],DRMS=Float64[])
+
+for (fl,line) in LINES
+    xyz  = get_XYZ(fl,df_flight;silent=true)
+    ind  = get_ind(xyz,line,df_nav)
+    mname= df_nav[(df_nav.flight.==fl).&(df_nav.line.==line),:map_name][1]
+    mapS = get_map(mname,df_map)
+    traj = get_traj(xyz,ind)
+    ins  = get_ins(xyz,ind;N_zero_ll=1)
+    (_,itp) = get_map_val(mapS,traj;return_itp=true)
+    flux = xyz.flux_d(ind)
+    nTL  = size(create_TL_A(flux;terms=TERMS),2)
+    (P0,Qd,R)    = create_model(traj.dt,traj.lat[1];init_pos_sigma=0.1,init_alt_sigma=1.0,
+        init_vel_sigma=1.0,meas_var=MEAS_VAR,fogm_sigma=FOGM_SIG,fogm_tau=FOGM_TAU,
+        vec_states=false,TL_sigma=fill(1.0,nTL),P0_TL=Matrix(Diagonal(fill(1.0,nTL))))
+    (P0n,Qdn,Rn) = create_model(traj.dt,traj.lat[1];init_pos_sigma=0.1,init_alt_sigma=1.0,
+        init_vel_sigma=1.0,meas_var=MEAS_VAR,fogm_sigma=FOGM_SIG,fogm_tau=FOGM_TAU)
+
+    clean = xyz.mag_1_c[ind]          # compensated stinger — interference removed
+    dirty = xyz.mag_5_uc[ind]         # uncompensated cabin mag — full interference
+
+    ekf_d(mag) = try drms(traj, (fo=run_filt(traj,ins,mag,itp,:ekf;P0=P0n,Qd=Qdn,R=Rn,
+                    core=true,run_crlb=false)).lat, fo.lon) catch e; @warn("EKF",e); Inf end
+    fgo_d(mag) = try drms(traj, (fo=run_filt(traj,ins,mag,itp,:fgo;P0=P0n,Qd=Qdn,R=Rn,
+                    core=true,run_crlb=false)).lat, fo.lon) catch e; @warn("FGO",e); Inf end
+    mpf_d(mag) = mpf_online_drms(traj,ins,mag,flux,itp,zeros(nTL),P0,Qd,R;
+                    terms=TERMS,num_part=MPF_NP)
+
+    println("\n$fl $line ($mname)")
+    for (sig, mag) in (("Mag1 (comp)", clean),)
+        for (m, d) in (("EKF", ekf_d(mag)), ("FGO", fgo_d(mag)), ("MPF", mpf_d(mag)))
+            push!(results,(fl,line,sig,m,round(d,digits=1)))
+            println("  $sig  $m  DRMS=$(round(d,digits=1)) m")
+        end
+    end
+    d = mpf_d(dirty)                  # the failing case, for contrast
+    push!(results,(fl,line,"Mag5 (uncomp)","MPF",round(d,digits=1)))
+    println("  Mag5 (uncomp)  MPF  DRMS=$(round(d,digits=1)) m")
+end
+
+CSV.write(joinpath(@__DIR__,"mpf_clean_results.csv"), results)
+println("\n=== MPF clean-signal control ===")
+show(results, allrows=true, allcols=true); println()
+println("wrote mpf_clean_results.csv")
