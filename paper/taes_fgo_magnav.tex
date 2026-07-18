@@ -100,7 +100,12 @@ position.
 \item[$\rho,\,\delta$] Robust kernel and its Huber threshold.
 \item[$\mathbf{G},\boldsymbol{\Psi}$] Stacked map-gradient and TL-regressor matrices
 over a window.
+\item[$\mathcal{N}(\cdot,\cdot)$] Gaussian density.
+\item[$\lVert\cdot\rVert_{\mathbf{M}}$] Mahalanobis norm,
+$\lVert\mathbf{v}\rVert^2_{\mathbf{M}}=\mathbf{v}^{\top}\mathbf{M}\mathbf{v}$.
 \end{IEEEdescription}
+
+\noindent Boldface lowercase denotes vectors and boldface uppercase matrices.
 
 \section{Introduction}
 
@@ -174,13 +179,13 @@ Aeromagnetic compensation is classically handled by the Tolles--Lawson (TL)
 model~\cite{tolles1950,leliak1961,bickel1979}, a regression of the interference onto
 sixteen attitude-dependent terms (permanent, induced, and eddy-current) formed from a
 three-axis fluxgate magnetometer. It faces two difficulties that are easy to conflate
-but are in fact orthogonal. The first is \emph{temporal}: the coefficients are
+but are in fact orthogonal. The first is temporal: the coefficients are
 conventionally identified on a dedicated high-altitude calibration flight of
 prescribed maneuvers, yet many operational scenarios admit none, and the coefficients
 drift with temperature and configuration. In this cold-start regime they must be
 estimated online and jointly with navigation, from the same measurements that fix
 position, a coupling that makes both estimation and its analysis substantially harder
-than the calibrated case. The second is \emph{representational}: however well its
+than the calibrated case. The second is representational: however well its
 coefficients are fit, the linear TL basis cannot span interference from platform
 currents and other non-rigid, non-attitude sources, which contribute a large fraction
 of the field on cabin-mounted sensors~\cite{gnadt2020,gnadt2022}. One difficulty is
@@ -190,9 +195,9 @@ too small.
 A public benchmark has made both concrete: the Signal Enhancement for Magnetic
 Navigation (SGL~2020) challenge dataset~\cite{gnadt2020}, with flight-grade INS,
 wingtip-stinger and cabin-mounted magnetometers, and high-resolution anomaly maps.
-Most work on it attacks the two difficulties \emph{offline}: the TL coefficients by a
+Most work on it attacks the two difficulties offline: the TL coefficients by a
 batch calibration flight, and the representational gap by learned models fit offline
-on logged data---neural-network heading-error and denoising
+on logged data, neural-network heading-error and denoising
 compensators~\cite{williams1993,gnadt2022}, physics-informed liquid-time-constant
 networks~\cite{nerrise2024}, and model-stability studies of the regression in
 gradiometry~\cite{noriega2015}. Offline learning, however, presupposes exactly
@@ -210,7 +215,7 @@ weights of a residual network as filter states learned in flight, and which has
 recently been extended with an error-state formulation and a natural-gradient
 interpretation~\cite{hager2026}; this lineage holds, to our knowledge, the
 strongest reported cold-start results on the benchmark. This paper takes on the
-\emph{temporal} difficulty fully---online, joint estimation of a time-varying
+temporal difficulty fully: online, joint estimation of a time-varying
 compensation. The representational gap it does not model term-by-term: instead of a
 learned remainder, the estimator absorbs what the TL basis misses structurally,
 through the time-varying coefficients, a colored disturbance state, and a robust
@@ -251,7 +256,7 @@ been studied in gradiometry~\cite{noriega2015}, and machine-learning-enhanced
 calibration has recently been applied to the SGL benchmark~\cite{gnadt2022}. Most
 relevant here, a residual neural network (NN) has been added on top of an online TL
 model, carried inside an EKF and trained online, to capture interference the linear
-basis misses---introduced with Gnadt's online models~\cite{gnadt2022} and recently
+basis misses, introduced with Gnadt's online models~\cite{gnadt2022} and recently
 extended in~\cite{hager2026}; this reaches good cold-start accuracy on the SGL~2020
 cabin magnetometers and holds, to our knowledge, the strongest reported cold-start
 results on that benchmark. Nevertheless, the network requires a carefully
@@ -311,7 +316,7 @@ window relinearizes is what lets it adapt along the flight, and deferring commit
 over the window is what lets late-arriving calibration correct early navigation. We
 are explicit about scope: for the linear--Gaussian INS error model the batch MAP
 estimate on the factor-graph chain equals the Rauch--Tung--Striebel (RTS)
-smoother~\cite{rauch1965}, so smoothing per se is not the contribution---the joint,
+smoother~\cite{rauch1965}, so smoothing per se is not the contribution; the joint,
 windowed estimation of a time-varying compensation is.
 The paper makes the following contributions:
 \begin{enumerate}
@@ -320,30 +325,28 @@ The paper makes the following contributions:
         factor-graph (batch MAP) estimation, and carry the online Tolles--Lawson
         coefficients as time-varying variables of a fixed-lag sliding-window graph so
         that navigation and compensation are estimated jointly. The per-window
-        relinearization makes the compensation adapt along the flight---the role a
-        learned online model plays in the competing filter---while the graph keeps
-        every quantity an explicit, physically interpretable state
-        (Section~\ref{sec:method}).
+        relinearization makes the compensation adapt along the flight, the role a
+        learned online model plays in the competing filter, while the graph keeps
+        every quantity an explicit, physically interpretable state.
   \item \textbf{Exact joint-observability condition.} We prove a necessary and
         sufficient linear-algebraic condition under which the aircraft position
         and the compensation coefficients are jointly observable from the
-        scalar magnetometer, separating three distinct failure modes---an
+        scalar magnetometer, separating three distinct failure modes: an
         unexcited trajectory, a rank-deficient compensation basis, and the subtle
-        one, a compensation subspace confounded with the anomaly gradient
-        (Section~\ref{sec:observability}).
+        one, a compensation subspace confounded with the anomaly gradient.
   \item \textbf{Cold-start capability, validated against a reproduced baseline.}
         Deferring commitment over the window lets the estimator stay bounded from a
         cold start with no calibration flight and no learned component. To measure
         this fairly we run, rather than merely cite, the online EKF+TL+NN lineage
-        of~\cite{gnadt2022,hager2026}---its reference implementation, tuned for a
-        stable cold start---and compare it, a weak online-TL EKF, and a marginalized
+        of~\cite{gnadt2022,hager2026}, its reference implementation, tuned for a
+        stable cold start, and compare it, a weak online-TL EKF, and a marginalized
         particle filter carrying the TL coefficients against the proposed smoother on
         the uncompensated cabin magnetometers, across eight cold-start cases spanning
         four lines, two flights, and two maps. The comparison isolates what the
         network buys (it keeps the causal filter bounded where online TL alone and
         the particle filter diverge) from what it does not (on every full-length line
         the smoother is the most accurate of the four), a like-for-like evaluation the
-        literature has lacked (Section~\ref{sec:results}).
+        literature has lacked.
 \end{enumerate}
 
 % P8: Organization
@@ -357,33 +360,25 @@ interprets the experiments. Section~\ref{sec:conclusion} concludes and states th
 limitations.
 
 \section{Problem Formulation}\label{sec:background}
-Throughout, boldface
-lowercase denotes vectors and boldface uppercase matrices; $\mathcal{N}(\cdot,\cdot)$
-is the Gaussian density; and $\lVert\mathbf{v}\rVert^2_{\mathbf{M}}=
-\mathbf{v}^{\top}\mathbf{M}\mathbf{v}$ is the squared Mahalanobis norm.
-
 The situation this paper addresses is the cold start: an aircraft departs with an
 uncalibrated magnetometer installation, its INS error grows, and the only absolute
 position information is a scalar magnetic reading in which the map signal and the
 aircraft's own field are mixed. The estimation task is therefore joint from the
-outset---there is no separate calibration step whose output a navigator could
+outset: there is no separate calibration step whose output a navigator could
 consume:
 
 \begin{problem}[Joint compensation and navigation]\label{prob:joint}
-Given the scalar measurements $z_{1:N}$ (Section~\ref{sec:background}-B), the
-fluxgate regressor rows $\mathbf{A}_{1:N}$ (Section~\ref{sec:background}-C), the
-anomaly map $h$, the INS mechanization (Section~\ref{sec:background}-A), and the
+Given the scalar measurements $z_{1:N}$, the
+fluxgate regressor rows $\mathbf{A}_{1:N}$, the
+anomaly map $h$, the INS mechanization, and the
 prior $(\hat{\boldsymbol{\chi}}_0,\mathbf{P}_0)$, estimate the joint trajectory
 $\boldsymbol{\chi}_{1:N}$ of navigation errors and compensation coefficients,
 $\boldsymbol{\chi}_t=(\mathbf{x}_t,\boldsymbol{\beta}_t)$.
 \end{problem}
 
 The rest of the section supplies the three models that make
-Problem~\ref{prob:joint} concrete---how the navigation error evolves
-(Section~\ref{sec:background}-A), what the scalar magnetometer measures
-(Section~\ref{sec:background}-B), and how the aircraft field enters it
-(Section~\ref{sec:background}-C)---and then casts the whole as maximum-a-posteriori
-estimation on a factor graph (Section~\ref{sec:background}-D).
+Problem~\ref{prob:joint} concrete: how the navigation error evolves, what the scalar magnetometer measures, and how the aircraft field enters it, and then casts the whole as maximum-a-posteriori
+estimation on a factor graph.
 
 \begin{figure*}[t]
 \centering
@@ -479,7 +474,7 @@ maximum-a-posteriori (MAP) estimate of Problem~\ref{prob:joint}. Because the
 dynamics are Markov and each measurement depends only on the current state, the
 posterior splits into one factor per piece of information: a prior, one dynamics
 factor per step for each of the two chains, and one measurement factor per epoch,
-\vspace{-4pt}
+\vspace{-8pt}
 \begin{equation}
 \begin{aligned}
 p(\boldsymbol{\chi}_{1:N}\mid z_{1:N})\;\propto\;
@@ -490,28 +485,28 @@ p(\boldsymbol{\beta}_{t+1}\mid\boldsymbol{\beta}_t)\\[-2pt]
 \end{aligned}
 \label{eq:factorization}
 \end{equation}
-This factorization \emph{is} a factor graph~\cite{kschischang2001,dellaert2017}: a
+This factorization is a factor graph~\cite{kschischang2001,dellaert2017}: a
 bipartite graph whose variable nodes carry the unknowns and whose factor nodes carry
 the individual densities in~\eqref{eq:factorization}, each edge joining a factor to
 the variables it constrains (Fig.~\ref{fig:graph}). Concretely, there is one
 variable node per epoch holding the joint state
-$\boldsymbol{\chi}_t=(\mathbf{x}_t,\boldsymbol{\beta}_t)$---the $18$ Pinson error
+$\boldsymbol{\chi}_t=(\mathbf{x}_t,\boldsymbol{\beta}_t)$, the $18$ Pinson error
 states of~\eqref{eq:state} and the $m\!\le\!19$ TL coefficients
-of~\eqref{eq:tlbasis}---so the graph has $N$ variable nodes and
+of~\eqref{eq:tlbasis}, so the graph has $N$ variable nodes and
 $N\,(18{+}m)$ scalar unknowns. Four factor types populate it: a single unary
-\emph{prior} factor on $\boldsymbol{\chi}_1$; $N{-}1$ binary \emph{INS dynamics}
+prior factor on $\boldsymbol{\chi}_1$; $N{-}1$ binary INS dynamics
 factors, each linking $\mathbf{x}_t$ to $\mathbf{x}_{t+1}$
-through~\eqref{eq:dyn}; $N{-}1$ binary \emph{compensation random-walk} factors,
+through~\eqref{eq:dyn}; $N{-}1$ binary compensation random-walk factors,
 each linking $\boldsymbol{\beta}_t$ to $\boldsymbol{\beta}_{t+1}$; and $N$ unary
-\emph{measurement} factors, each attached to one node $\boldsymbol{\chi}_t$
+measurement factors, each attached to one node $\boldsymbol{\chi}_t$
 through~\eqref{eq:meas}. The two dynamics families run as parallel chains that never
 touch directly; the measurement factor is the only place position and compensation
 meet, which is exactly why the two are estimated jointly and why their separability
-needs a condition (Section~\ref{sec:observability}). MAP estimation on such a graph is sparse nonlinear
+needs a condition. MAP estimation on such a graph is sparse nonlinear
 least squares: the negative logarithm of~\eqref{eq:factorization} turns each factor
-into a squared---or robust---residual, and the Gauss--Newton normal equations
+into a squared or robust residual, and the Gauss--Newton normal equations
 inherit the graph's chain sparsity, which is what makes batch solution tractable at
-flight scale (Section~\ref{sec:method}-E). Concretely, the MAP estimate minimizes
+flight scale. Concretely, the MAP estimate minimizes
 \begin{equation}
 \begin{aligned}
 J(\boldsymbol{\chi})=\;&\lVert\boldsymbol{\chi}_1-\boldsymbol{\chi}_0\rVert^2_{\mathbf{P}_0^{-1}}
@@ -571,7 +566,7 @@ factor families, drawn explicitly in Fig.~\ref{fig:graph}:
 \begin{enumerate}
   \item a joint prior on $\boldsymbol{\chi}_1$: $\mathbf{P}_0$ at cold
         start, or the smoothed mean and covariance carried from the previous
-        window (Section~\ref{sec:method}-B);
+        window;
   \item Pinson--FOGM process factors
         $\lVert\mathbf{x}_{t+1}-\boldsymbol{\Phi}_t\mathbf{x}_t\rVert^2_{\mathbf{Q}_t^{-1}}$,
         parameterized by the INS mechanization (specific force $\mathbf{f}^n$,
@@ -620,11 +615,10 @@ from which $\boldsymbol{\beta}$ could be identified and leaves free-inertial dri
 The window changes both halves of the failure. Each Gauss--Newton iteration
 relinearizes every epoch in the window, so once the coefficients begin to converge
 mid-window, the residual attribution and the linearization points of the
-\emph{early} epochs are revised retroactively; and the robust kernel, unlike a
+early epochs are revised retroactively; and the robust kernel, unlike a
 gate, keeps every measurement, merely down-weighting what the current model cannot
 yet explain. The breadth study isolates the two effects: the window alone, with no
-robust kernel, already stays bounded on every counted case
-(Section~\ref{sec:results}-C), so the load-bearing mechanism is the windowed
+robust kernel, already stays bounded on every counted case, so the load-bearing mechanism is the windowed
 relinearization, with the kernel as an accuracy refinement.
 
 \smallskip\noindent\textbf{Absorbing the non-Tolles--Lawson remainder.}
@@ -791,7 +785,7 @@ compute~\cite{rauch1965}.
 The lemma serves two ends. It licenses the fast iterated-RTS solve on the
 navigation chain, which we check against the QR path to within a metre in
 Section~\ref{sec:results}-A; and it fixes scope, since the paper's gain comes from
-precisely what the lemma's hypotheses exclude---the jointly estimated, time-varying
+precisely what the lemma's hypotheses exclude: the jointly estimated, time-varying
 $\boldsymbol{\beta}$, the robust kernel~\eqref{eq:huber}, and the fixed-lag window.
 
 \section{Observability of Joint Compensation and Navigation}
@@ -850,7 +844,7 @@ Condition (iii) is the operative one in practice. Conditions (i) and (ii) are
 routine to check; the confounding of position with compensation, by contrast,
 depends on the joint geometry of the flight path and the local map gradient, and it
 can fail only through coincidence of the flown attitude history with that
-gradient---plausible, for instance, when turns always occur at the same map features.
+gradient, plausible, for instance, when turns always occur at the same map features.
 One expects (iii) to hold for trajectories and maps in general position, but the
 condition is non-constructive: it yields no reliable scalar screening statistic, and
 in our experiments correlation-based proxies for the intersection (in-sample basis
@@ -879,7 +873,7 @@ The condition is geometric: it depends on the ranges of $\mathbf{G}$ and
 $\boldsymbol{\Psi}$ over the window, hence on the flight path and the local map
 gradient. It explains the dominant failure mode seen in practice: over a locally
 flat map $\mathbf{G}\!\approx\!\mathbf{0}$ and condition (i) fails, so position is
-unobservable regardless of the compensation---a map-information floor that bounds
+unobservable regardless of the compensation, a map-information floor that bounds
 every estimator, which we observe on the shortest line in Section~\ref{sec:results}.
 \end{remark}
 
@@ -904,12 +898,12 @@ normalization data-drivenly from the first five minutes of onboard interference,
 set the NN-weight covariance by hand as an explicit adaptation-rate knob rather than
 through the package's training-data warm start.
 
-We keep the uncompensated scalar out of the feature set---the standard choice here,
+We keep the uncompensated scalar out of the feature set, the standard choice here,
 and one the observability analysis makes mandatory. A position-dependent input has
 sensitivity $\partial z_t/\partial\mathbf{p}=\mathbf{g}_t$, so a fitted coefficient
 $\beta_z$ turns the effective position row into $(1-\beta_z)\mathbf{g}_t$; as
 $\beta_z\!\to\!1$ the network quietly absorbs the map signal while the residual stays
-small and horizontal position drifts to kilometres---condition (iii) of
+small and horizontal position drifts to kilometres, condition (iii) of
 Proposition~\ref{prop:obs} failing by construction. The recent augmentation of the
 feature set with that scalar~\cite{hager2026} avoids this only by freezing the
 network after its transient; ours keeps learning, where the endogenous input would
@@ -938,12 +932,11 @@ task and are what prior work~\cite{gnadt2020,canciani2017,hager2026} reports;
 1007.06 is our primary line for that reason. Flt1003 is a crustal-field
 measurement flight (survey traverses at \SI{400}{} and \SI{800}{\meter});
 its lines 1003.02 and 1003.08 are straighter than the free-flight legs. Flt1006 is
-a calibration-maneuver flight, so we set its single short line aside
-(Section~\ref{sec:results}-C), and the map-building flights (Flt1004--1005) are not
+a calibration-maneuver flight, so we set its single short line aside, and the map-building flights (Flt1004--1005) are not
 used. Two honest points remain. First, none of these is a dedicated long,
 straight-and-level operational transit; the free-flight and survey legs carry more
 attitude variation, which stresses compensation but also aids TL
-observability by exciting the regressor (Section~\ref{sec:observability}), so
+observability by exciting the regressor, so
 performance on a pure operational cruise is not directly established here and is
 future work. Second, the lines span two altitude regimes: four at the
 $\approx\!\SI{400}{\meter}$ survey-drape altitude and 1007.02 at
@@ -1023,10 +1016,9 @@ interference and degrades to \num{123.7}/\SI{68.1}{\meter}. Allowing the
 compensation to adapt with a \SI{5}{\minute} window recovers it to
 \num{37.0}/\SI{15.1}{\meter}, and the Huber kernel further trims transient outliers
 to \num{32.6}/\SI{14.2}{\meter}. Our online EKF+TL+NN baseline reaches
-\num{40.0}/\SI{17.5}{\meter} (Section~\ref{sec:baseline} details the
-implementation and its relation to the published operating points). The window smoother beats
-the NN-augmented filter on both sensors---\SI{7.4}{\meter} on Mag~4 and
-\SI{3.3}{\meter} on Mag~5---without any neural network, using only the linear TL
+\num{40.0}/\SI{17.5}{\meter}. The window smoother beats
+the NN-augmented filter on both sensors, \SI{7.4}{\meter} on Mag~4 and
+\SI{3.3}{\meter} on Mag~5, without any neural network, using only the linear TL
 basis carried as graph variables. All compared numbers are our own runs under one
 protocol; 1007.06 is the line on which the baseline tuning is anchored, and the
 same baseline carries to the other lines in the breadth study
@@ -1105,7 +1097,7 @@ non-Gaussian Bayesian estimator rather than a linearization.
 The baselines behave very differently, and the contrast is the point. The
 plain online-TL EKF is fragile: on the noisy Mag~4 it diverges from the cold start
 to tens of kilometres on two lines and runs off the map on a third. The particle
-filter is no more robust---it diverges past \SI{10}{\kilo\meter} on every counted
+filter is no more robust: it diverges past \SI{10}{\kilo\meter} on every counted
 case, because per-particle map-matching still cannot re-linearize the early flight
 once the coefficients drift. The neural network is what fixes this: the EKF+TL+NN
 stays finite on all eight cases, confirming that its residual network is what buys
@@ -1136,8 +1128,7 @@ basis already suffices, a cost the NN-free window avoids. Both effects favor a
 linear compensation carried in a smoother over a learned one carried in a filter,
 on this benchmark. One caveat on provenance: the EKF+TL+NN is the lineage's
 reference implementation under our tuning, matching the reported 1007.06 operating
-points to within a few metres
-(Section~\ref{sec:baseline}), but the original's per-line numbers on the other
+points to within a few metres, but the original's per-line numbers on the other
 lines are unpublished, so the comparison is against a faithful, not the
 authors', filter. Its cold-start trajectory is also numerically sensitive, so its
 per-line DRMS varies by order \SI{1}{}--\SI{2}{\meter} between runs; the values here
@@ -1262,8 +1253,8 @@ Averaged over the \num{30} seeds, after a \SI{30}{\second} warm-up, the horizont
 DRMS is \SI{1.4}{\meter} for the factor graph, \SI{4.1}{\meter} for the EKF, and
 \SI{4.9}{\meter} for the particle filter, with \SI{95}{\percent} confidence
 half-widths of \SI{0.2}{}, \SI{0.4}{}, and \SI{0.8}{\meter}. Even on this clean
-sensor the factor graph separates cleanly from both recursive baselines---its
-interval does not overlap theirs---while the EKF and the particle filter are
+sensor the factor graph separates cleanly from both recursive baselines, its
+interval does not overlap theirs, while the EKF and the particle filter are
 statistically indistinguishable in accuracy. The larger cold-start separations are
 in Sections~\ref{sec:results}-B and \ref{sec:results}-C; the purpose of this study
 is consistency.
@@ -1274,7 +1265,7 @@ is \num{2}. Averaged over all seeds and epochs the ANEES is \num{1.57} for the
 factor graph and \num{1.72} for the EKF, both below the ideal \num{2}: both report
 conservative uncertainty that bounds the true error with margin. The particle filter
 is the opposite. Its ANEES is \num{59.8}, more than an order of magnitude above
-\num{2}, so its reported position covariance is severely over-confident---the
+\num{2}, so its reported position covariance is severely over-confident: the
 particle-depletion signature, in which the surviving particles after resampling on a
 high-resolution map cluster far more tightly than the true error and the empirical
 covariance collapses. The two linearized estimators are credible; the particle
@@ -1294,7 +1285,7 @@ the safe direction in which to err.
 \includegraphics[width=0.98\columnwidth]{figs/fig_consistency.pdf}
 \caption{Monte-Carlo position NEES versus time (EKF, marginalized particle filter,
 and batch FGO) with the \SI{95}{\percent} $\chi^2_2$ band (ideal \num{2}, dotted).
-NEES divides each estimator's error by its \emph{own} reported covariance, so a
+NEES divides each estimator's error by its own reported covariance, so a
 lower curve means a more conservative filter, not a more accurate one; the EKF's
 larger errors over its larger causal covariance can plot below the more accurate
 smoother. Accuracy is compared by DRMS in the text.}
@@ -1365,8 +1356,8 @@ filter, still lacks a grid or point-mass MMSE
 map-matcher~\cite{bergman1999,nordlund2009}. The compensation basis is
 attitude-only: physically structured sensor-error states (heading harmonics, dead
 zones) and direct regression of current telemetry are natural graph extensions, but
-our exploratory tests show that applying either blindly---without documented sensor
-hardware and orientation, or with na\"{\i}vely scaled telemetry---can help or hurt
+our exploratory tests show that applying either blindly, without documented sensor
+hardware and orientation, or with na\"{\i}vely scaled telemetry, can help or hurt
 by tens of percent depending on the line, so neither is claimed here. And none of
 the SGL~2020 lines is a long,
 straight-and-level operational transit: the attitude content that stresses
@@ -1377,7 +1368,7 @@ estimator one.
 
 These limitations set the agenda for further work: extending the evaluation to the
 full SGL line set and a grid or point-mass baseline; making the graph extensions
-robust enough to claim---sensor-error states on a campaign whose sensor hardware
+robust enough to claim: sensor-error states on a campaign whose sensor hardware
 and mounting are documented, and current-telemetry regressors with principled
 channel scaling and gating, both of which stay within the attitude-derived,
 position-independent basis the observability condition requires;
