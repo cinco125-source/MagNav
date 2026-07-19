@@ -62,7 +62,8 @@ for (fl,line) in LINES
     mapS = get_map(mname,df_map)
     traj = get_traj(xyz,ind)
     ins  = get_ins(xyz,ind;N_zero_ll=1)
-    (_,itp) = get_map_val(mapS,traj;return_itp=true)
+    (_,itp) = get_map_val(mapS,traj;return_itp=true)   # cubic (EKF/FGO reference)
+    itp_lin = map_interpolate(mapS, :linear)           # linear: graceful out-of-grid for the PF
     flux = xyz.flux_d(ind)
     nTL  = size(create_TL_A(flux;terms=TERMS),2)
     (P0,Qd,R)    = create_model(traj.dt,traj.lat[1];init_pos_sigma=3.0,init_alt_sigma=1.0,
@@ -78,12 +79,12 @@ for (fl,line) in LINES
                     core=true,run_crlb=false)).lat, fo.lon) catch e; @warn("EKF",e); Inf end
     fgo_d(mag) = try drms(traj, (fo=run_filt(traj,ins,mag,itp,:fgo;P0=P0n,Qd=Qdn,R=Rn,
                     core=true,run_crlb=false)).lat, fo.lon) catch e; @warn("FGO",e); Inf end
-    mpf_d(mag) = mpf_online_drms(traj,ins,mag,flux,itp,zeros(nTL),P0,Qd,R;
+    mpf_d(mag) = mpf_online_drms(traj,ins,mag,flux,itp_lin,zeros(nTL),P0,Qd,R;
                     terms=TERMS,num_part=MPF_NP)
 
-    # native (vanilla) MagNav.mpf: 18-state nav model, no online TL, no R-inflation
+    # native (vanilla) MagNav.mpf on the LINEAR itp (graceful out-of-grid)
     native_d(mag, np) = try
-        fr = MagNav.mpf(ins, mag, itp; P0=P0n, Qd=Qdn, R=Rn, num_part=np, core=true)
+        fr = MagNav.mpf(ins, mag, itp_lin; P0=P0n, Qd=Qdn, R=Rn, num_part=np, core=true)
         fr.c ? drms(traj, (fo=MagNav.eval_filt(traj,ins,fr)).lat, fo.lon) : Inf
     catch e; @warn("native mpf", e); Inf end
 
