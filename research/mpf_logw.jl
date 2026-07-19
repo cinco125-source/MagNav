@@ -12,7 +12,7 @@ using LinearAlgebra, Statistics
 using Random: randn
 
 function mpf_logw(ins::MagNav.INS, meas, itp_mapS;
-                 P0, Qd, R, num_part=1000, thresh=0.8,
+                 P0, Qd, R, num_part=1000, thresh=0.8, roughen_m=0.0,
                  baro_tau=3600.0, acc_tau=3600.0, gyro_tau=3600.0, fogm_tau=600.0,
                  date=MagNav.get_years(2020,185), core::Bool=false)
     lat=ins.lat; lon=ins.lon; alt=ins.alt; vn=ins.vn; ve=ins.ve; vd=ins.vd
@@ -46,6 +46,10 @@ function mpf_logw(ins::MagNav.INS, meas, itp_mapS;
             Pn_out[:,:,t]=MagNav.part_cov(q,xn,x_out[1:nxn,t])
             if 1/sum(q.^2)<np*thresh
                 ind=MagNav.sys_resample(q); xn=xn[:,ind]; xl=xl[:,ind]; q=ones(T2,np)/np
+                if roughen_m > 0   # regularized-PF roughening: reinject position diversity
+                    xn[1,:] .+= MagNav.dn2dlat(roughen_m, lat[t]).*randn(T2,np)
+                    xn[2,:] .+= MagNav.de2dlon(roughen_m, lat[t]).*randn(T2,np)
+                end
             end
         else
             return MagNav.FILTres(x_out, MagNav.filter_exit(Pl_out,Pn_out,t,false), resid, false)

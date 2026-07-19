@@ -89,9 +89,10 @@ for (fl,line) in LINES
         fr.c ? drms(traj, (fo=MagNav.eval_filt(traj,ins,fr)).lat, fo.lon) : Inf
     catch e; @warn("native mpf", e); Inf end
 
-    # native mpf + LOG-DOMAIN weights (fixes the raw-exp underflow), pure map-matching
-    logw_d(mag, np) = try
-        fr = mpf_logw(ins, mag, itp_lin; P0=P0n, Qd=Qdn, R=Rn, num_part=np, core=true)
+    # native mpf + LOG-DOMAIN weights (fixes underflow) + resampling knobs, no TL
+    logw_d(mag; np=1000, thr=0.8, rgh=0.0) = try
+        fr = mpf_logw(ins, mag, itp_lin; P0=P0n, Qd=Qdn, R=Rn, num_part=np,
+                      thresh=thr, roughen_m=rgh, core=true)
         fr.c ? drms(traj, (fo=MagNav.eval_filt(traj,ins,fr)).lat, fo.lon) : Inf
     catch e; @warn("mpf_logw", e); Inf end
 
@@ -99,43 +100,18 @@ for (fl,line) in LINES
     for (sig, mag) in (("Mag1 (comp)", clean),)
         for (m, d) in (("EKF", ekf_d(mag)), ("FGO", fgo_d(mag)), ("MPF-ours", mpf_d(mag)),
                        ("MPF-native-1000", native_d(mag,1000)),
-                       ("MPF-logw-1000", logw_d(mag,1000)),
-                       ("MPF-logw-3000", logw_d(mag,3000)))
+                       ("MPF-logw thr0.8", logw_d(mag)),
+                       ("MPF-logw thr0.1", logw_d(mag;thr=0.1)),
+                       ("MPF-logw thr0.1+rgh5", logw_d(mag;thr=0.1,rgh=5.0)),
+                       ("MPF-logw thr0.1+rgh5 np3000", logw_d(mag;thr=0.1,rgh=5.0,np=3000)))
             push!(results,(fl,line,sig,m,round(d,digits=1)))
             println("  $sig  $m  DRMS=$(round(d,digits=1)) m")
         end
     end
+    # cold start: best resampling recipe on the uncompensated cabin mag (has TL via mpf_online,
+    # since mpf_logw has no compensation). Reported for contrast only.
     push!(results,(fl,line,"Mag5 (uncomp)","MPF-ours",round(mpf_d(dirty),digits=1)))
     println("  Mag5 (uncomp)  MPF-ours  DRMS done")
-
-    # Gnadt canonical default model (create_P0 / create_Qd defaults) instead of our
-    # create_model, full line, linear itp. Tries R = Gnadt-default 1.0 and our 144.
-    for (rlab, rr) in (("R1", 1.0), ("R144", Rn))
-        d = try
-            fr = MagNav.mpf(ins, clean, itp_lin; P0=MagNav.create_P0(traj.lat[1]),
-                            Qd=MagNav.create_Qd(traj.dt), R=rr, num_part=1000, core=true)
-            fr.c ? drms(traj, (fo=MagNav.eval_filt(traj,ins,fr)).lat, fo.lon) : Inf
-        catch e; @warn("gnadt-default mpf",e); Inf end
-        push!(results,(fl,line,"Mag1 gnadt-P0Qd $rlab","MPF-native-1000",round(d,digits=1)))
-        println("  Mag1 gnadt-P0Qd $rlab  MPF-native-1000  DRMS=$(round(d,digits=1)) m")
-    end
-
-    # SHORT-SEGMENT control (linear itp): does native mpf survive the first 5/10/20 min?
-    # Works short + dies long => long-line particle depletion, not a config bug.
-    tind = findall(ind)                       # ind is a BitVector mask over the flight
-    for mins in (5.0, 10.0, 20.0)
-        d = try
-            N     = min(length(tind), round(Int, mins*60/traj.dt))
-            ind_s = falses(length(ind)); ind_s[tind[1:N]] .= true
-            traj_s = get_traj(xyz, ind_s)
-            ins_s  = get_ins(xyz, ind_s; N_zero_ll=1)
-            fr = MagNav.mpf(ins_s, xyz.mag_1_c[ind_s], itp_lin; P0=P0n, Qd=Qdn, R=Rn,
-                            num_part=1000, core=true)
-            fr.c ? drms(traj_s, (fo=MagNav.eval_filt(traj_s,ins_s,fr)).lat, fo.lon; warm=60.0) : Inf
-        catch e; @warn("native mpf short",e); Inf end
-        push!(results,(fl,line,"Mag1 first-$(round(Int,mins))min","MPF-native-1000",round(d,digits=1)))
-        println("  Mag1 first-$(round(Int,mins))min  MPF-native-1000  DRMS=$(round(d,digits=1)) m")
-    end
 end
 
 CSV.write(joinpath(@__DIR__,"mpf_clean_results.csv"), results)
