@@ -99,6 +99,35 @@ for (fl,line) in LINES
     end
     push!(results,(fl,line,"Mag5 (uncomp)","MPF-ours",round(mpf_d(dirty),digits=1)))
     println("  Mag5 (uncomp)  MPF-ours  DRMS done")
+
+    # Gnadt canonical default model (create_P0 / create_Qd defaults) instead of our
+    # create_model, full line, linear itp. Tries R = Gnadt-default 1.0 and our 144.
+    for (rlab, rr) in (("R1", 1.0), ("R144", Rn))
+        d = try
+            fr = MagNav.mpf(ins, clean, itp_lin; P0=MagNav.create_P0(traj.lat[1]),
+                            Qd=MagNav.create_Qd(traj.dt), R=rr, num_part=1000, core=true)
+            fr.c ? drms(traj, (fo=MagNav.eval_filt(traj,ins,fr)).lat, fo.lon) : Inf
+        catch e; @warn("gnadt-default mpf",e); Inf end
+        push!(results,(fl,line,"Mag1 gnadt-P0Qd $rlab","MPF-native-1000",round(d,digits=1)))
+        println("  Mag1 gnadt-P0Qd $rlab  MPF-native-1000  DRMS=$(round(d,digits=1)) m")
+    end
+
+    # SHORT-SEGMENT control (linear itp): does native mpf converge on the first 10 min?
+    # Separates a config problem (fails even short) from long-line particle depletion
+    # (works short, dies long).
+    for mins in (5.0, 10.0, 20.0)
+        N = min(length(ind), round(Int, mins*60/traj.dt))
+        ind_s  = ind[1:N]
+        traj_s = get_traj(xyz, ind_s)
+        ins_s  = get_ins(xyz, ind_s; N_zero_ll=1)
+        mag_s  = xyz.mag_1_c[ind_s]
+        d = try
+            fr = MagNav.mpf(ins_s, mag_s, itp_lin; P0=P0n, Qd=Qdn, R=Rn, num_part=1000, core=true)
+            fr.c ? drms(traj_s, (fo=MagNav.eval_filt(traj_s,ins_s,fr)).lat, fo.lon; warm=60.0) : Inf
+        catch e; @warn("native mpf short",e); Inf end
+        push!(results,(fl,line,"Mag1 first-$(round(Int,mins))min","MPF-native-1000",round(d,digits=1)))
+        println("  Mag1 first-$(round(Int,mins))min  MPF-native-1000  DRMS=$(round(d,digits=1)) m")
+    end
 end
 
 CSV.write(joinpath(@__DIR__,"mpf_clean_results.csv"), results)
