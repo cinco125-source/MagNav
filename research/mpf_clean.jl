@@ -25,8 +25,7 @@ FOGM_SIG = 3.0
 FOGM_TAU = 180.0
 TERMS    = [:permanent,:induced,:eddy,:bias]
 
-LINES = [(:Flt1003,1003.02), (:Flt1003,1003.08),
-         (:Flt1007,1007.02), (:Flt1007,1007.06)]
+LINES = [(:Flt1003,1003.08), (:Flt1007,1007.06)]  # lines where short-segment mpf navigated
 flights = unique(first.(LINES))
 
 df_dir    = joinpath(@__DIR__,"..","examples","dataframes")
@@ -103,7 +102,7 @@ for (fl,line) in LINES
                        ("MPF-logw thr0.8", logw_d(mag)),
                        ("MPF-logw thr0.1", logw_d(mag;thr=0.1)),
                        ("MPF-logw thr0.1+rgh5", logw_d(mag;thr=0.1,rgh=5.0)),
-                       ("MPF-logw thr0.1+rgh5 np3000", logw_d(mag;thr=0.1,rgh=5.0,np=3000)))
+                       ("MPF-logw thr0.3+rgh10", logw_d(mag;thr=0.3,rgh=10.0)))
             push!(results,(fl,line,sig,m,round(d,digits=1)))
             println("  $sig  $m  DRMS=$(round(d,digits=1)) m")
         end
