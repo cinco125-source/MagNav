@@ -112,17 +112,17 @@ for (fl,line) in LINES
         println("  Mag1 gnadt-P0Qd $rlab  MPF-native-1000  DRMS=$(round(d,digits=1)) m")
     end
 
-    # SHORT-SEGMENT control (linear itp): does native mpf converge on the first 10 min?
-    # Separates a config problem (fails even short) from long-line particle depletion
-    # (works short, dies long).
+    # SHORT-SEGMENT control (linear itp): does native mpf survive the first 5/10/20 min?
+    # Works short + dies long => long-line particle depletion, not a config bug.
+    tind = findall(ind)                       # ind is a BitVector mask over the flight
     for mins in (5.0, 10.0, 20.0)
-        N = min(length(ind), round(Int, mins*60/traj.dt))
-        ind_s  = ind[1:N]
-        traj_s = get_traj(xyz, ind_s)
-        ins_s  = get_ins(xyz, ind_s; N_zero_ll=1)
-        mag_s  = xyz.mag_1_c[ind_s]
         d = try
-            fr = MagNav.mpf(ins_s, mag_s, itp_lin; P0=P0n, Qd=Qdn, R=Rn, num_part=1000, core=true)
+            N     = min(length(tind), round(Int, mins*60/traj.dt))
+            ind_s = falses(length(ind)); ind_s[tind[1:N]] .= true
+            traj_s = get_traj(xyz, ind_s)
+            ins_s  = get_ins(xyz, ind_s; N_zero_ll=1)
+            fr = MagNav.mpf(ins_s, xyz.mag_1_c[ind_s], itp_lin; P0=P0n, Qd=Qdn, R=Rn,
+                            num_part=1000, core=true)
             fr.c ? drms(traj_s, (fo=MagNav.eval_filt(traj_s,ins_s,fr)).lat, fo.lon; warm=60.0) : Inf
         catch e; @warn("native mpf short",e); Inf end
         push!(results,(fl,line,"Mag1 first-$(round(Int,mins))min","MPF-native-1000",round(d,digits=1)))
