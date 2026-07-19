@@ -1,0 +1,5 @@
+flight,line,mag,comp_rmse_nT,EKF_offNN,MPF_offNN
+Flt1003,1003.08,Mag 4,293.7,Inf,Inf
+Flt1003,1003.08,Mag 5,49.7,38.6,9109.6
+Flt1007,1007.06,Mag 4,205.1,158.1,7988.1
+Flt1007,1007.06,Mag 5,36.0,29.0,Inf
