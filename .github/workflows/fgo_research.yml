@@ -21,9 +21,11 @@ on:
       - 'research/mpf_clean.jl'
       - '.github/workflows/mpf_clean.yml'
       - 'research/mpf_fixed.jl'
+      - 'research/mpf_warm.jl'
       - 'research/mpf_online.jl'
       - 'research/mpf_nn.jl'
       - '.github/workflows/mpf_fixed.yml'
+      - '.github/workflows/mpf_warm.yml'
       - '.github/workflows/fgo_research.yml'
   workflow_dispatch:
 

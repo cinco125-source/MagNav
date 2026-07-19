@@ -1,0 +1,55 @@
+name: MPF warm not-cold-start
+
+# Warm control for the fixed MPF recipe: the SAME MPF+TL / MPF+TL+NN / FGO on the
+# COMPENSATED stinger mag_1_c (no cold start), same lines/recipe as mpf_fixed.jl.
+# Runs only research/mpf_warm.jl.
+
+on:
+  push:
+    branches:
+      - 'claude/continued-work-**'
+    paths:
+      - 'research/mpf_warm.jl'
+      - 'research/mpf_online.jl'
+      - 'research/mpf_nn.jl'
+      - '.github/workflows/mpf_warm.yml'
+  workflow_dispatch:
+
+jobs:
+  warm:
+    name: MPF warm not-cold-start
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: MPF warm not-cold-start
+        run: julia --project=. research/mpf_warm.jl
+        env:
+          GKSwstype: '100'
+      - name: Commit result CSV back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f research/mpf_warm_results.csv ] && git add -f research/mpf_warm_results.csv || echo "no csv"
+          if git diff --cached --quiet; then
+            echo "No result CSV to commit."
+          else
+            git commit -m "Add MPF warm not-cold-start CSV [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mpf-warm-results
+          path: research/mpf_warm_results.csv
+          if-no-files-found: ignore
