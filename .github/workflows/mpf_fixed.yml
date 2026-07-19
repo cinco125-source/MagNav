@@ -1,0 +1,55 @@
+name: MPF fixed cold-start
+
+# Resampling-fixed MPF+TL and MPF+TL+NN (linear itp, log weights, low resample
+# threshold, roughening) on the cold-start Mag 4/5, with FGO reference. Runs only
+# research/mpf_fixed.jl.
+
+on:
+  push:
+    branches:
+      - 'claude/continued-work-**'
+    paths:
+      - 'research/mpf_fixed.jl'
+      - 'research/mpf_online.jl'
+      - 'research/mpf_nn.jl'
+      - '.github/workflows/mpf_fixed.yml'
+  workflow_dispatch:
+
+jobs:
+  fixed:
+    name: MPF fixed cold-start
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: MPF fixed cold-start
+        run: julia --project=. research/mpf_fixed.jl
+        env:
+          GKSwstype: '100'
+      - name: Commit result CSV back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f research/mpf_fixed_results.csv ] && git add -f research/mpf_fixed_results.csv || echo "no csv"
+          if git diff --cached --quiet; then
+            echo "No result CSV to commit."
+          else
+            git commit -m "Add MPF fixed cold-start CSV [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mpf-fixed-results
+          path: research/mpf_fixed_results.csv
+          if-no-files-found: ignore

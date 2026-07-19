@@ -21,6 +21,7 @@ function mpf_online(ins::MagNav.INS, meas, flux::MagNav.MagV, itp_mapS, x0_TL, P
                     terms    = [:permanent,:induced,:eddy,:bias],
                     num_part = 1000,
                     thresh   = 0.8,
+                    roughen_m = 0.0,     # [m] position jitter reinjected after resample
                     baro_tau = 3600.0,
                     acc_tau  = 3600.0,
                     gyro_tau = 3600.0,
@@ -86,6 +87,10 @@ function mpf_online(ins::MagNav.INS, meas, flux::MagNav.MagV, itp_mapS, x0_TL, P
             if 1/sum(q.^2) < np*thresh
                 ind = MagNav.sys_resample(q); xn = xn[:,ind]; xl = xl[:,ind]
                 q = ones(T2,np)/np
+                if roughen_m > 0   # regularized-PF roughening: reinject position diversity
+                    xn[1,:] .+= MagNav.dn2dlat(roughen_m, lat[t]).*randn(T2,np)
+                    xn[2,:] .+= MagNav.de2dlon(roughen_m, lat[t]).*randn(T2,np)
+                end
             end
         else
             return MagNav.FILTres(x_out, MagNav.filter_exit(Pl_out,Pn_out,t,false), resid, false)
@@ -117,9 +122,11 @@ end
 # DRMS convenience wrapper mirroring ekf_tlnn_drms: returns Inf on divergence.
 function mpf_online_drms(traj, ins, mag, flux, itp, x0_TL, P0, Qd, R;
                          terms=[:permanent,:induced,:eddy,:bias], num_part=1000,
+                         thresh=0.8, roughen_m=0.0,
                          core::Bool=true, warm=600.0, div_thresh=1e4)
     fr = try
-        mpf_online(ins,mag,flux,itp,x0_TL,P0,Qd,R;terms=terms,num_part=num_part,core=core)
+        mpf_online(ins,mag,flux,itp,x0_TL,P0,Qd,R;terms=terms,num_part=num_part,
+                   thresh=thresh,roughen_m=roughen_m,core=core)
     catch e
         @warn("mpf_online failed",e); return Inf
     end

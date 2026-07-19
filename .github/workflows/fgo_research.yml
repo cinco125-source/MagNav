@@ -20,6 +20,10 @@ on:
       - '.github/workflows/coldstart_trace.yml'
       - 'research/mpf_clean.jl'
       - '.github/workflows/mpf_clean.yml'
+      - 'research/mpf_fixed.jl'
+      - 'research/mpf_online.jl'
+      - 'research/mpf_nn.jl'
+      - '.github/workflows/mpf_fixed.yml'
       - '.github/workflows/fgo_research.yml'
   workflow_dispatch:
 

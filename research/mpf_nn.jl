@@ -36,6 +36,7 @@ const NUM_PART    = 300     # matches the MPF+TL baseline in fgo_breadth.jl
 function mpf_online_nn(ins::MagNav.INS, meas, x_nn, m0, y_norms, P0, Qd, R;
                        num_part = NUM_PART,
                        thresh   = 0.8,
+                       roughen_m = 0.0,
                        baro_tau = 3600.0, acc_tau = 3600.0, gyro_tau = 3600.0,
                        fogm_tau = FOGM_TAU,
                        warm_infl = 300.0,   # [s] cold-start R inflation window
@@ -106,6 +107,10 @@ function mpf_online_nn(ins::MagNav.INS, meas, x_nn, m0, y_norms, P0, Qd, R;
             if 1/sum(q.^2) < np*thresh
                 ind = MagNav.sys_resample(q); xn = xn[:,ind]; xl = xl[:,ind]
                 q = ones(T2,np)/np
+                if roughen_m > 0
+                    xn[1,:] .+= MagNav.dn2dlat(roughen_m, lat[t]).*randn(T2,np)
+                    xn[2,:] .+= MagNav.de2dlon(roughen_m, lat[t]).*randn(T2,np)
+                end
             end
         else
             return MagNav.FILTres(x_out, MagNav.filter_exit(Pl_out,Pn_out,t,false), resid, false)
@@ -135,7 +140,8 @@ function mpf_online_nn(ins::MagNav.INS, meas, x_nn, m0, y_norms, P0, Qd, R;
 end
 
 # DRMS wrapper with the exact ekf_tlnn.jl cold-start recipe (features, DC init).
-function mpf_nn_drms(traj, ins, mag_uc, flux, itp; warm=600.0, div_thresh=1e4)
+function mpf_nn_drms(traj, ins, mag_uc, flux, itp; warm=600.0, div_thresh=1e4,
+                     thresh=0.8, roughen_m=0.0, init_ps=0.1)
     try
         N  = traj.N
         x  = create_TL_A(flux; terms=NN_TERMS)
@@ -155,12 +161,13 @@ function mpf_nn_drms(traj, ins, mag_uc, flux, itp; warm=600.0, div_thresh=1e4)
         nnsig = fill(NN_WEIGHT_Q, nx_nn)
 
         (P0,Qd,R) = create_model(traj.dt,traj.lat[1];
-                                 init_pos_sigma=0.1,init_alt_sigma=1.0,init_vel_sigma=1.0,
+                                 init_pos_sigma=init_ps,init_alt_sigma=1.0,init_vel_sigma=1.0,
                                  meas_var=MEAS_VAR,fogm_sigma=FOGM_SIG,
                                  fogm_tau=FOGM_TAU,vec_states=false,
                                  TL_sigma=nnsig,P0_TL=P0_nn)
 
-        fr = mpf_online_nn(ins,mag_uc,x_norm,m0,y_norms,P0,Qd,R;itp_mapS=itp)
+        fr = mpf_online_nn(ins,mag_uc,x_norm,m0,y_norms,P0,Qd,R;
+                           thresh=thresh,roughen_m=roughen_m,itp_mapS=itp)
         fr.c || return Inf
         fo = MagNav.eval_filt(traj,ins,fr)
         mk = (traj.tt .- traj.tt[1]) .>= warm
