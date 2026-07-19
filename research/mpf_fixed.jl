@@ -17,9 +17,7 @@ seed!(33)
 include(joinpath(@__DIR__,"mpf_online.jl"))   # MPF+TL  (+ thresh/roughen)
 include(joinpath(@__DIR__,"mpf_nn.jl"))        # MPF+TL+NN (+ thresh/roughen/init_ps)
 
-MEAS_VAR = 12.0^2
-FOGM_SIG = 3.0
-FOGM_TAU = 180.0
+# MEAS_VAR/FOGM_SIG/FOGM_TAU are const, defined by the mpf_nn.jl include above.
 TERMS    = [:permanent,:induced,:eddy,:bias]
 THR      = 0.1     # resample threshold (low = resample rarely)
 RGH      = 5.0     # roughening [m]

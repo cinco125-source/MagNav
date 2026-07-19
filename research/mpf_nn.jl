@@ -181,6 +181,9 @@ function mpf_nn_drms(traj, ins, mag_uc, flux, itp; warm=600.0, div_thresh=1e4,
 end
 
 ##* run the 4 counted breadth lines ---------------------------------------------
+# Only when run as a script (julia research/mpf_nn.jl). When include()'d from
+# another study (e.g. mpf_fixed.jl) only the function/const definitions load.
+if abspath(PROGRAM_FILE) == @__FILE__
 LINES = [(:Flt1003,1003.02), (:Flt1003,1003.08),
          (:Flt1007,1007.02), (:Flt1007,1007.06)]
 flights = unique(first.(LINES))
@@ -232,3 +235,4 @@ println("\n=== MPF+TL+NN (particle filter given the EKF's neural network) ===")
 show(results;allrows=true,allcols=true); println()
 CSV.write(joinpath(@__DIR__,"mpf_nn_results.csv"),results)
 println("wrote mpf_nn_results.csv")
+end # abspath(PROGRAM_FILE) == @__FILE__
