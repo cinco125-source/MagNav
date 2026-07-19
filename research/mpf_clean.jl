@@ -81,16 +81,23 @@ for (fl,line) in LINES
     mpf_d(mag) = mpf_online_drms(traj,ins,mag,flux,itp,zeros(nTL),P0,Qd,R;
                     terms=TERMS,num_part=MPF_NP)
 
+    # native (vanilla) MagNav.mpf: 18-state nav model, no online TL, no R-inflation
+    native_d(mag, np) = try
+        fr = MagNav.mpf(ins, mag, itp; P0=P0n, Qd=Qdn, R=Rn, num_part=np, core=true)
+        fr.c ? drms(traj, (fo=MagNav.eval_filt(traj,ins,fr)).lat, fo.lon) : Inf
+    catch e; @warn("native mpf", e); Inf end
+
     println("\n$fl $line ($mname)")
     for (sig, mag) in (("Mag1 (comp)", clean),)
-        for (m, d) in (("EKF", ekf_d(mag)), ("FGO", fgo_d(mag)), ("MPF", mpf_d(mag)))
+        for (m, d) in (("EKF", ekf_d(mag)), ("FGO", fgo_d(mag)), ("MPF-ours", mpf_d(mag)),
+                       ("MPF-native-300", native_d(mag,300)),
+                       ("MPF-native-1000", native_d(mag,1000)))
             push!(results,(fl,line,sig,m,round(d,digits=1)))
             println("  $sig  $m  DRMS=$(round(d,digits=1)) m")
         end
     end
-    d = mpf_d(dirty)                  # the failing case, for contrast
-    push!(results,(fl,line,"Mag5 (uncomp)","MPF",round(d,digits=1)))
-    println("  Mag5 (uncomp)  MPF  DRMS=$(round(d,digits=1)) m")
+    push!(results,(fl,line,"Mag5 (uncomp)","MPF-ours",round(mpf_d(dirty),digits=1)))
+    println("  Mag5 (uncomp)  MPF-ours  DRMS done")
 end
 
 CSV.write(joinpath(@__DIR__,"mpf_clean_results.csv"), results)
