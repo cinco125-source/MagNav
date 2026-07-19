@@ -65,10 +65,10 @@ for (fl,line) in LINES
     (_,itp) = get_map_val(mapS,traj;return_itp=true)
     flux = xyz.flux_d(ind)
     nTL  = size(create_TL_A(flux;terms=TERMS),2)
-    (P0,Qd,R)    = create_model(traj.dt,traj.lat[1];init_pos_sigma=0.1,init_alt_sigma=1.0,
+    (P0,Qd,R)    = create_model(traj.dt,traj.lat[1];init_pos_sigma=3.0,init_alt_sigma=1.0,
         init_vel_sigma=1.0,meas_var=MEAS_VAR,fogm_sigma=FOGM_SIG,fogm_tau=FOGM_TAU,
         vec_states=false,TL_sigma=fill(1.0,nTL),P0_TL=Matrix(Diagonal(fill(1.0,nTL))))
-    (P0n,Qdn,Rn) = create_model(traj.dt,traj.lat[1];init_pos_sigma=0.1,init_alt_sigma=1.0,
+    (P0n,Qdn,Rn) = create_model(traj.dt,traj.lat[1];init_pos_sigma=3.0,init_alt_sigma=1.0,
         init_vel_sigma=1.0,meas_var=MEAS_VAR,fogm_sigma=FOGM_SIG,fogm_tau=FOGM_TAU)
 
     clean = xyz.mag_1_c[ind]          # compensated stinger — interference removed
