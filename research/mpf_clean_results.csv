@@ -1,45 +1,19 @@
 flight,line,signal,method,DRMS
-Flt1003,1003.02,Mag1 (comp),EKF,21.4
-Flt1003,1003.02,Mag1 (comp),FGO,13.5
-Flt1003,1003.02,Mag1 (comp),MPF-ours,746.6
-Flt1003,1003.02,Mag1 (comp),MPF-native-300,Inf
-Flt1003,1003.02,Mag1 (comp),MPF-native-1000,Inf
-Flt1003,1003.02,Mag5 (uncomp),MPF-ours,1283.4
-Flt1003,1003.02,Mag1 gnadt-P0Qd R1,MPF-native-1000,Inf
-Flt1003,1003.02,Mag1 gnadt-P0Qd R144,MPF-native-1000,Inf
-Flt1003,1003.02,Mag1 first-5min,MPF-native-1000,Inf
-Flt1003,1003.02,Mag1 first-10min,MPF-native-1000,Inf
-Flt1003,1003.02,Mag1 first-20min,MPF-native-1000,Inf
 Flt1003,1003.08,Mag1 (comp),EKF,17.7
 Flt1003,1003.08,Mag1 (comp),FGO,12.5
-Flt1003,1003.08,Mag1 (comp),MPF-ours,1881.5
-Flt1003,1003.08,Mag1 (comp),MPF-native-300,Inf
+Flt1003,1003.08,Mag1 (comp),MPF-ours,1088.1
 Flt1003,1003.08,Mag1 (comp),MPF-native-1000,Inf
-Flt1003,1003.08,Mag5 (uncomp),MPF-ours,567.6
-Flt1003,1003.08,Mag1 gnadt-P0Qd R1,MPF-native-1000,Inf
-Flt1003,1003.08,Mag1 gnadt-P0Qd R144,MPF-native-1000,Inf
-Flt1003,1003.08,Mag1 first-5min,MPF-native-1000,23.1
-Flt1003,1003.08,Mag1 first-10min,MPF-native-1000,98.5
-Flt1003,1003.08,Mag1 first-20min,MPF-native-1000,Inf
-Flt1007,1007.02,Mag1 (comp),EKF,26.1
-Flt1007,1007.02,Mag1 (comp),FGO,17.0
-Flt1007,1007.02,Mag1 (comp),MPF-ours,2135.8
-Flt1007,1007.02,Mag1 (comp),MPF-native-300,Inf
-Flt1007,1007.02,Mag1 (comp),MPF-native-1000,Inf
-Flt1007,1007.02,Mag5 (uncomp),MPF-ours,2221.2
-Flt1007,1007.02,Mag1 gnadt-P0Qd R1,MPF-native-1000,Inf
-Flt1007,1007.02,Mag1 gnadt-P0Qd R144,MPF-native-1000,Inf
-Flt1007,1007.02,Mag1 first-5min,MPF-native-1000,Inf
-Flt1007,1007.02,Mag1 first-10min,MPF-native-1000,Inf
-Flt1007,1007.02,Mag1 first-20min,MPF-native-1000,Inf
+Flt1003,1003.08,Mag1 (comp),MPF-logw thr0.8,1901.5
+Flt1003,1003.08,Mag1 (comp),MPF-logw thr0.1,1342.2
+Flt1003,1003.08,Mag1 (comp),MPF-logw thr0.1+rgh5,121.7
+Flt1003,1003.08,Mag1 (comp),MPF-logw thr0.3+rgh10,12244.0
+Flt1003,1003.08,Mag5 (uncomp),MPF-ours,627.3
 Flt1007,1007.06,Mag1 (comp),EKF,20.0
 Flt1007,1007.06,Mag1 (comp),FGO,16.7
-Flt1007,1007.06,Mag1 (comp),MPF-ours,2621.0
-Flt1007,1007.06,Mag1 (comp),MPF-native-300,Inf
+Flt1007,1007.06,Mag1 (comp),MPF-ours,891.9
 Flt1007,1007.06,Mag1 (comp),MPF-native-1000,Inf
-Flt1007,1007.06,Mag5 (uncomp),MPF-ours,750.9
-Flt1007,1007.06,Mag1 gnadt-P0Qd R1,MPF-native-1000,Inf
-Flt1007,1007.06,Mag1 gnadt-P0Qd R144,MPF-native-1000,Inf
-Flt1007,1007.06,Mag1 first-5min,MPF-native-1000,16.0
-Flt1007,1007.06,Mag1 first-10min,MPF-native-1000,25.9
-Flt1007,1007.06,Mag1 first-20min,MPF-native-1000,Inf
+Flt1007,1007.06,Mag1 (comp),MPF-logw thr0.8,1251.5
+Flt1007,1007.06,Mag1 (comp),MPF-logw thr0.1,237.7
+Flt1007,1007.06,Mag1 (comp),MPF-logw thr0.1+rgh5,29.4
+Flt1007,1007.06,Mag1 (comp),MPF-logw thr0.3+rgh10,33.9
+Flt1007,1007.06,Mag5 (uncomp),MPF-ours,1806.1
