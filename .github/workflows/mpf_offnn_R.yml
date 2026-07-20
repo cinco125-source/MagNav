@@ -1,0 +1,55 @@
+name: MPF offNN R-matched sweep
+
+# Diagnostic: is the offline-NN MPF divergence config (R over-confidence / roughening)
+# or fundamental? Sweeps meas_std x roughening for the repaired native MPF on the
+# offline-NN compensated Mag 5, with EKF at matched R as reference. Runs only
+# research/mpf_offnn_R.jl.
+
+on:
+  push:
+    branches:
+      - 'claude/continued-work-**'
+    paths:
+      - 'research/mpf_offnn_R.jl'
+      - 'research/mpf_logw.jl'
+      - '.github/workflows/mpf_offnn_R.yml'
+  workflow_dispatch:
+
+jobs:
+  offnnR:
+    name: MPF offNN R-matched sweep
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: MPF offNN R-matched sweep
+        run: julia --project=. research/mpf_offnn_R.jl
+        env:
+          GKSwstype: '100'
+      - name: Commit result CSV back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f research/mpf_offnn_R_results.csv ] && git add -f research/mpf_offnn_R_results.csv || echo "no csv"
+          if git diff --cached --quiet; then
+            echo "No result CSV to commit."
+          else
+            git commit -m "Add MPF offNN R-matched sweep CSV [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mpf-offnn-R-results
+          path: research/mpf_offnn_R_results.csv
+          if-no-files-found: ignore
