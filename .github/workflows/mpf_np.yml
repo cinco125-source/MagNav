@@ -1,0 +1,53 @@
+name: MPF particle-count check
+
+# Does MPF -> EKF as N grows? Matched config (R=40 nT, roughen 5 m) on the offline-NN
+# compensated Mag 5, N in {1000, 4000}, both lines, EKF reference. Runs only mpf_np.jl.
+
+on:
+  push:
+    branches:
+      - 'claude/continued-work-**'
+    paths:
+      - 'research/mpf_np.jl'
+      - 'research/mpf_logw.jl'
+      - '.github/workflows/mpf_np.yml'
+  workflow_dispatch:
+
+jobs:
+  np:
+    name: MPF particle-count check
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: MPF particle-count check
+        run: julia --project=. research/mpf_np.jl
+        env:
+          GKSwstype: '100'
+      - name: Commit result CSV back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f research/mpf_np_results.csv ] && git add -f research/mpf_np_results.csv || echo "no csv"
+          if git diff --cached --quiet; then
+            echo "No result CSV to commit."
+          else
+            git commit -m "Add MPF particle-count check CSV [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mpf-np-results
+          path: research/mpf_np_results.csv
+          if-no-files-found: ignore
