@@ -1,0 +1,54 @@
+name: MPF no-roughening (standard RBPF)
+
+# Is roughening needed at standard resampling? thresh=0.5, roughen=0, offline-NN Mag 5,
+# R=40 nT, N in {1000,4000}. If N=4000 still reaches EKF-class, the baseline is pure
+# standard RBPF (no regularization). Runs only research/mpf_rough0.jl.
+
+on:
+  push:
+    branches:
+      - 'claude/continued-work-**'
+    paths:
+      - 'research/mpf_rough0.jl'
+      - 'research/mpf_logw.jl'
+      - '.github/workflows/mpf_rough0.yml'
+  workflow_dispatch:
+
+jobs:
+  rough0:
+    name: MPF no-roughening (standard RBPF)
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: MPF no-roughening
+        run: julia --project=. research/mpf_rough0.jl
+        env:
+          GKSwstype: '100'
+      - name: Commit result CSV back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f research/mpf_rough0_results.csv ] && git add -f research/mpf_rough0_results.csv || echo "no csv"
+          if git diff --cached --quiet; then
+            echo "No result CSV to commit."
+          else
+            git commit -m "Add MPF no-roughening CSV [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mpf-rough0-results
+          path: research/mpf_rough0_results.csv
+          if-no-files-found: ignore
