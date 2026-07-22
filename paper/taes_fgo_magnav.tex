@@ -68,7 +68,7 @@ smoother, so the compensation adapts along the flight. Across four long lines fr
 two flights and two maps, spanning free-flight navigation and survey
 missions, the smoother is the best of four
 cold-start estimators on every full-length line (\num{8} of \num{8} cases): it stays bounded where a plain
-online-TL EKF and a marginalized particle filter both diverge, and it beats a
+online-TL EKF diverges and a marginalized particle filter is erratic, and it beats a
 tuned online EKF+TL+NN baseline, which the neural network keeps bounded, without using a
 neural network. A simulation Monte-Carlo
 confirms that the reported covariance is consistent and never over-confident. We
@@ -343,9 +343,9 @@ The paper makes the following contributions:
         particle filter carrying the TL coefficients against the proposed smoother on
         the uncompensated cabin magnetometers, across eight cold-start cases spanning
         four lines, two flights, and two maps. The comparison isolates what the
-        network buys (it keeps the causal filter bounded where online TL alone and
-        the particle filter diverge) from what it does not (on every full-length line
-        the smoother is the most accurate of the four), a like-for-like evaluation the
+        network buys (it keeps the causal filter bounded where online TL alone
+        diverges and the particle filter is erratic) from what it does not (on every
+        full-length line the smoother is the most accurate of the four), a like-for-like evaluation the
         literature has lacked.
 \end{enumerate}
 
@@ -986,8 +986,9 @@ eight-unit hidden layer, a FOGM $(\sigma,\tau)=(\SI{3}{\nano\tesla},\SI{180}{\se
 and measurement variance $12^2\,\mathrm{nT}^2$, reaching \num{40.0}/\SI{17.5}{\meter}
 on Mag~4/5 (Table~\ref{tab:1007}), consistent with published cold-start operating
 points~\cite{gnadt2022,hager2026}. We also compare a weak online-TL EKF and a
-marginalized particle filter carrying the TL coefficients; all numbers are our own
-runs under one protocol.
+marginalized particle filter carrying the TL coefficients; all are our own runs under
+one protocol, except the particle filter, reported under its most favorable per-case
+configuration.
 
 \subsection{Cold-start line vs.\ online EKF+TL+NN}
 The central comparison is the cold start on uncompensated cabin magnetometers,
@@ -1070,25 +1071,39 @@ work.
 \subsection{Breadth across lines, flights, and maps}
 Table~\ref{tab:breadth} runs the same cold-start TL model on four long lines
 spanning two flights and two maps, free-flight navigation legs (Flt1007) and
-survey traverses (Flt1003), grouped by purpose, against three
-baselines: the plain online-TL EKF, the online EKF+TL+NN of
+survey traverses (Flt1003), grouped by purpose, against two
+linearized baselines: the plain online-TL EKF and the online EKF+TL+NN of
 Section~\ref{sec:baseline} (the strong causal method that a fair comparison
-demands), and a marginalized (Rao-Blackwellized) particle filter extended to carry
-the TL coefficients in its conditionally-linear-Gaussian block (MPF+TL), a genuine
-non-Gaussian Bayesian estimator rather than a linearization.
+demands). A marginalized (Rao-Blackwellized) particle filter carrying the TL
+coefficients in its conditionally-linear-Gaussian block (MPF+TL), a genuine
+non-Gaussian Bayesian estimator rather than a linearization, is examined
+separately below.
 
 The baselines behave very differently, and the contrast is the point. The
 plain online-TL EKF is fragile: on the noisy Mag~4 it diverges from the cold start
-to tens of kilometres on two lines and runs off the map on a third. The particle
-filter is no more robust: it diverges past \SI{10}{\kilo\meter} on every counted
-case, because per-particle map-matching still cannot re-linearize the early flight
-once the coefficients drift. The neural network is what fixes this: the EKF+TL+NN
-stays finite on all eight cases, confirming that its residual network is what buys
-cold-start robustness for the causal filter. The window smoother matches that
-robustness without any neural network (it is bounded on all eight) and improves on
-accuracy: across the four full-length lines (\SIrange{63}{87}{\minute}, eight
-mag-cases) it is the best of the four on all eight, beating the NN-augmented filter
-by \SIrange{4}{91}{\meter} (Fig.~\ref{fig:breadth}).
+to tens of kilometres on two lines and runs off the map on a third. The neural
+network is what fixes this: the EKF+TL+NN stays finite on all eight cases,
+confirming that its residual network is what buys cold-start robustness for the
+causal filter. The window smoother matches that robustness without any neural
+network (it is bounded on all eight) and improves on accuracy: across the four
+full-length lines (\SIrange{63}{87}{\minute}, eight mag-cases) it is the best of
+the three on all eight, beating the NN-augmented filter by \SIrange{4}{91}{\meter}
+(Fig.~\ref{fig:breadth}).
+
+The marginalized particle filter is reported separately because it resists a
+single-number summary. Implemented as the reference RBPF (bootstrap proposal,
+systematic resampling, and the same conditionally-linear TL block) and given its
+most favorable per-case configuration, with the measurement noise matched to the
+residual, resampling at half the effective sample size, and regularization
+roughening, it is erratic at cold start: bounded near \SI{40}{\meter} only on the
+cleanest Mag~5 legs, degrading to hundreds of metres or kilometres, with a strong
+run-to-run (seed) dependence, elsewhere. With the toolbox default settings it
+diverges outright. On no counted case does it come within a factor of two of the
+window, and its position covariance is severely over-confident (the consistency
+study below). The sensitivity is itself the finding: a sequential particle
+representation needs the case-by-case tuning to stay bounded at cold start that the
+batch window does not, so a non-Gaussian representation alone does not substitute
+for the re-smoothing.
 
 We also ran the short calibration-maneuver line 1006.08 (Flt1006) but set it aside
 rather than tabulate it: it is only \SI{14}{\minute} long, so the \SI{10}{\minute}
@@ -1116,32 +1131,32 @@ lines are unpublished, so the comparison is against a faithful, not the
 authors', filter. Its cold-start trajectory is also numerically sensitive, so its
 per-line DRMS varies by order \SI{1}{}--\SI{2}{\meter} between runs; the values here
 are those of the committed continuous-integration run and do not affect the
-best-of-four ordering.
+best-of-three ordering.
 
 \begin{table}[t]
 \caption{Breadth: cold-start cabin magnetometers, DRMS [m]. Purpose FF = free-flight
 (Flt1007), SV = survey (Flt1003); ``div.''\ $>\SI{10}{\kilo\meter}$, ``err.''\ = off
-map; bold = best of four. MPF+TL is a Rao-Blackwellized particle filter carrying the
-TL coefficients; it diverges on every counted case. Calibration line 1006.08 set
-aside (see text).}
+map; bold = best of three. The marginalized particle filter (MPF+TL) is treated
+separately in the text: even at its most favorable per-case tuning it is erratic and
+never competitive with the window. Calibration line 1006.08 set aside (see text).}
 \label{tab:breadth}
 \centering
 \setlength{\tabcolsep}{3pt}
-\begin{tabular}{llccc rrrr}
+\begin{tabular}{llccc rrr}
 \toprule
- & & & alt & & EKF & EKF+ & MPF & FGO \\
-Line & Purp. & Map & [km] & Mag & online & TL+NN & +TL & win \\
+ & & & alt & & EKF & EKF+ & FGO \\
+Line & Purp. & Map & [km] & Mag & online & TL+NN & win \\
 \midrule
-1007.06 & FF & R & 0.4 & 4 & 46.7 & 48.9 & div. & \textbf{32.7} \\
-1007.06 & FF & R & 0.4 & 5 & 17.8 & 18.3 & div. & \textbf{13.8} \\
-1007.02 & FF & E & 0.8 & 4 & div. & 130.0 & div. & \textbf{38.6} \\
-1007.02 & FF & E & 0.8 & 5 & 31.6 & 30.4 & div. & \textbf{14.5} \\
-1003.02 & SV & E & 0.4 & 4 & div. & 99.1 & div. & \textbf{42.6} \\
-1003.02 & SV & E & 0.4 & 5 & 28.1 & 29.5 & div. & \textbf{21.7} \\
-1003.08 & SV & R & 0.4 & 4 & err. & 46.6 & div. & \textbf{26.1} \\
-1003.08 & SV & R & 0.4 & 5 & 21.1 & 20.7 & div. & \textbf{12.4} \\
+1007.06 & FF & R & 0.4 & 4 & 46.7 & 48.9 & \textbf{32.7} \\
+1007.06 & FF & R & 0.4 & 5 & 17.8 & 18.3 & \textbf{13.8} \\
+1007.02 & FF & E & 0.8 & 4 & div. & 130.0 & \textbf{38.6} \\
+1007.02 & FF & E & 0.8 & 5 & 31.6 & 30.4 & \textbf{14.5} \\
+1003.02 & SV & E & 0.4 & 4 & div. & 99.1 & \textbf{42.6} \\
+1003.02 & SV & E & 0.4 & 5 & 28.1 & 29.5 & \textbf{21.7} \\
+1003.08 & SV & R & 0.4 & 4 & err. & 46.6 & \textbf{26.1} \\
+1003.08 & SV & R & 0.4 & 5 & 21.1 & 20.7 & \textbf{12.4} \\
 \midrule
-\multicolumn{5}{l}{FGO best (all counted lines)} & & & & \textbf{8 / 8}\\
+\multicolumn{5}{l}{FGO best (all counted lines)} & & & \textbf{8 / 8}\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1151,7 +1166,7 @@ Line & Purp. & Map & [km] & Mag & online & TL+NN & +TL & win \\
 \includegraphics[width=0.92\columnwidth]{figs/fig_breadth.pdf}
 \caption{Breadth study (Table~\ref{tab:breadth}), log DRMS axis: online-TL EKF
 (gray), EKF+TL+NN (red), and the NN-free FGO window (blue). The MPF+TL particle
-filter diverges on every counted case and is omitted.}
+filter is erratic at cold start (see text) and is omitted.}
 \label{fig:breadth}
 \end{figure}
 
@@ -1160,10 +1175,10 @@ comparison conflates them. The first is about robustness. Keeping a causal filte
 bounded at cold start is not unique to the window, since the neural network does it
 too, so the blanket claim that causal filters diverge is false for the
 state-of-the-art filter. It is, however, true of every non-NN cold-start estimator
-we tried, including the marginalized particle filter, which diverges on all eight
-counted cases despite being a full Bayesian estimator: bounded cold-start
-compensation without a network requires the batch/window re-smoothing, not merely a
-non-Gaussian representation. An ablation within our own estimator locates the
+we tried: the plain online-TL EKF diverges, and the marginalized particle filter,
+though a full Bayesian estimator, is only erratically bounded and never competitive
+(preceding paragraph). Reliable cold-start compensation without a network requires
+the batch/window re-smoothing, not merely a non-Gaussian representation. An ablation within our own estimator locates the
 mechanism more precisely: running the same window with the robust kernel disabled
 still stays bounded on all eight counted cases (e.g.\ \SI{66.3}{\meter} on
 1003.02/Mag~4 where the causal filter reads \SI{41626}{\meter}, refined to
@@ -1322,8 +1337,8 @@ adapts along the flight and late-arriving calibration information corrects early
 navigation states, the mechanism a one-pass causal filter lacks; and a
 necessary-and-sufficient joint-observability condition states when position and
 compensation can be separated at all. On real SGL~2020 data the estimator stays bounded from a cold
-start on all eight full-length cabin-magnetometer cases, where both the plain
-online-TL EKF and a marginalized particle filter diverge, and it is more accurate
+start on all eight full-length cabin-magnetometer cases, where the plain
+online-TL EKF diverges and a marginalized particle filter is erratic, and it is more accurate
 on every such case than the tuned online EKF+TL+NN baseline, with no neural network
 and no calibration flight. A simulation Monte-Carlo shows its reported covariance
 is consistent and conservative where the particle filter's is over-confident, and

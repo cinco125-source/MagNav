@@ -36,6 +36,32 @@ Two separated conclusions (paper §V):
 2. **Accuracy** — the FGO matches that robustness WITHOUT any NN and is more accurate
    (best of four on all 8, by 4–91 m).
 
+### 1c. Fairness: MPF+TL at BEST config, R-swept, all 8 cases — mpf_cold_R / mpf_breadth_fix
+The paper baseline ran the MPF+TL at R=12 nT (over-confident) and thresh 0.1, which is
+unfair to the R-sensitive PF. Re-running with the best config (thresh 0.5, roughen 5,
+R in {40,100}) on all 8 cases, taking the best R per case:
+
+| Line | Mag | MPF+TL best | (paper FGO) |
+|------|-----|-------------|-------------|
+| 1007.06 | 4 | 1227 | 32.7 |
+| 1007.06 | 5 | 75  | 13.8 |
+| 1007.02 | 4 | 1312 | 38.6 |
+| 1007.02 | 5 | 2247 | 14.5 |
+| 1003.02 | 4 | 483 | 42.6 |
+| 1003.02 | 5 | 41  | 21.7 |
+| 1003.08 | 4 | 2899 | 26.1 |
+| 1003.08 | 5 | 77  | 12.4 |
+
+Verdict: NOT a clean "diverges on all 8" (best config keeps it <10 km), but NOT
+"bounded" either. It is **erratic and strongly seed-dependent**: bounded ~40-77 m only
+on the cleanest Mag 5 legs, 0.5-4 km elsewhere and on every Mag 4. (1007.06/Mag 5 gave
+61 m in mpf_cold_R but diverged to 2947 m at R=40 here, at identical config = seed
+sensitivity.) Never within 2x of the FGO. Paper claim revised from "MPF diverges" to
+"MPF is erratic/unreliable at cold start"; breadth table now 3-way (EKF/EKF+TL+NN/FGO),
+MPF in a separate paragraph. NOTE: mpf_breadth_fix's own FGO column diverged on 1007.02
+(1337/1414) because it used linear itp + PF init for FGO too; the paper FGO (cubic,
+proper init) is 38.6/14.5 and is the valid reference.
+
 Warm control — same online MPF+TL on the COMPENSATED stinger Mag 1 (mpf_warm):
 1003.08 MPF+TL 2977 / MPF+TL+NN 1724 / FGO 14.6; 1007.06 43.7 / 95.6 / 16.7.
 Online joint estimation on top of an already-compensated signal is ill-posed (the
