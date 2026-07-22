@@ -16,18 +16,25 @@ MPF variants:
 
 ## PART 1 — Paper baseline: cold start, raw uncompensated Mag 4/5 (online joint est.)
 
-Config: online MPF+TL / MPF+TL+NN, "fixed" resampling recipe (linear itp, log weights,
-thr 0.1, roughen 5), N=1000. Source: mpf_fixed.
+Full four-way comparison from the paper breadth table (canonical, pinned), with the
+MPF+TL / MPF+TL+NN divergence magnitudes from the "fixed" recipe run (mpf_fixed) shown
+in parentheses. "div." = >10 km; "err." = off map.
 
-| Line | Mag | MPF+TL | MPF+TL+NN | FGO |
-|------|-----|--------|-----------|-----|
-| 1003.08 | 4 | Inf   | 347.1  | 26.4 |
-| 1003.08 | 5 | 151.5 | 4196.6 | 12.6 |
-| 1007.06 | 4 | 3306.2| 1445.7 | 32.9 |
-| 1007.06 | 5 | 179.5 | 81.4   | 14.3 |
+| Line | Mag | EKF online | EKF+TL+NN | MPF+TL | MPF+TL+NN | FGO |
+|------|-----|-----------|-----------|--------|-----------|-----|
+| 1007.06 | 4 | 46.7 | 48.9 | div. (3306) | 1446 | **32.7** |
+| 1007.06 | 5 | 17.8 | 18.3 | 180 | 81 | **13.8** |
+| 1003.08 | 4 | err. | 46.6 | div. (Inf) | 347 | **26.1** |
+| 1003.08 | 5 | 21.1 | 20.7 | 152 | 4197 | **12.4** |
 
-**Online MPF diverges on every cold-start case; FGO stays 12–33 m.** This is the
-paper's headline baseline result and is unchanged.
+Two separated conclusions (paper §V):
+1. **Robustness** — "causal filters diverge" is FALSE for the state of the art: the
+   NN-augmented **EKF+TL+NN stays bounded on all 8 counted cases** (46–49 / 18–21 m);
+   the NN is what buys causal cold-start robustness. But the **MPF+TL diverges on all
+   8** — a full Bayesian representation is not enough; bounded cold-start compensation
+   without a network needs the batch/window re-smoothing.
+2. **Accuracy** — the FGO matches that robustness WITHOUT any NN and is more accurate
+   (best of four on all 8, by 4–91 m).
 
 Warm control — same online MPF+TL on the COMPENSATED stinger Mag 1 (mpf_warm):
 1003.08 MPF+TL 2977 / MPF+TL+NN 1724 / FGO 14.6; 1007.06 43.7 / 95.6 / 16.7.
