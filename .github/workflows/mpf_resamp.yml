@@ -1,0 +1,54 @@
+name: MPF resample-threshold sweep
+
+# Is the huge particle count a resampling artifact? Fix N=1000 and sweep the resample
+# threshold {0.1,0.3,0.5,0.7} on the offline-NN compensated Mag 5, matched R=40 nT,
+# roughen 5 m, EKF reference. Runs only research/mpf_resamp.jl.
+
+on:
+  push:
+    branches:
+      - 'claude/continued-work-**'
+    paths:
+      - 'research/mpf_resamp.jl'
+      - 'research/mpf_logw.jl'
+      - '.github/workflows/mpf_resamp.yml'
+  workflow_dispatch:
+
+jobs:
+  resamp:
+    name: MPF resample-threshold sweep
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: MPF resample-threshold sweep
+        run: julia --project=. research/mpf_resamp.jl
+        env:
+          GKSwstype: '100'
+      - name: Commit result CSV back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f research/mpf_resamp_results.csv ] && git add -f research/mpf_resamp_results.csv || echo "no csv"
+          if git diff --cached --quiet; then
+            echo "No result CSV to commit."
+          else
+            git commit -m "Add MPF resample-threshold sweep CSV [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mpf-resamp-results
+          path: research/mpf_resamp_results.csv
+          if-no-files-found: ignore
