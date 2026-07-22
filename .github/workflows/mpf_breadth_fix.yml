@@ -1,0 +1,54 @@
+name: MPF breadth fix (bounded cold-start)
+
+# Re-run the cold-start MPF+TL on all 8 counted cases (4 lines x Mag 4/5) with the best
+# config (thresh=0.5, roughen 5, R in {40,100} nT), FGO reference, to replace the
+# paper's "div." claim with honest bounded numbers. Runs only research/mpf_breadth_fix.jl.
+
+on:
+  push:
+    branches:
+      - 'claude/continued-work-**'
+    paths:
+      - 'research/mpf_breadth_fix.jl'
+      - 'research/mpf_online.jl'
+      - '.github/workflows/mpf_breadth_fix.yml'
+  workflow_dispatch:
+
+jobs:
+  breadthfix:
+    name: MPF breadth fix (bounded cold-start)
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: MPF breadth fix
+        run: julia --project=. research/mpf_breadth_fix.jl
+        env:
+          GKSwstype: '100'
+      - name: Commit result CSV back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f research/mpf_breadth_fix_results.csv ] && git add -f research/mpf_breadth_fix_results.csv || echo "no csv"
+          if git diff --cached --quiet; then
+            echo "No result CSV to commit."
+          else
+            git commit -m "Add MPF breadth-fix (bounded cold-start) CSV [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mpf-breadth-fix-results
+          path: research/mpf_breadth_fix_results.csv
+          if-no-files-found: ignore
