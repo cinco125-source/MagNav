@@ -1,0 +1,54 @@
+name: MPF cold-start R fairness
+
+# Does the cold-start MPF+TL still diverge with a properly tuned R? Best config
+# (thresh=0.5, roughen 5) on raw uncompensated Mag 5, R sweep {12,40,100,300} nT,
+# FGO reference. Runs only research/mpf_cold_R.jl.
+
+on:
+  push:
+    branches:
+      - 'claude/continued-work-**'
+    paths:
+      - 'research/mpf_cold_R.jl'
+      - 'research/mpf_online.jl'
+      - '.github/workflows/mpf_cold_R.yml'
+  workflow_dispatch:
+
+jobs:
+  coldR:
+    name: MPF cold-start R fairness
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: MPF cold-start R fairness
+        run: julia --project=. research/mpf_cold_R.jl
+        env:
+          GKSwstype: '100'
+      - name: Commit result CSV back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f research/mpf_cold_R_results.csv ] && git add -f research/mpf_cold_R_results.csv || echo "no csv"
+          if git diff --cached --quiet; then
+            echo "No result CSV to commit."
+          else
+            git commit -m "Add MPF cold-start R fairness CSV [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mpf-cold-R-results
+          path: research/mpf_cold_R_results.csv
+          if-no-files-found: ignore
