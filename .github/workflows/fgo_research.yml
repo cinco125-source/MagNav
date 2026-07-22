@@ -28,6 +28,7 @@ on:
       - 'research/mpf_np2.jl'
       - 'research/mpf_resamp.jl'
       - 'research/mpf_np_t05.jl'
+      - 'research/mpf_every.jl'
       - 'research/mpf_logw.jl'
       - 'research/mpf_online.jl'
       - 'research/mpf_nn.jl'
@@ -39,6 +40,7 @@ on:
       - '.github/workflows/mpf_np2.yml'
       - '.github/workflows/mpf_resamp.yml'
       - '.github/workflows/mpf_np_t05.yml'
+      - '.github/workflows/mpf_every.yml'
       - '.github/workflows/fgo_research.yml'
   workflow_dispatch:
 

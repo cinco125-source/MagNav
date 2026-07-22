@@ -1,0 +1,54 @@
+name: MPF every-step resampling
+
+# Change ONLY the resampling to Canciani-style every-step (thresh=1.0); everything
+# else identical (offline-NN Mag 5, R=40 nT, roughen 5, N in {1000,4000}). Runs only
+# research/mpf_every.jl.
+
+on:
+  push:
+    branches:
+      - 'claude/continued-work-**'
+    paths:
+      - 'research/mpf_every.jl'
+      - 'research/mpf_logw.jl'
+      - '.github/workflows/mpf_every.yml'
+  workflow_dispatch:
+
+jobs:
+  every:
+    name: MPF every-step resampling
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: MPF every-step resampling
+        run: julia --project=. research/mpf_every.jl
+        env:
+          GKSwstype: '100'
+      - name: Commit result CSV back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f research/mpf_every_results.csv ] && git add -f research/mpf_every_results.csv || echo "no csv"
+          if git diff --cached --quiet; then
+            echo "No result CSV to commit."
+          else
+            git commit -m "Add MPF every-step resampling CSV [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mpf-every-results
+          path: research/mpf_every_results.csv
+          if-no-files-found: ignore
