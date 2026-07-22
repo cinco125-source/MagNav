@@ -1,0 +1,54 @@
+name: MC NEES MPF fairness
+
+# Re-run the consistency (NEES) sim with the properly-configured RBPF (mpf_logw,
+# thresh=0.5, roughening sweep) vs the toolbox MPF, to test whether the ANEES=59.8
+# over-confidence is a config artifact. Runs only research/mc_nees_mpf.jl.
+
+on:
+  push:
+    branches:
+      - 'claude/continued-work-**'
+    paths:
+      - 'research/mc_nees_mpf.jl'
+      - 'research/mpf_logw.jl'
+      - '.github/workflows/mc_nees_mpf.yml'
+  workflow_dispatch:
+
+jobs:
+  neesmpf:
+    name: MC NEES MPF fairness
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: MC NEES MPF fairness
+        run: julia --project=. research/mc_nees_mpf.jl
+        env:
+          GKSwstype: '100'
+      - name: Commit result CSV back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f research/mc_nees_mpf_results.csv ] && git add -f research/mc_nees_mpf_results.csv || echo "no csv"
+          if git diff --cached --quiet; then
+            echo "No result CSV to commit."
+          else
+            git commit -m "Add MC NEES MPF fairness CSV [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mc-nees-mpf-results
+          path: research/mc_nees_mpf_results.csv
+          if-no-files-found: ignore

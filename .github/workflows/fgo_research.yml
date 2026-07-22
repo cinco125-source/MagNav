@@ -32,6 +32,7 @@ on:
       - 'research/mpf_rough0.jl'
       - 'research/mpf_cold_R.jl'
       - 'research/mpf_breadth_fix.jl'
+      - 'research/mc_nees_mpf.jl'
       - 'research/mpf_logw.jl'
       - 'research/mpf_online.jl'
       - 'research/mpf_nn.jl'
@@ -47,6 +48,7 @@ on:
       - '.github/workflows/mpf_rough0.yml'
       - '.github/workflows/mpf_cold_R.yml'
       - '.github/workflows/mpf_breadth_fix.yml'
+      - '.github/workflows/mc_nees_mpf.yml'
       - '.github/workflows/fgo_research.yml'
   workflow_dispatch:
 
