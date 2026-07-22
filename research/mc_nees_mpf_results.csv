@@ -1,0 +1,7 @@
+method,DRMS_mean,DRMS_ci95,ANEES,n_seed
+EKF,4.1,0.4,1.72,30
+FGO,1.39,0.18,1.57,30
+MPF toolbox,4.94,0.75,59.76,30
+MPF logw+rgh0.0,5.07,0.79,88.8,30
+MPF logw+rgh1.0,4.61,0.41,1.8,30
+MPF logw+rgh3.0,6.47,0.64,1.19,30
