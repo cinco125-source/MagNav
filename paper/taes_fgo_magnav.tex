@@ -120,7 +120,8 @@ operations. This has renewed interest in passive, self-contained references that
 draw on natural geophysical signatures of the Earth. Among these, the crustal
 magnetic-anomaly field is attractive: it is globally available, temporally stable
 over the mission horizon, and observable with a lightweight scalar
-magnetometer~\cite{canciani2016,canciani2017}. It is also inherently hard to deny.
+magnetometer~\cite{canciani2016,canciani2017}. It is also difficult to spoof from a
+stand-off distance.
 Denial of a satellite signal exploits the far-field radio link, whose power falls
 off only as the inverse square of range, so a modest transmitter jams or spoofs a
 receiver from far away; a magnetic anomaly, by contrast, is a near-field source
@@ -347,8 +348,9 @@ The paper makes the following contributions:
         four lines, two flights, and two maps. The comparison isolates what the
         network buys (it keeps the causal filter bounded where online TL alone
         diverges and the particle filter is erratic) from what it does not (on every
-        full-length line the smoother is the most accurate of the four), a like-for-like evaluation the
-        literature has lacked.
+        full-length line the smoother is the most accurate of the four under this
+        calibration-cold-start protocol), a like-for-like comparison not previously
+        reported.
 \end{enumerate}
 
 % P8: Organization
@@ -664,9 +666,11 @@ node $\boldsymbol{\theta}$ holds optional extension variables.}
 \end{figure*}
 
 \subsection{Fixed-lag sliding window}
-A single batch over a long line forces one static $\boldsymbol{\beta}$, which
-underfits time-varying interference; a per-epoch filter, conversely, cannot use
-future data. We take the middle path and process the flight in overlapping windows
+A single batch over a long line with a static $\boldsymbol{\beta}$ underfits the
+time-varying interference; carrying $\boldsymbol{\beta}$ as a time-varying chain over
+the full line removes that limitation but at a computation and latency that grow
+without bound, while a per-epoch filter, conversely, cannot use future data. We take
+the middle path and process the flight in overlapping windows
 of length $L_w$ with overlap $L_o$, each a batch factor graph, in the manner of
 fixed-lag and incremental smoothing~\cite{kaess2012,sibley2010,leutenegger2015}.
 Window $k$ spans epochs $[s_k,s_k+L_w)$; it is solved as a batch, commits only its
@@ -907,7 +911,10 @@ Map matching uses the Eastern (``E'') and Renfrew (``R'') high-resolution anomal
 grids, upward-continued to flight altitude with the IGRF core field restored. The
 metric is horizontal distance-RMS (DRMS) of position error after a
 \SI{10}{\minute} warm-up. Cold
-start means the TL coefficients are initialized to zero with no calibration flight.
+start means the TL coefficients are initialized to zero with no calibration flight;
+the navigation solution is accurately initialized (position std \SI{0.1}{\meter},
+Table~\ref{tab:params}), so the term denotes a compensation cold start, not an
+unknown-position navigation start.
 For every comparison the EKF and FGO estimators use identical dynamics, map
 interpolation, and noise settings (Table~\ref{tab:params}); the window smoother
 additionally applies the Huber kernel~\eqref{eq:huber}, whose isolated
@@ -1225,8 +1232,8 @@ generalize, which we report as a negative result.
 \setlength{\tabcolsep}{3.5pt}
 \begin{tabular}{lcccc}
 \toprule
- & Future & Comp. & Non- & Bounded \\
-Estimator & data & state & Gauss. & latency \\
+ & Future & Comp. & Robust & Bounded \\
+Estimator & data & state & meas. & latency \\
 \midrule
 Causal EKF~\cite{canciani2017} & \ding{55} & ($\sim$) & \ding{55} & \ding{51} \\
 Particle / grid filter~\cite{nordlund2009} & \ding{55} & \ding{55} & \ding{51} & \ding{51} \\
