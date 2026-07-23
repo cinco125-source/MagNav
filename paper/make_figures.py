@@ -29,9 +29,9 @@ def fig_breadth():
         # The calibration line 1006.08 is set aside (see text) and not shown.
         # Numbers match Table IV / research/fgo_breadth_results.csv (committed CI run).
         # (label, EKF-online, EKF+TL+NN, FGO-win); None->div, "err"->off-map
-        ("1007.06  M4  (FF)", 46.7, 48.9, 32.7), ("1007.06  M5  (FF)", 17.8, 18.3, 13.8),
+        ("1007.06  M4  (FF)", 46.7, 48.8, 32.7), ("1007.06  M5  (FF)", 17.8, 18.3, 13.8),
         ("1007.02  M4  (FF)", None, 130.0, 38.6), ("1007.02  M5  (FF)", 31.6, 30.4, 14.5),
-        ("1003.02  M4  (SV)", None, 99.1, 42.6), ("1003.02  M5  (SV)", 28.1, 29.5, 21.7),
+        ("1003.02  M4  (SV)", None, 101.0, 42.6), ("1003.02  M5  (SV)", 28.1, 29.5, 21.7),
         ("1003.08  M4  (SV)", "err", 46.6, 26.1), ("1003.08  M5  (SV)", 21.1, 20.7, 12.4),
     ]
     labels = [r[0] for r in rows]
@@ -78,8 +78,8 @@ def fig_coldstart():
     """Line 1007.06 head-to-head vs the reimplemented EKF+TL+NN (our runs only)."""
     methods = ["FGO\nbatch", "FGO\nwin 5", "FGO win 5\n+Huber",
                "EKF+TL+NN\n(reimpl.)"]
-    m4 = [123.7, 37.0, 32.6, 40.0]
-    m5 = [68.1, 15.1, 14.2, 17.5]
+    m4 = [123.7, 37.0, 32.6, 48.8]
+    m5 = [68.1, 15.1, 14.2, 18.3]
     ours = [True, True, True, False]
     x = np.arange(len(methods)); w = 0.38
     fig, ax = plt.subplots(figsize=(COL_W, 2.4))

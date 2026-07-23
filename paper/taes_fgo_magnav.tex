@@ -993,7 +993,7 @@ the map signal and position drifts while the residual stays small (the
 scalar-augmented variant~\cite{hager2026} escapes this only by freezing the network
 after its transient). The tuned filter uses the permanent TL group with an
 eight-unit hidden layer, a FOGM $(\sigma,\tau)=(\SI{3}{\nano\tesla},\SI{180}{\second})$,
-and measurement variance $12^2\,\mathrm{nT}^2$, reaching \num{40.0}/\SI{17.5}{\meter}
+and measurement variance $12^2\,\mathrm{nT}^2$, reaching \num{48.8}/\SI{18.3}{\meter}
 on Mag~4/5 (Table~\ref{tab:1007}), consistent with published cold-start operating
 points~\cite{gnadt2022,hager2026}. We also compare a weak online-TL EKF and a
 marginalized particle filter carrying the TL coefficients; all are our own runs under
@@ -1010,9 +1010,9 @@ interference and degrades to \num{123.7}/\SI{68.1}{\meter}. Allowing the
 compensation to adapt with a \SI{5}{\minute} window recovers it to
 \num{37.0}/\SI{15.1}{\meter}, and the Huber kernel further trims transient outliers
 to \num{32.6}/\SI{14.2}{\meter}. Our online EKF+TL+NN baseline reaches
-\num{40.0}/\SI{17.5}{\meter}. The window smoother beats
-the NN-augmented filter on both sensors, \SI{7.4}{\meter} on Mag~4 and
-\SI{3.3}{\meter} on Mag~5, without any neural network, using only the linear TL
+\num{48.8}/\SI{18.3}{\meter}. The window smoother beats
+the NN-augmented filter on both sensors, \SI{16.2}{\meter} on Mag~4 and
+\SI{4.1}{\meter} on Mag~5, without any neural network, using only the linear TL
 basis carried as graph variables. All compared numbers are our own runs under one
 protocol; 1007.06 is the line on which the baseline tuning is anchored, and the
 same baseline carries to the other lines in the breadth study
@@ -1050,7 +1050,7 @@ FGO-online, window \SI{2}{\minute} & 45.9 & 17.1 \\
 FGO-online, window \SI{5}{\minute} & 37.0 & 15.1 \\
 \textbf{FGO-online, window \SI{5}{\minute} + Huber} & \textbf{32.6} & \textbf{14.2} \\
 \midrule
-EKF+TL+NN, online~\cite{gnadt2022,hager2026} & 40.0 & 17.5 \\
+EKF+TL+NN, online~\cite{gnadt2022,hager2026} & 48.8 & 18.3 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1156,11 +1156,11 @@ never competitive with the window. Calibration line 1006.08 set aside (see text)
  & & & alt & & EKF & EKF+ & FGO \\
 Line & Purp. & Map & [km] & Mag & online & TL+NN & win \\
 \midrule
-1007.06 & FF & R & 0.4 & 4 & 46.7 & 48.9 & \textbf{32.7} \\
+1007.06 & FF & R & 0.4 & 4 & 46.7 & 48.8 & \textbf{32.7} \\
 1007.06 & FF & R & 0.4 & 5 & 17.8 & 18.3 & \textbf{13.8} \\
 1007.02 & FF & E & 0.8 & 4 & div. & 130.0 & \textbf{38.6} \\
 1007.02 & FF & E & 0.8 & 5 & 31.6 & 30.4 & \textbf{14.5} \\
-1003.02 & SV & E & 0.4 & 4 & div. & 99.1 & \textbf{42.6} \\
+1003.02 & SV & E & 0.4 & 4 & div. & 101.0 & \textbf{42.6} \\
 1003.02 & SV & E & 0.4 & 5 & 28.1 & 29.5 & \textbf{21.7} \\
 1003.08 & SV & R & 0.4 & 4 & err. & 46.6 & \textbf{26.1} \\
 1003.08 & SV & R & 0.4 & 5 & 21.1 & 20.7 & \textbf{12.4} \\
