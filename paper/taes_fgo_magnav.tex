@@ -72,8 +72,8 @@ online-TL EKF diverges and a marginalized particle filter is erratic, and it bea
 tuned online EKF+TL+NN baseline, which the neural network keeps bounded, without using a
 neural network. A simulation Monte-Carlo
 confirms that the reported covariance is consistent and never over-confident. We
-also give an exact linear condition for the joint observability of compensation and
-navigation.
+also give a linear condition for when position can be separated from the
+compensation.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -332,12 +332,11 @@ The paper makes the following contributions:
         compensation adapt along the flight, the role a learned online model plays in
         the competing filter, while the graph keeps every quantity an explicit,
         physically interpretable state.
-  \item \textbf{Exact joint-observability condition.} We prove a necessary and
-        sufficient linear-algebraic condition under which the aircraft position
-        and the compensation coefficients are jointly observable from the
-        scalar magnetometer, separating three distinct failure modes: an
+  \item \textbf{Position--compensation separability.} We give a linear-algebraic
+        condition, evaluated over a window, for when a position error can be told
+        apart from a change in the compensation, separating three failure modes: an
         unexcited trajectory, a rank-deficient compensation basis, and the subtle
-        one, a compensation subspace confounded with the anomaly gradient.
+        one, a compensation subspace aligned with the anomaly gradient.
   \item \textbf{Cold-start capability, validated against a reproduced baseline.}
         Deferring commitment over the window lets the estimator stay bounded from a
         cold start with no calibration flight and no learned component. To measure
@@ -359,7 +358,7 @@ The remainder of this paper is organized as follows.
 Section~\ref{sec:background} states the INS error model, the measurement, and the
 batch MAP problem. Section~\ref{sec:method} develops the sliding-window smoother
 and the compensation factors. Section~\ref{sec:observability}
-establishes the observability condition. Section~\ref{sec:results} describes the
+establishes the separability condition. Section~\ref{sec:results} describes the
 baselines and reports and
 interprets the experiments. Section~\ref{sec:conclusion} concludes and states the
 limitations.
@@ -647,11 +646,11 @@ residual, cheaper and far less expressive but requiring no training data. What
 neither term explains, the heavy-tailed switching transients of onboard
 electronics, is handled not by fitting but by the robust kernel in factor~(iv),
 which the reweighting of Section~\ref{sec:method}-D down-weights so that such
-samples cannot pull the position estimate. The observability condition of
-Section~\ref{sec:observability} is what keeps this well-posed: $S_t$ and
-$\boldsymbol{\beta}_t$ may only absorb signal that is not collinear with the
-map gradient $\mathbf{g}_t$, so genuine map information is not silently explained
-away as interference. The trade it makes, a higher compensation residual than the
+samples cannot pull the position estimate. The separability condition of
+Section~\ref{sec:observability} speaks to this: where position and compensation are
+separable, $S_t$ and $\boldsymbol{\beta}_t$ absorb only signal that is not collinear
+with the map gradient $\mathbf{g}_t$, so genuine map information is not silently
+explained away as interference. The trade it makes, a higher compensation residual than the
 network in exchange for navigation robustness, is quantified with the cold-start
 results in Section~\ref{sec:results}-C, where the account is also checked
 against the recorded platform-current channels.
@@ -795,7 +794,7 @@ Section~\ref{sec:results}-A; and it fixes scope, since the paper's gain comes fr
 precisely what the lemma's hypotheses exclude: the jointly estimated, time-varying
 $\boldsymbol{\beta}$, the robust kernel~\eqref{eq:huber}, and the fixed-lag window.
 
-\section{Observability of Joint Compensation and Navigation}
+\section{Separability of Position and Compensation}
 \label{sec:observability}
 Whether position can be recovered while the compensation is estimated jointly is a
 property of the measurement geometry. Over a window let $\mathbf{G}$ have rows
@@ -807,8 +806,10 @@ $\mathbf{z}=\mathbf{G}\,\delta\mathbf{p}+\boldsymbol{\Psi}\,\delta\boldsymbol{\b
 (Fig.~\ref{fig:obs}). This model freezes $\delta\mathbf{p}$ and
 $\delta\boldsymbol{\beta}$ over the window: it is a per-window surrogate for the
 time-varying system~\eqref{eq:dyn},~\eqref{eq:resid} that isolates the
-position--compensation coupling which a full observability Gramian would mix with
-the INS dynamics.
+position--compensation coupling. It holds the coefficients fixed and sets aside the
+slow magnetic-bias state $S_t$ and the INS dynamics that a full observability Gramian
+would mix in, so it speaks to how position and compensation are told apart, not to
+observability of the complete time-varying state.
 
 \begin{figure}[t]
 \centering
@@ -1216,7 +1217,7 @@ both to survive the cold start and to match or beat an NN-augmented causal filte
 this benchmark. Table~\ref{tab:compare} places the estimator families along the axes
 that matter for cold-start compensation.
 
-The observability condition of Section~\ref{sec:observability} accounts for the
+The separability condition of Section~\ref{sec:observability} accounts for the
 pattern. The map-information floor
 (Remark~\ref{rem:floor}) is why the short calibration line 1006.08 is hard for every method, since
 there is little independent map gradient to exploit over its brief window, and it is
@@ -1347,8 +1348,7 @@ jointly with navigation. The Tolles--Lawson coefficients enter the graph as
 time-varying variables of a fixed-lag sliding-window smoother, so the compensation
 adapts along the flight and late-arriving calibration information corrects early
 navigation states, the mechanism a one-pass causal filter lacks; and a
-necessary-and-sufficient joint-observability condition states when position and
-compensation can be separated at all. On real SGL~2020 data the estimator stays bounded from a cold
+linear condition states when position and compensation can be separated at all. On real SGL~2020 data the estimator stays bounded from a cold
 start on all eight full-length cabin-magnetometer cases, where the plain
 online-TL EKF diverges and a marginalized particle filter is erratic, and it is more accurate
 on every such case than the tuned online EKF+TL+NN baseline, with no neural network
@@ -1381,9 +1381,9 @@ full SGL line set and a grid or point-mass baseline; making the graph extensions
 robust enough to claim: sensor-error states on a campaign whose sensor hardware
 and mounting are documented, and current-telemetry regressors with principled
 channel scaling and gating, both of which stay within the attitude-derived,
-position-independent basis the observability condition requires;
+position-independent basis the separability condition requires;
 testing a low-excitation operational cruise; and sharpening the geometric
-observability condition into a quantitative identifiability screen. None of these qualifications affects the central and
+separability condition into a quantitative identifiability screen. None of these qualifications affects the central and
 reproducible finding: carrying the compensation as time-varying variables of a
 windowed factor graph is sufficient to survive the cold start and to match or beat
 an NN-augmented causal filter on this benchmark, with every estimated quantity a
