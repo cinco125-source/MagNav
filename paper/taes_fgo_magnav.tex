@@ -287,8 +287,9 @@ calibrate a magnetometer by fusing vector and scalar magnetometers with inertial
 measurements in a factor graph, absorbing large permanent moments and a
 time-varying external field. That work compensates the sensor but does not close
 the loop to navigation. The joint problem, estimating a time-varying compensation
-together with aircraft position from map matching, has not been posed in a factor
-graph, and the observability of doing so has not been characterized.
+together with aircraft position from map matching, has not, to our knowledge, been
+posed in a published factor-graph formulation, and the observability of doing so has
+not been characterized.
 
 % P6.5: Synthesis of the gap
 Taken together, the three lines leave a specific gap. The cold-start MagNav problem
@@ -924,8 +925,8 @@ the remaining margin to the estimator structure. Unless noted, the window smooth
 uses $L_w=\SI{5}{\minute}$ and $L_o=\SI{90}{\second}$; $L_w$ was selected on line
 1007.06 (Fig.~\ref{fig:winlen}) and then held fixed for every other line, so the
 breadth results of Table~\ref{tab:breadth} are not per-line tuned. All numbers are
-produced by continuous-integration scripts on the code branch and are reproducible
-from it.
+produced by scripted runs under a fixed software environment and are available from
+the authors on request.
 
 \begin{table}[t]
 \caption{Estimator settings for all cold-start results; the same $\mathbf{P}_0$,
@@ -1138,9 +1139,8 @@ reference implementation under our tuning, matching the reported 1007.06 operati
 points to within a few metres, but the original's per-line numbers on the other
 lines are unpublished, so the comparison is against a faithful, not the
 authors', filter. Its cold-start trajectory is also numerically sensitive, so its
-per-line DRMS varies by order \SI{1}{}--\SI{2}{\meter} between runs; the values here
-are those of the committed continuous-integration run and do not affect the
-best-of-three ordering.
+per-line DRMS varies between runs; the values here are those of a single fixed run
+and do not affect the best-of-three ordering.
 
 \begin{table}[t]
 \caption{Breadth: cold-start cabin magnetometers, DRMS [m]. Purpose FF = free-flight
