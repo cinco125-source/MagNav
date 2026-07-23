@@ -1261,15 +1261,18 @@ For consistency we use the per-axis two-degree-of-freedom position NEES,
 $(e_N/\sigma_N)^2+(e_E/\sigma_E)^2$, whose expectation under a consistent covariance
 is \num{2}. Averaged over all seeds and epochs the ANEES is \num{1.57} for the
 factor graph and \num{1.72} for the EKF, both below the ideal \num{2}: both report
-conservative uncertainty that bounds the true error with margin. The particle filter
-is the opposite. Its ANEES is \num{59.8}, more than an order of magnitude above
-\num{2}, so its reported position covariance is severely over-confident: the
-particle-depletion signature, in which the surviving particles after resampling on a
-high-resolution map cluster far more tightly than the true error and the empirical
-covariance collapses. The two linearized estimators are credible; the particle
-filter, though DRMS-competitive with the EKF, is not. Fig.~\ref{fig:consistency}
-shows the EKF and factor-graph NEES staying inside the \SI{95}{\percent} $\chi^2_2$
-band throughout a representative run while the particle filter runs far above it, and
+conservative uncertainty that bounds the true error with margin. The toolbox
+particle filter is the opposite: its ANEES is \num{59.8}, more than an order of
+magnitude above \num{2}, the particle-depletion signature in which the surviving
+particles after resampling on a high-resolution map cluster far more tightly than the
+true error and the empirical covariance collapses. This over-confidence is a
+configuration artifact, not a property of the estimator class: adding regularization
+roughening restores consistency (ANEES \num{1.8} at \SI{1}{\meter} roughening) at a
+small accuracy cost. Even so the factor graph dominates both recursive baselines, more
+accurate (\SI{1.4}{} versus \SIrange{4.1}{4.6}{\meter}) and consistent at once.
+Fig.~\ref{fig:consistency} shows the EKF and factor-graph NEES staying inside the
+\SI{95}{\percent} $\chi^2_2$ band throughout a representative run while the toolbox
+particle filter runs far above it, and
 Fig.~\ref{fig:sigma} shows the North and East position error contained within the
 factor-graph $\pm2\sigma$ envelope. Two caveats bound the reading. The NEES uses the
 per-axis (diagonal) covariance, since the cross term is not exposed by the evaluated
@@ -1341,7 +1344,7 @@ start on all eight full-length cabin-magnetometer cases, where the plain
 online-TL EKF diverges and a marginalized particle filter is erratic, and it is more accurate
 on every such case than the tuned online EKF+TL+NN baseline, with no neural network
 and no calibration flight. A simulation Monte-Carlo shows its reported covariance
-is consistent and conservative where the particle filter's is over-confident, and
+is consistent and conservative where the toolbox particle filter's is over-confident, and
 the recorded platform currents confirm the absorption mechanism: the current
 channels explain a third of the raw cabin interference but almost none of the
 post-fit residual.

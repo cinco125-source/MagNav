@@ -155,6 +155,25 @@ Our mpf_logw vs Canciani's MPF algorithm:
 
 ---
 
+## PART 4 — Consistency (NEES) fairness: is the ANEES=59.8 over-confidence config? — mc_nees_mpf
+Clean 30-seed simulation, Eastern_395, R known exactly (MEASV=1 nT). Ideal ANEES=2.
+
+| method | DRMS [m] | ANEES |
+|--------|----------|-------|
+| FGO | 1.39 | 1.57 |
+| EKF | 4.1 | 1.72 |
+| MPF toolbox (run_filt :mpf) | 4.94 | 59.8 |
+| MPF logw, roughen 0 | 5.07 | 88.8 |
+| MPF logw, roughen 1 | 4.61 | 1.8 |
+| MPF logw, roughen 3 | 6.47 | 1.19 |
+
+The toolbox ANEES=59.8 reproduces the paper. It is a depletion artifact: log-weights
+alone do not fix it (88.8), but roughening does (ANEES 1.8 at 1 m, competitive DRMS
+4.6 m; 3 m over-corrects to conservative 1.19 with an accuracy floor). So "the MPF is
+over-confident" is config-conditional. The FGO still dominates: 1.4 m DRMS (3x the
+recursive baselines) and ANEES 1.57. Paper §V-E revised to make the over-confidence a
+toolbox-default artifact that regularization removes, FGO win unchanged.
+
 ## Bottom line for §V
 
 1. **Core sound**: with an accurate measurement + proper config, plain MPF ≈ EKF
