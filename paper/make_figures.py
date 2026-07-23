@@ -195,7 +195,7 @@ def fig_factorgraph():
     var(thx, thy, r"$\boldsymbol{\theta}$", "#e9e9e9", r=0.27, ec="0.4", ls="--")
     for cx in xs[2:]:
         seg(thx-0.24, thy+0.14, cx+0.10, YZ-0.10, ls="--", color="0.55", lw=0.7)
-    ax.text(thx+0.38, thy, "optional sensor-error\nvariables (Sec. III-F):\n"
+    ax.text(thx+0.38, thy, "optional sensor-error\nvariables (not in this estimator):\n"
             r"$\{c_n\},\,b^{\mathrm{hi}},\,\gamma_0,\gamma_1$"
             "\n(couple to every $z_t$)",
             fontsize=6.4, ha="left", va="center", color="#333")

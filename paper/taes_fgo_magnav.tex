@@ -320,14 +320,16 @@ smoother~\cite{rauch1965}, so smoothing per se is not the contribution; the join
 windowed estimation of a time-varying compensation is.
 The paper makes the following contributions:
 \begin{enumerate}
-  \item \textbf{Factor-graph MagNav with joint online compensation.} We give, to our
-        knowledge, the first formulation of magnetic-anomaly navigation as
-        factor-graph (batch MAP) estimation, and carry the online Tolles--Lawson
-        coefficients as time-varying variables of a fixed-lag sliding-window graph so
-        that navigation and compensation are estimated jointly. The per-window
-        relinearization makes the compensation adapt along the flight, the role a
-        learned online model plays in the competing filter, while the graph keeps
-        every quantity an explicit, physically interpretable state.
+  \item \textbf{Fixed-lag factor-graph joint compensation.} We carry the online
+        Tolles--Lawson coefficients as time-varying variables of a fixed-lag
+        sliding-window graph so that navigation and compensation are estimated jointly
+        from the same scalar measurements. To the authors' knowledge this is the first
+        fixed-lag factor-graph formulation that jointly estimates time-varying
+        Tolles--Lawson compensation coefficients and navigation states in the
+        calibration-cold-start regime. The per-window relinearization makes the
+        compensation adapt along the flight, the role a learned online model plays in
+        the competing filter, while the graph keeps every quantity an explicit,
+        physically interpretable state.
   \item \textbf{Exact joint-observability condition.} We prove a necessary and
         sufficient linear-algebraic condition under which the aircraft position
         and the compensation coefficients are jointly observable from the
@@ -1016,8 +1018,8 @@ Fig.~\ref{fig:winlen} plots DRMS at the three lengths evaluated on this line: th
 batch cannot track their drift, and the \SI{5}{\minute} window is the best of the
 three. The tradeoff mirrors the expressiveness discussion of
 Section~\ref{sec:observability} and makes $L_w$ a physically interpretable knob
-rather than a free hyperparameter, though a denser sweep (and other lines, where
-the balance can shift toward longer windows) is left for the revision.
+rather than a free hyperparameter; a denser sweep across more lines, where the
+balance can shift toward longer windows, is left to future work.
 
 \begin{figure}[t]
 \centering
