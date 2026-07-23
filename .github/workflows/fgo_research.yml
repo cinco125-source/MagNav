@@ -33,6 +33,8 @@ on:
       - 'research/mpf_cold_R.jl'
       - 'research/mpf_breadth_fix.jl'
       - 'research/mc_nees_mpf.jl'
+      - 'research/fgo_overlap.jl'
+      - '.github/workflows/fgo_overlap.yml'
       - 'research/mpf_logw.jl'
       - 'research/mpf_online.jl'
       - 'research/mpf_nn.jl'

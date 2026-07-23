@@ -1,0 +1,53 @@
+name: FGO overlap double-count
+
+# Focused (C-2): does re-processing the window overlap move the DRMS point estimate,
+# or only the covariance? Sweeps window overlap 0..150 s on cold-start cabin Mag 4/5
+# (lines 1007.06, 1003.08). Runs only research/fgo_overlap.jl and commits the CSV back.
+
+on:
+  push:
+    branches:
+      - 'claude/continued-work-**'
+    paths:
+      - 'research/fgo_overlap.jl'
+      - '.github/workflows/fgo_overlap.yml'
+  workflow_dispatch:
+
+jobs:
+  overlap:
+    name: FGO overlap double-count
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: FGO overlap double-count sweep
+        run: julia --project=. research/fgo_overlap.jl
+        env:
+          GKSwstype: '100'
+      - name: Commit result CSV back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f research/fgo_overlap_results.csv ] && git add -f research/fgo_overlap_results.csv || echo "no csv"
+          if git diff --cached --quiet; then
+            echo "No result CSV to commit."
+          else
+            git commit -m "Add FGO overlap double-count CSV [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fgo-overlap-results
+          path: research/fgo_overlap_results.csv
+          if-no-files-found: ignore
