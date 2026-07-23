@@ -687,8 +687,8 @@ the forward-filtered state or marginalize the overlap by a Schur
 complement~\cite{leutenegger2015,kaess2012}; we accept the bounded
 optimism (the overlap is a fixed fraction, $L_o/L_w\!=\!0.3$, of each window) in
 exchange for the simpler implementation. The reported DRMS is a comparison of
-means: Table~\ref{tab:overlap} shows it is empirically insensitive to $L_o$, so the
-double-count affects only the covariance, not the point estimate.
+means: Table~\ref{tab:overlap} indicates it varies little with $L_o$, so the
+double-count primarily affects the covariance rather than the point estimate.
 Algorithm~\ref{alg:window} summarizes the procedure; its per-window cost is
 constant in the line length, giving overall linear complexity.
 
@@ -734,15 +734,14 @@ how much data each compensation estimate sees and thus the effective adaptation
 time; too short and $\boldsymbol{\beta}$ is under-determined, too long and it cannot
 track drift. $L_o$ sets the look-ahead and hence the commit latency: a committed
 state has seen $L_o$ epochs of future data, and the estimator lags real time by
-$L_o$. Table~\ref{tab:overlap} sweeps $L_o$ from $0$ to \SI{150}{\second}: the DRMS is
-insensitive to the choice, and the no-overlap handoff ($L_o=0$), which carries no
-future data and incurs no double-count, is in fact the worst or near-worst on every
-case, while adding look-ahead lowers the mean by up to \SI{9}{\meter}. The
-information double-count noted in Sec.~\ref{sec:method}-B is therefore benign for the
-point estimate---the look-ahead it buys outweighs the mild measurement
-reuse---so an exactly consistent handoff would not improve the reported DRMS. The
-\SI{90}{\second} column reproduces the operating-point numbers used throughout
-(Table~\ref{tab:breadth}). In the experiments we use $L_w=\SI{5}{\minute}$ and
+$L_o$. Table~\ref{tab:overlap} sweeps $L_o$ from $0$ to \SI{150}{\second}: the DRMS varies
+little across this range, and the no-overlap handoff ($L_o=0$), which carries no
+future data and incurs no double-count, is among the worst on each case, with the
+look-ahead configurations somewhat lower. This suggests the information double-count
+noted in Sec.~\ref{sec:method}-B has little effect on the point estimate over the
+cases examined; an exactly consistent handoff would mainly affect the covariance
+rather than the reported DRMS. The \SI{90}{\second} column reproduces the
+operating-point numbers used throughout (Table~\ref{tab:breadth}). In the experiments we use $L_w=\SI{5}{\minute}$ and
 $L_o=\SI{90}{\second}$; the
 \SI{2}{\minute} window in Table~\ref{tab:1007} shows that shortening $L_w$ degrades
 the long-line result, consistent with under-determination. The first window is seeded
