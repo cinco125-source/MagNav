@@ -95,8 +95,11 @@ function drms(tt,tlat,tlon,lat,lon;warm=600.0)
     dn = dlat2dn.(lat[m] .- tlat[m], tlat[m]); de = dlon2de.(lon[m] .- tlon[m], tlat[m])
     sqrt(mean(dn.^2 .+ de.^2))
 end
-traj_s = get_traj(xyz,ind[S]); ins_s = get_ins(xyz,ind[S];N_zero_ll=1)
-fr  = fgo_online(ins_s,meas,xyz.flux_d(ind[S]),itp,zeros(nTL),P0,Qd,R;terms=TERMS,
+# segment mask = first Nseg TRUE samples of the full-flight line mask `ind`
+idx     = findall(ind)
+segmask = falses(length(ind)); segmask[idx[1:Nseg]] .= true
+traj_s = get_traj(xyz,segmask); ins_s = get_ins(xyz,segmask;N_zero_ll=1)
+fr  = fgo_online(ins_s,meas,xyz.flux_d(segmask),itp,zeros(nTL),P0,Qd,R;terms=TERMS,
                  core=true,win=WIN,overlap=OVERLAP,robust=:huber)
 fo  = MagNav.eval_filt(traj_s,ins_s,fr)
 ref_drms = drms(traj_s.tt,traj_s.lat,traj_s.lon,fo.lat,fo.lon)
