@@ -56,7 +56,7 @@ flux  = xyz.flux_d(ind)
 Nseg = min(traj.N, round(Int, SEG_MIN*60/traj.dt))
 S    = 1:Nseg
 dt   = traj.dt
-date = get_years(2020,185)
+date = MagNav.get_years(2020,185)
 
 A   = create_TL_A(flux;terms=TERMS)          # [Nfull, nTL]
 nTL = size(A,2)
@@ -68,7 +68,7 @@ nx = size(P0,1)
 # error-state transition Phi[:,:,t] over the segment (t = 1..Nseg-1)
 Phi = zeros(Float32,nx,nx,Nseg-1)
 for t = 1:Nseg-1
-    Phi[:,:,t] = get_Phi(nx,ins.lat[t],ins.vn[t],ins.ve[t],ins.vd[t],
+    Phi[:,:,t] = MagNav.get_Phi(nx,ins.lat[t],ins.vn[t],ins.ve[t],ins.vd[t],
                          ins.fn[t],ins.fe[t],ins.fd[t],ins.Cnb[:,:,t],
                          3600.0,3600.0,3600.0,FOGM_TAU,dt)
 end
@@ -77,13 +77,13 @@ end
 # Python side can evaluate h(pos) and its gradient for relinearization.
 malt = mean(ins.alt[S])
 pad  = 0.02*pi/180                            # ~2 km padding [rad]
-Ng   = 400
+Ng   = 200
 glat = collect(range(minimum(traj.lat[S])-pad, maximum(traj.lat[S])+pad, length=Ng))
 glon = collect(range(minimum(traj.lon[S])-pad, maximum(traj.lon[S])+pad, length=Ng))
 gh   = zeros(Float64,Ng,Ng)                   # gh[i,j] = map(glat_i,glon_j,malt)+|IGRF|
 for i = 1:Ng, j = 1:Ng
     m = itp(glat[i],glon[j],malt)
-    c = norm(igrf(date,malt,glat[i],glon[j],Val(:geodetic)))
+    c = norm(MagNav.igrf(date,malt,glat[i],glon[j],Val(:geodetic)))
     gh[i,j] = m + c
 end
 
