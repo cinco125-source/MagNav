@@ -1,9 +1,10 @@
 name: GTSAM PoC
 
-# Proof-of-concept: can gtsam's IncrementalFixedLagSmoother reproduce the Julia
-# fixed-lag MagNav FGO on one line? Julia exports the graph ingredients to HDF5,
-# then Python (gtsam) builds the sliding-window smoother and compares DRMS.
-# Iteration 1 — expect to debug the model port across a few runs.
+# Proof-of-concept: can gtsam's IncrementalFixedLagSmoother (gtsam_unstable)
+# reproduce the Julia fixed-lag MagNav FGO on one line? Julia exports the graph
+# ingredients to HDF5 (once, committed back), then Python (gtsam) builds the
+# sliding-window smoother and compares DRMS. The Julia export is SKIPPED when the
+# committed h5 already exists, so Python-side iterations are fast.
 
 on:
   push:
@@ -24,12 +25,24 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - name: Check for cached export
+        id: check
+        run: |
+          if [ -f research/gtsam_poc/line_1007_06.h5 ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: julia-actions/setup-julia@v2
+        if: steps.check.outputs.exists != 'true'
         with:
           version: '1'
       - uses: julia-actions/cache@v2
+        if: steps.check.outputs.exists != 'true'
       - uses: julia-actions/julia-buildpkg@v1
+        if: steps.check.outputs.exists != 'true'
       - name: Export line to HDF5 (Julia)
+        if: steps.check.outputs.exists != 'true'
         run: julia --project=. research/gtsam_poc/export_line.jl
         env:
           GKSwstype: '100'
@@ -43,16 +56,16 @@ jobs:
       - name: Show result
         if: always()
         run: cat research/gtsam_poc/gtsam_poc_result.txt || echo "no result"
-      - name: Commit result back to the branch
+      - name: Commit h5 + result back to the branch
         if: always()
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          [ -f research/gtsam_poc/gtsam_poc_result.txt ] && git add -f research/gtsam_poc/gtsam_poc_result.txt || echo "no result"
+          git add -f research/gtsam_poc/line_1007_06.h5 research/gtsam_poc/gtsam_poc_result.txt 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "nothing to commit"
           else
-            git commit -m "Add GTSAM PoC result [skip ci]"
+            git commit -m "GTSAM PoC: cache export h5 + result [skip ci]"
             git pull --rebase --autostash origin ${{ github.ref_name }} || true
             git push origin HEAD:${{ github.ref_name }}
           fi
@@ -60,7 +73,5 @@ jobs:
         if: always()
         with:
           name: gtsam-poc
-          path: |
-            research/gtsam_poc/gtsam_poc_result.txt
-            research/gtsam_poc/line_1007_06.h5
+          path: research/gtsam_poc/gtsam_poc_result.txt
           if-no-files-found: ignore

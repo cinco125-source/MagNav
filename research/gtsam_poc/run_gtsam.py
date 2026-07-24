@@ -19,6 +19,7 @@ import sys, math
 import numpy as np
 import h5py
 import gtsam
+import gtsam_unstable                     # IncrementalFixedLagSmoother lives here
 from gtsam import symbol_shorthand
 X = symbol_shorthand.X
 
@@ -117,7 +118,7 @@ def main():
         return f
 
     params = gtsam.ISAM2Params()
-    sm = gtsam.IncrementalFixedLagSmoother(win, params)
+    sm = gtsam_unstable.IncrementalFixedLagSmoother(win, params)
 
     graph = gtsam.NonlinearFactorGraph(); vals = gtsam.Values(); ts = {}
     est = np.zeros((N, nx))
