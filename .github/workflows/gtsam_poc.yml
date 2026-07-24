@@ -1,0 +1,66 @@
+name: GTSAM PoC
+
+# Proof-of-concept: can gtsam's IncrementalFixedLagSmoother reproduce the Julia
+# fixed-lag MagNav FGO on one line? Julia exports the graph ingredients to HDF5,
+# then Python (gtsam) builds the sliding-window smoother and compares DRMS.
+# Iteration 1 — expect to debug the model port across a few runs.
+
+on:
+  push:
+    branches:
+      - 'claude/continued-work-**'
+    paths:
+      - 'research/gtsam_poc/**'
+      - '.github/workflows/gtsam_poc.yml'
+  workflow_dispatch:
+
+jobs:
+  poc:
+    name: GTSAM PoC (export + smoother)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Export line to HDF5 (Julia)
+        run: julia --project=. research/gtsam_poc/export_line.jl
+        env:
+          GKSwstype: '100'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install gtsam + h5py
+        run: pip install gtsam h5py numpy
+      - name: Run GTSAM fixed-lag smoother
+        run: python research/gtsam_poc/run_gtsam.py research/gtsam_poc/line_1007_06.h5
+      - name: Show result
+        if: always()
+        run: cat research/gtsam_poc/gtsam_poc_result.txt || echo "no result"
+      - name: Commit result back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f research/gtsam_poc/gtsam_poc_result.txt ] && git add -f research/gtsam_poc/gtsam_poc_result.txt || echo "no result"
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "Add GTSAM PoC result [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gtsam-poc
+          path: |
+            research/gtsam_poc/gtsam_poc_result.txt
+            research/gtsam_poc/line_1007_06.h5
+          if-no-files-found: ignore

@@ -41,6 +41,8 @@ on:
       - '.github/workflows/fgo_winlen.yml'
       - 'research/fgo_norobust.jl'
       - '.github/workflows/fgo_norobust.yml'
+      - 'research/gtsam_poc/**'
+      - '.github/workflows/gtsam_poc.yml'
       - 'research/mpf_logw.jl'
       - 'research/mpf_online.jl'
       - 'research/mpf_nn.jl'
