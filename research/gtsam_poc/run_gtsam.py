@@ -123,6 +123,11 @@ def main():
 
     params = gtsam.ISAM2Params()
     sm = gtsam_unstable.IncrementalFixedLagSmoother(win, params)
+    # weak prior on every variable: MagNav position is only observable where the map
+    # has gradient, so ISAM2's exact factorization can hit a momentarily
+    # underconstrained variable (the Julia RTS smoother tolerates this via the
+    # covariance). A diffuse prior regularizes without materially biasing the estimate.
+    reg_nm = gtsam.noiseModel.Isotropic.Sigma(nx, 1e4)
 
     KTM = gtsam_unstable.FixedLagSmootherKeyTimestampMap
     graph = gtsam.NonlinearFactorGraph(); vals = gtsam.Values(); ts = KTM()
@@ -134,6 +139,7 @@ def main():
     for t in range(1, N):
         graph.add(gtsam.CustomFactor(dyn_nm, [X(t-1), X(t)], dyn_err(Phi[t-1])))
         graph.add(gtsam.CustomFactor(meas_nm, [X(t)], meas_err(t)))
+        graph.push_back(gtsam.PriorFactorVector(X(t), np.zeros(nx), reg_nm))
         vals.insert(X(t), np.zeros(nx)); ts.insert((X(t), t * dt))
         sm.update(graph, vals, ts)
         graph = gtsam.NonlinearFactorGraph(); vals = gtsam.Values(); ts = KTM()
