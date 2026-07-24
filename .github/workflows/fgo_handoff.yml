@@ -1,0 +1,54 @@
+name: FGO marginalized handoff
+
+# Focused (C-2 strong): compares the legacy smoothed window handoff (double-counts
+# the overlap) against the forward-filtered / marginalized handoff (counts the
+# overlap once) on the breadth lines. Runs only research/fgo_handoff.jl and commits
+# the CSV back. Also exercises the new handoff kwarg through the solver on real data.
+
+on:
+  push:
+    branches:
+      - 'claude/continued-work-**'
+    paths:
+      - 'research/fgo_handoff.jl'
+      - '.github/workflows/fgo_handoff.yml'
+  workflow_dispatch:
+
+jobs:
+  handoff:
+    name: FGO marginalized handoff
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: FGO smoothed vs marginalized handoff
+        run: julia --project=. research/fgo_handoff.jl
+        env:
+          GKSwstype: '100'
+      - name: Commit result CSV back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f research/fgo_handoff_results.csv ] && git add -f research/fgo_handoff_results.csv || echo "no csv"
+          if git diff --cached --quiet; then
+            echo "No result CSV to commit."
+          else
+            git commit -m "Add FGO marginalized-handoff CSV [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fgo-handoff-results
+          path: research/fgo_handoff_results.csv
+          if-no-files-found: ignore

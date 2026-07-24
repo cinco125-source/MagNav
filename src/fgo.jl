@@ -393,7 +393,10 @@ function fgo_rts_pass(x_bar, h_bar, H_bar, Phi_a, meas, P0, Qd, R, w, ny;
         P_smooth[:,:,t] = (P_smooth[:,:,t] + P_smooth[:,:,t]') / 2
     end
 
-    return (x_smooth, P_smooth)
+    # also return the filtered (forward-pass) estimates x_upd/P_upd: for a chain,
+    # the filtered state at a node is the marginal of the past sub-graph onto that
+    # node, which the fixed-lag window uses as a double-count-free handoff prior.
+    return (x_smooth, P_smooth, x_upd, P_upd)
 end # function fgo_rts_pass
 
 """

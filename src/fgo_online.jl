@@ -90,6 +90,8 @@ function fgo_online(lat, lon, alt, vn, ve, vd, fn, fe, fd, Cnb, meas,
                     robust_c       = 0,
                     win            = 0.0,
                     overlap        = 0.0,
+                    handoff::Symbol = :smoothed,
+                    return_filtered::Bool = false,
                     x0_prior       = nothing,
                     obs_gate::Bool = false,
                     obs_gate_thresh = 0.5,
@@ -100,6 +102,7 @@ function fgo_online(lat, lon, alt, vn, ve, vd, fn, fe, fd, Cnb, meas,
                     silent         = true)
 
     @assert robust in (:none,:huber,:cauchy) "robust kernel $robust not defined"
+    @assert handoff in (:smoothed,:filtered) "handoff $handoff not defined"
 
     # fixed-lag / sliding-window smoother (incremental FGO, iSAM2-style): let the
     # Tolles-Lawson calibration adapt over a long flight instead of one static
@@ -107,7 +110,8 @@ function fgo_online(lat, lon, alt, vn, ve, vd, fn, fe, fd, Cnb, meas,
     if win > 0
         return fgo_online_window(lat,lon,alt,vn,ve,vd,fn,fe,fd,Cnb,meas,Bx,By,Bz,
                                  dt,itp_mapS,x0_TL,P0,Qd,R;
-                                 win=win,overlap=overlap,baro_tau=baro_tau,
+                                 win=win,overlap=overlap,handoff=handoff,
+                                 baro_tau=baro_tau,
                                  acc_tau=acc_tau,gyro_tau=gyro_tau,fogm_tau=fogm_tau,
                                  date=date,core=core,terms=terms,Bt_scale=Bt_scale,
                                  robust=robust,robust_c=robust_c,obs_gate=obs_gate,
@@ -198,6 +202,8 @@ function fgo_online(lat, lon, alt, vn, ve, vd, fn, fe, fd, Cnb, meas,
 
     x_smooth = repeat(x0,1,N) # initial linearization reference
     P_smooth = zeros(eltype(P0),nx,nx,N)
+    x_filt   = copy(x_smooth) # filtered (forward-pass) estimate, final iteration
+    P_filt   = zeros(eltype(P0),nx,nx,N)
     w        = ones(eltype(P0),N) # IRLS measurement weights
 
     for iter = 1:n_iter
@@ -213,7 +219,7 @@ function fgo_online(lat, lon, alt, vn, ve, vd, fn, fe, fd, Cnb, meas,
             end
         end
 
-        (x_smooth,P_smooth) = fgo_rts_pass(x_bar,h_bar,H_bar,Phi_a,meas,
+        (x_smooth,P_smooth,x_filt,P_filt) = fgo_rts_pass(x_bar,h_bar,H_bar,Phi_a,meas,
                                            Pg,Qg,R,w,ny;x0=x0)
 
         # convergence check on the RMS change of the smoothed states
@@ -229,7 +235,10 @@ function fgo_online(lat, lon, alt, vn, ve, vd, fn, fe, fd, Cnb, meas,
         r_out[:,t] = meas[t,:] .- h_fit[t]
     end
 
-    return FILTres(x_smooth, P_smooth, r_out, true)
+    fr = FILTres(x_smooth, P_smooth, r_out, true)
+    # the fixed-lag window asks for the filtered marginals to build a
+    # double-count-free (marginalized) handoff prior; see fgo_online_window
+    return return_filtered ? (fr, x_filt, P_filt) : fr
 end # function fgo_online
 
 """
@@ -250,7 +259,9 @@ information; the committed means are unaffected).
 """
 function fgo_online_window(lat, lon, alt, vn, ve, vd, fn, fe, fd, Cnb, meas,
                            Bx, By, Bz, dt, itp_mapS, x0_TL, P0, Qd, R;
-                           win, overlap, A_extra = nothing, kwargs...)
+                           win, overlap, handoff::Symbol = :smoothed,
+                           A_extra = nothing, kwargs...)
+    filt  = handoff === :filtered
     N     = length(lat)
     ny    = size(meas,2)
     nx    = size(P0,1)
@@ -282,17 +293,27 @@ function fgo_online_window(lat, lon, alt, vn, ve, vd, fn, fe, fd, Cnb, meas,
         res = fgo_online(lat[S],lon[S],alt[S],vn[S],ve[S],vd[S],fn[S],fe[S],fd[S],
                          Cnb[:,:,S],meas[S,:],Bx[S],By[S],Bz[S],dt,itp_mapS,
                          x0_TL,P0_c,Qd,R; win=0.0,overlap=0.0,x0_prior=x0_pr,
-                         A_extra=Ax, kwargs...)
+                         A_extra=Ax, return_filtered=filt, kwargs...)
+        fres = filt ? res[1] : res
 
         gc1 = (i1==N) ? N : min(i0+stride-1, N)   # committed global end
         lc1 = gc1-i0+1                            # local index of commit end
-        x_out[:,i0:gc1]   = res.x[:,1:lc1]
-        P_out[:,:,i0:gc1] = res.P[:,:,1:lc1]
-        r_out[:,i0:gc1]   = res.r[:,1:lc1]
+        x_out[:,i0:gc1]   = fres.x[:,1:lc1]       # commit smoothed (in-window look-ahead)
+        P_out[:,:,i0:gc1] = fres.P[:,:,1:lc1]
+        r_out[:,i0:gc1]   = fres.r[:,1:lc1]
 
-        # carry the full smoothed state (mean + covariance) at the commit boundary
-        x0_pr = res.x[:,lc1]
-        P0_c  = (res.P[:,:,lc1] .+ res.P[:,:,lc1]') ./ 2   # keep symmetric
+        # handoff prior at the commit boundary. :filtered carries the forward-
+        # filtered marginal, which has NOT seen the trailing overlap, so window
+        # k+1 does not double-count the overlap measurements (the marginalized,
+        # consistent scheme). :smoothed (legacy) carries the smoothed boundary and
+        # counts the overlap twice.
+        if filt
+            x0_pr = res[2][:,lc1]
+            P0_c  = (res[3][:,:,lc1] .+ res[3][:,:,lc1]') ./ 2
+        else
+            x0_pr = fres.x[:,lc1]
+            P0_c  = (fres.P[:,:,lc1] .+ fres.P[:,:,lc1]') ./ 2   # keep symmetric
+        end
 
         i1 == N && break
         i0 += stride
@@ -359,6 +380,7 @@ function fgo_online(ins::INS, meas, flux::MagV, itp_mapS, x0_TL, P0, Qd, R;
                     robust_c       = 0,
                     win            = 0.0,
                     overlap        = 0.0,
+                    handoff::Symbol = :smoothed,
                     obs_gate::Bool = false,
                     obs_gate_thresh = 0.5,
                     obs_gate_min   = 0.05,
@@ -380,6 +402,7 @@ function fgo_online(ins::INS, meas, flux::MagV, itp_mapS, x0_TL, P0, Qd, R;
                robust_c = robust_c,
                win      = win,
                overlap  = overlap,
+               handoff  = handoff,
                obs_gate = obs_gate,
                obs_gate_thresh = obs_gate_thresh,
                obs_gate_min    = obs_gate_min,
