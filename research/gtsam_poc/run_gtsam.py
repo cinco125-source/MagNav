@@ -81,6 +81,10 @@ def main():
     ins_lat = np.asarray(d["ins_lat"]).ravel(); ins_lon = np.asarray(d["ins_lon"]).ravel()
     true_lat = np.asarray(d["true_lat"]).ravel(); true_lon = np.asarray(d["true_lon"]).ravel()
     P0 = np.asarray(d["P0"], dtype=float); Qd = np.asarray(d["Qd"], dtype=float)
+    # the Pinson position process noise is ~0 (position error propagates
+    # deterministically from velocity), so Covariance(Qd) is near-singular; floor
+    # the diagonal so the dynamics factor is representable (cf. fgo_gn_step q_floor).
+    Qd = Qd + 1e-8 * np.eye(nx)
     grid = Grid(d["glat"], d["glon"], d["gh"])
 
     iS  = nx - 1                                 # S state index (last)
