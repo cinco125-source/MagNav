@@ -147,4 +147,12 @@ def main():
         f.write(f"gtsam_drms {drms:.3f}\njulia_ref {ref:.3f}\nN {N} nx {nx} nTL {nTL}\n")
 
 if __name__ == "__main__":
-    main()
+    import traceback
+    try:
+        main()
+    except Exception:
+        tb = traceback.format_exc()
+        print(tb)
+        with open("research/gtsam_poc/gtsam_poc_result.txt", "w") as f:
+            f.write("PYTHON_ERROR\n" + tb)
+        raise
