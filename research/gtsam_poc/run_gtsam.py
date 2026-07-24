@@ -124,13 +124,13 @@ def main():
     graph = gtsam.NonlinearFactorGraph(); vals = gtsam.Values(); ts = KTM()
     est = np.zeros((N, nx))
     graph.push_back(gtsam.PriorFactorVector(X(0), np.zeros(nx), prior_nm))
-    vals.insert(X(0), np.zeros(nx)); ts[X(0)] = 0.0
+    vals.insert(X(0), np.zeros(nx)); ts.insert((X(0), 0.0))
     graph.add(gtsam.CustomFactor(meas_nm, [X(0)], meas_err(0)))
 
     for t in range(1, N):
         graph.add(gtsam.CustomFactor(dyn_nm, [X(t-1), X(t)], dyn_err(Phi[t-1])))
         graph.add(gtsam.CustomFactor(meas_nm, [X(t)], meas_err(t)))
-        vals.insert(X(t), np.zeros(nx)); ts[X(t)] = t * dt
+        vals.insert(X(t), np.zeros(nx)); ts.insert((X(t), t * dt))
         sm.update(graph, vals, ts)
         graph = gtsam.NonlinearFactorGraph(); vals = gtsam.Values(); ts = KTM()
         cur = sm.calculateEstimate()
