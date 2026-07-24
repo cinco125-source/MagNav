@@ -68,7 +68,8 @@ measurement kernels are applied with iteratively reweighted least squares.
 - `robust`:       (optional) robust measurement kernel {`:none`,`:huber`,`:cauchy`}
 - `robust_c`:     (optional) robust kernel tuning constant, `0` for default (`1.345` Huber, `2.385` Cauchy)
 - `win`:          (optional) fixed-lag window length [s], `0` for a single full-batch fit
-- `overlap`:      (optional) window overlap [s] used as warm-up and discarded
+- `overlap`:      (optional) window overlap [s], the smoother look-ahead carried by each committed epoch
+- `handoff`:      (optional) window handoff prior {`:filtered`,`:smoothed`}; `:filtered` marginalizes the departing states (forward-filtered boundary, overlap counted once), `:smoothed` carries the smoothed boundary (legacy, double-counts the overlap)
 - `n_iter`:       (optional) maximum number of Gauss–Newton (relinearization/IRLS) iterations
 - `tol`:          (optional) convergence tolerance on the RMS smoothed state change between iterations
 - `silent`:       (optional) if true, no print outs

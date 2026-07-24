@@ -673,22 +673,18 @@ without bound, while a per-epoch filter, conversely, cannot use future data. We 
 the middle path and process the flight in overlapping windows
 of length $L_w$ with overlap $L_o$, each a batch factor graph, in the manner of
 fixed-lag and incremental smoothing~\cite{kaess2012,sibley2010,leutenegger2015}.
-Window $k$ spans epochs $[s_k,s_k+L_w)$; it is solved as a batch, commits only its
-leading stride of $L_w-L_o$ epochs, and carries the full smoothed state and
-covariance of the last committed epoch forward as a Gaussian prior for window
-$k{+}1$ (Fig.~\ref{fig:window}). The trailing overlap $L_o$ acts as bounded
-smoother look-ahead, so each committed estimate has seen $L_o$ epochs of future
-data. Carrying the full covariance, not just the mean, keeps navigation
-continuous across window boundaries. One approximation deserves note: the carried
-prior is the smoothed state at the commit boundary, which has already seen
-the overlap measurements, and window $k{+}1$ processes those $L_o$ epochs again, so
-the overlap information is counted twice. An exactly consistent scheme would carry
-the forward-filtered state or marginalize the overlap by a Schur
-complement~\cite{leutenegger2015,kaess2012}; we accept the bounded
-optimism (the overlap is a fixed fraction, $L_o/L_w\!=\!0.3$, of each window) in
-exchange for the simpler implementation. The reported DRMS is a comparison of
-means: Table~\ref{tab:overlap} indicates it varies little with $L_o$, so the
-double-count primarily affects the covariance rather than the point estimate.
+Window $k$ spans epochs $[s_k,s_k+L_w)$; it is solved as a batch and commits only its
+leading stride of $L_w-L_o$ epochs. When the window slides, the states that leave it
+are marginalized out and their information is carried forward as a Gaussian prior on
+the retained states of window $k{+}1$ (Fig.~\ref{fig:window})---the standard fixed-lag
+marginalization of square-root SAM and sliding-window visual--inertial
+estimators~\cite{dellaert2006,kaess2012,leutenegger2015,qin2018}. Because the graph is
+a chain, the marginal of the departing sub-graph reduces to the forward-filtered state
+at the commit boundary (a Schur complement computed for free by the forward Kalman
+pass), so each overlap measurement enters the estimate exactly once. The trailing
+overlap $L_o$ thus acts as bounded smoother look-ahead---each committed estimate has
+seen $L_o$ epochs of future data---while the marginalized handoff keeps both the mean
+and the covariance consistent across window boundaries.
 Algorithm~\ref{alg:window} summarizes the procedure; its per-window cost is
 constant in the line length, giving overall linear complexity.
 
@@ -734,15 +730,7 @@ how much data each compensation estimate sees and thus the effective adaptation
 time; too short and $\boldsymbol{\beta}$ is under-determined, too long and it cannot
 track drift. $L_o$ sets the look-ahead and hence the commit latency: a committed
 state has seen $L_o$ epochs of future data, and the estimator lags real time by
-$L_o$. Table~\ref{tab:overlap} sweeps $L_o$ from $0$ to \SI{150}{\second}: the DRMS varies
-little across this range, and the no-overlap handoff ($L_o=0$), which carries no
-future data and incurs no double-count, is among the worst on each case, with the
-look-ahead configurations somewhat lower. This suggests the information double-count
-noted in Sec.~\ref{sec:method}-B has little effect on the point estimate over the
-cases examined; an exactly consistent handoff would mainly affect the covariance
-rather than the reported DRMS. The \SI{90}{\second} column reproduces the
-operating-point numbers used throughout (Table~\ref{tab:breadth}). In the experiments we use $L_w=\SI{5}{\minute}$ and
-$L_o=\SI{90}{\second}$; the
+$L_o$. In the experiments we use $L_w=\SI{5}{\minute}$ and $L_o=\SI{90}{\second}$; the
 \SI{2}{\minute} window in Table~\ref{tab:1007} shows that shortening $L_w$ degrades
 the long-line result, consistent with under-determination. The first window is seeded
 with a diffuse prior on $\boldsymbol{\beta}$ (large $\mathbf{P}_0$ block) so the cold
@@ -752,27 +740,6 @@ tight carried covariance and converge in a few Gauss--Newton iterations
 (typically $3$--$5$; Sec.~\ref{sec:results}-E). This
 warm-start is why the per-window iteration count stays low despite the nonlinearity
 of the map term.
-
-\begin{table}[t]
-\caption{Overlap $L_o$ versus horizontal DRMS [m] at $L_w=\SI{5}{\minute}$, cold
-start, uncompensated cabin magnetometers. $L_o=0$ removes both the look-ahead and the
-overlap double-count; $L_o=\SI{90}{\second}$ (bold) is the operating point used
-throughout and reproduces Table~\ref{tab:breadth}.}
-\label{tab:overlap}
-\centering
-\begin{tabular}{llrrrrrr}
-\toprule
- & & \multicolumn{6}{c}{Overlap $L_o$ [s]} \\
-\cmidrule(l){3-8}
-Line & Mag & 0 & 30 & 60 & \textbf{90} & 120 & 150 \\
-\midrule
-1007.06 & 4 & 34.6 & 30.1 & 35.8 & \textbf{32.7} & 29.7 & 30.3 \\
-        & 5 & 14.5 & 13.5 & 13.9 & \textbf{13.8} & 13.0 & 13.6 \\
-1003.08 & 4 & 35.4 & 31.0 & 32.1 & \textbf{26.1} & 26.4 & 29.5 \\
-        & 5 & 15.7 & 14.0 & 13.0 & \textbf{12.4} & 12.5 & 12.1 \\
-\bottomrule
-\end{tabular}
-\end{table}
 
 \subsection{Robust kernel and reweighting}
 Map error and transient interference produce heavy-tailed
@@ -1129,7 +1096,7 @@ confirming that its residual network is what buys cold-start robustness for the
 causal filter. The window smoother matches that robustness without any neural
 network (it is bounded on all eight) and improves on accuracy: across the four
 full-length lines (\SIrange{63}{87}{\minute}, eight mag-cases) it is the best of
-the three on all eight, beating the NN-augmented filter by \SIrange{4}{91}{\meter}
+the three on all eight, beating the NN-augmented filter by \SIrange{5}{90}{\meter}
 (Fig.~\ref{fig:breadth}).
 
 The marginalized particle filter is reported separately because it resists a
@@ -1188,14 +1155,14 @@ never competitive with the window. Calibration line 1006.08 set aside (see text)
  & & & alt & & EKF & EKF+ & FGO \\
 Line & Purp. & Map & [km] & Mag & online & TL+NN & win \\
 \midrule
-1007.06 & FF & R & 0.4 & 4 & 46.7 & 48.8 & \textbf{32.7} \\
-1007.06 & FF & R & 0.4 & 5 & 17.8 & 18.3 & \textbf{13.8} \\
-1007.02 & FF & E & 0.8 & 4 & div. & 130.0 & \textbf{38.6} \\
-1007.02 & FF & E & 0.8 & 5 & 31.6 & 30.4 & \textbf{14.5} \\
-1003.02 & SV & E & 0.4 & 4 & div. & 101.0 & \textbf{42.6} \\
-1003.02 & SV & E & 0.4 & 5 & 28.1 & 29.5 & \textbf{21.7} \\
-1003.08 & SV & R & 0.4 & 4 & err. & 46.6 & \textbf{26.1} \\
-1003.08 & SV & R & 0.4 & 5 & 21.1 & 20.7 & \textbf{12.4} \\
+1007.06 & FF & R & 0.4 & 4 & 46.7 & 48.8 & \textbf{30.7} \\
+1007.06 & FF & R & 0.4 & 5 & 17.8 & 18.3 & \textbf{13.1} \\
+1007.02 & FF & E & 0.8 & 4 & div. & 130.0 & \textbf{39.9} \\
+1007.02 & FF & E & 0.8 & 5 & 31.6 & 30.4 & \textbf{15.4} \\
+1003.02 & SV & E & 0.4 & 4 & div. & 101.0 & \textbf{43.1} \\
+1003.02 & SV & E & 0.4 & 5 & 28.1 & 29.5 & \textbf{21.1} \\
+1003.08 & SV & R & 0.4 & 4 & err. & 46.6 & \textbf{28.0} \\
+1003.08 & SV & R & 0.4 & 5 & 21.1 & 20.7 & \textbf{13.1} \\
 \midrule
 \multicolumn{5}{l}{FGO best (all counted lines)} & & & \textbf{8 / 8}\\
 \bottomrule
