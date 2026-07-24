@@ -127,7 +127,7 @@ def main():
     # has gradient, so ISAM2's exact factorization can hit a momentarily
     # underconstrained variable (the Julia RTS smoother tolerates this via the
     # covariance). A diffuse prior regularizes without materially biasing the estimate.
-    reg_nm = gtsam.noiseModel.Isotropic.Sigma(nx, 1e4)
+    reg_nm = gtsam.noiseModel.Gaussian.Covariance(P0 * 1e4)
 
     KTM = gtsam_unstable.FixedLagSmootherKeyTimestampMap
     graph = gtsam.NonlinearFactorGraph(); vals = gtsam.Values(); ts = KTM()
