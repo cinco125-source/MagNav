@@ -120,7 +120,8 @@ def main():
     params = gtsam.ISAM2Params()
     sm = gtsam_unstable.IncrementalFixedLagSmoother(win, params)
 
-    graph = gtsam.NonlinearFactorGraph(); vals = gtsam.Values(); ts = {}
+    KTM = gtsam_unstable.FixedLagSmootherKeyTimestampMap
+    graph = gtsam.NonlinearFactorGraph(); vals = gtsam.Values(); ts = KTM()
     est = np.zeros((N, nx))
     graph.push_back(gtsam.PriorFactorVector(X(0), np.zeros(nx), prior_nm))
     vals.insert(X(0), np.zeros(nx)); ts[X(0)] = 0.0
@@ -131,7 +132,7 @@ def main():
         graph.add(gtsam.CustomFactor(meas_nm, [X(t)], meas_err(t)))
         vals.insert(X(t), np.zeros(nx)); ts[X(t)] = t * dt
         sm.update(graph, vals, ts)
-        graph = gtsam.NonlinearFactorGraph(); vals = gtsam.Values(); ts = {}
+        graph = gtsam.NonlinearFactorGraph(); vals = gtsam.Values(); ts = KTM()
         cur = sm.calculateEstimate()
         # record the freshest available estimate for each key still in the window
         for k in range(max(0, t - int(round(win/dt))), t + 1):
