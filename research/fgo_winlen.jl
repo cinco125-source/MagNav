@@ -1,4 +1,5 @@
 ##* Window-length sweep on line 1007.06 (cold-start cabin mags).
+# Uses the default marginalized (forward-filtered) window handoff.
 # Fills in the gap between the short window and the static batch so the
 # window-length-vs-accuracy curve is dense enough to be convincing: L_w in
 # {2, 5, 10, 20, 40} min plus the static (full-line) batch. Same cold-start

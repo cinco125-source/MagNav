@@ -90,7 +90,7 @@ function fgo_online(lat, lon, alt, vn, ve, vd, fn, fe, fd, Cnb, meas,
                     robust_c       = 0,
                     win            = 0.0,
                     overlap        = 0.0,
-                    handoff::Symbol = :smoothed,
+                    handoff::Symbol = :filtered,
                     return_filtered::Bool = false,
                     x0_prior       = nothing,
                     obs_gate::Bool = false,
@@ -259,7 +259,7 @@ information; the committed means are unaffected).
 """
 function fgo_online_window(lat, lon, alt, vn, ve, vd, fn, fe, fd, Cnb, meas,
                            Bx, By, Bz, dt, itp_mapS, x0_TL, P0, Qd, R;
-                           win, overlap, handoff::Symbol = :smoothed,
+                           win, overlap, handoff::Symbol = :filtered,
                            A_extra = nothing, kwargs...)
     filt  = handoff === :filtered
     N     = length(lat)
@@ -380,7 +380,7 @@ function fgo_online(ins::INS, meas, flux::MagV, itp_mapS, x0_TL, P0, Qd, R;
                     robust_c       = 0,
                     win            = 0.0,
                     overlap        = 0.0,
-                    handoff::Symbol = :smoothed,
+                    handoff::Symbol = :filtered,
                     obs_gate::Bool = false,
                     obs_gate_thresh = 0.5,
                     obs_gate_min   = 0.05,
