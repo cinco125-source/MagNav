@@ -2,7 +2,14 @@ PYTHON_ERROR
 Traceback (most recent call last):
   File "/home/runner/work/MagNav/MagNav/research/gtsam_poc/run_gtsam.py", line 154, in <module>
     main()
-  File "/home/runner/work/MagNav/MagNav/research/gtsam_poc/run_gtsam.py", line 127, in main
-    vals.insert(X(0), np.zeros(nx)); ts[X(0)] = 0.0
-                                     ~~^^^^^^
-TypeError: 'gtsam_unstable.gtsam_unstable.FixedLagSmootherKeyTimestampMap' object does not support item assignment
+  File "/home/runner/work/MagNav/MagNav/research/gtsam_poc/run_gtsam.py", line 134, in main
+    sm.update(graph, vals, ts)
+RuntimeError: 
+Indeterminant linear system detected while working near variable
+8646911284551352320 (Symbol: x0).
+
+Thrown when a linear system is ill-posed.  The most common cause for this
+error is having underconstrained variables.  Mathematically, the system is
+underdetermined.  See the GTSAM Doxygen documentation at
+http://borg.cc.gatech.edu/ on gtsam::IndeterminantLinearSystemException for
+more information.
