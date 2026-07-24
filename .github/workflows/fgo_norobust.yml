@@ -1,0 +1,53 @@
+name: FGO robust-kernel ablation
+
+# Focused: regenerate the FGO Huber vs no-Huber breadth numbers under the marginalized
+# (forward-filtered) handoff (Sec. V no-Huber ablation + tab:breadth FGO column).
+# FGO only, deterministic. Runs research/fgo_norobust.jl and commits the CSV back.
+
+on:
+  push:
+    branches:
+      - 'claude/continued-work-**'
+    paths:
+      - 'research/fgo_norobust.jl'
+      - '.github/workflows/fgo_norobust.yml'
+  workflow_dispatch:
+
+jobs:
+  norobust:
+    name: FGO robust-kernel ablation
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: FGO Huber vs no-Huber (marginalized handoff)
+        run: julia --project=. research/fgo_norobust.jl
+        env:
+          GKSwstype: '100'
+      - name: Commit result CSV back to the branch
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          [ -f research/fgo_norobust_results.csv ] && git add -f research/fgo_norobust_results.csv || echo "no csv"
+          if git diff --cached --quiet; then
+            echo "No result CSV to commit."
+          else
+            git commit -m "Add FGO robust-kernel ablation CSV (marginalized handoff) [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fgo-norobust-results
+          path: research/fgo_norobust_results.csv
+          if-no-files-found: ignore

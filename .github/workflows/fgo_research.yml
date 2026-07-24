@@ -39,6 +39,8 @@ on:
       - '.github/workflows/fgo_handoff.yml'
       - 'research/fgo_winlen.jl'
       - '.github/workflows/fgo_winlen.yml'
+      - 'research/fgo_norobust.jl'
+      - '.github/workflows/fgo_norobust.yml'
       - 'research/mpf_logw.jl'
       - 'research/mpf_online.jl'
       - 'research/mpf_nn.jl'
