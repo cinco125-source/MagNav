@@ -87,6 +87,21 @@ def main():
     Qd = Qd + 1e-8 * np.eye(nx)
     grid = Grid(d["glat"], d["glon"], d["gh"])
 
+    # data sanity: a NaN/Inf in Phi/meas/INS shows up as an ISAM2 "indeterminate"
+    for nm_, arr in (("Phi", Phi), ("A", A), ("meas", meas),
+                     ("ins_lat", ins_lat), ("ins_lon", ins_lon)):
+        bad = ~np.isfinite(arr)
+        if bad.any():
+            if arr.ndim == 1:
+                epochs = np.where(bad)[0][:10].tolist()
+            else:
+                epochs = sorted(set(np.where(bad.any(axis=tuple(range(1, arr.ndim)))
+                                             if arr.ndim > 1 else bad)[0].tolist()))[:10]
+            msg = f"NONFINITE in {nm_}: {int(bad.sum())} entries, first epochs {epochs}\n"
+            print(msg)
+            with open("research/gtsam_poc/gtsam_poc_result.txt", "w") as f:
+                f.write("DATA_NONFINITE\n" + msg)
+
     iS  = nx - 1                                 # S state index (last)
     iTL = slice(17, 17 + nTL)                    # TL beta indices (0-based)
 
