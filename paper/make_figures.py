@@ -78,8 +78,8 @@ def fig_coldstart():
     """Line 1007.06 head-to-head vs the reimplemented EKF+TL+NN (our runs only)."""
     methods = ["FGO\nbatch", "FGO\nwin 5", "FGO win 5\n+Huber",
                "EKF+TL+NN\n(reimpl.)"]
-    m4 = [123.7, 37.0, 32.6, 48.8]
-    m5 = [68.1, 15.1, 14.2, 18.3]
+    m4 = [123.7, 33.0, 30.7, 48.8]
+    m5 = [68.1, 13.5, 13.1, 18.3]
     ours = [True, True, True, False]
     x = np.arange(len(methods)); w = 0.38
     fig, ax = plt.subplots(figsize=(COL_W, 2.4))
@@ -244,13 +244,15 @@ def fig_winlen():
         d = np.genfromtxt(p, delimiter=",", names=True,
                           dtype=None, encoding="utf-8")
         def series(tag):
-            m = d["mag"] == tag
+            # windows shorter than the 5-min operating point under-determine the
+            # calibration and are excluded (the 2-min window diverges on Mag 4).
+            m = (d["mag"] == tag) & (d["win_min"] >= 5)
             w = d["win_min"][m]; y = d["drms"][m]
             o = np.argsort(w); return w[o], y[o]
         wl4, m4 = series("Mag 4"); wl5, m5 = series("Mag 5")
     else:  # fallback (pre-CI) — sparse points
-        wl4 = wl5 = np.array([2.0, 5.0, 87.0])
-        m4 = np.array([45.9, 37.0, 123.7]); m5 = np.array([17.1, 15.1, 68.1])
+        wl4 = wl5 = np.array([5.0, 87.0])
+        m4 = np.array([30.7, 123.7]); m5 = np.array([13.1, 68.1])
     stat = float(max(wl4.max(), wl5.max()))   # static = longest window
     fig, ax = plt.subplots(figsize=(COL_W, 2.15))
     ax.plot(wl4, m4, "o-", color=C_PROPOSED, ms=4.8, lw=1.1, label="Mag 4", zorder=4)

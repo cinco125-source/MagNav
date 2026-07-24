@@ -731,7 +731,7 @@ time; too short and $\boldsymbol{\beta}$ is under-determined, too long and it ca
 track drift. $L_o$ sets the look-ahead and hence the commit latency: a committed
 state has seen $L_o$ epochs of future data, and the estimator lags real time by
 $L_o$. In the experiments we use $L_w=\SI{5}{\minute}$ and $L_o=\SI{90}{\second}$; the
-\SI{2}{\minute} window in Table~\ref{tab:1007} shows that shortening $L_w$ degrades
+window-length sweep in Fig.~\ref{fig:winlen} shows that shortening $L_w$ degrades
 the long-line result, consistent with under-determination. The first window is seeded
 with a diffuse prior on $\boldsymbol{\beta}$ (large $\mathbf{P}_0$ block) so the cold
 start is not biased toward zero interference, and the FOGM disturbance state absorbs
@@ -919,7 +919,7 @@ For every comparison the EKF and FGO estimators use identical dynamics, map
 interpolation, and noise settings (Table~\ref{tab:params}); the window smoother
 additionally applies the Huber kernel~\eqref{eq:huber}, whose isolated
 contribution is reported separately in Table~\ref{tab:1007}
-(\SI{37.0}{}$\rightarrow$\SI{32.6}{\meter} on Mag~4), so the reader can attribute
+(\SI{33.0}{}$\rightarrow$\SI{30.7}{\meter} on Mag~4), so the reader can attribute
 the remaining margin to the estimator structure. Unless noted, the window smoother
 uses $L_w=\SI{5}{\minute}$ and $L_o=\SI{90}{\second}$; $L_w$ was selected on line
 1007.06 (Fig.~\ref{fig:winlen}) and then held fixed for every other line, so the
@@ -1007,11 +1007,11 @@ and Fig.~\ref{fig:coldstart} report the primary evaluation line 1007.06
 single coefficient vector over the whole line; it underfits the time-varying
 interference and degrades to \num{123.7}/\SI{68.1}{\meter}. Allowing the
 compensation to adapt with a \SI{5}{\minute} window recovers it to
-\num{37.0}/\SI{15.1}{\meter}, and the Huber kernel further trims transient outliers
-to \num{32.6}/\SI{14.2}{\meter}. Our online EKF+TL+NN baseline reaches
+\num{33.0}/\SI{13.5}{\meter}, and the Huber kernel further trims transient outliers
+to \num{30.7}/\SI{13.1}{\meter}. Our online EKF+TL+NN baseline reaches
 \num{48.8}/\SI{18.3}{\meter}. The window smoother beats
-the NN-augmented filter on both sensors, \SI{16.2}{\meter} on Mag~4 and
-\SI{4.1}{\meter} on Mag~5, without any neural network, using only the linear TL
+the NN-augmented filter on both sensors, \SI{18.1}{\meter} on Mag~4 and
+\SI{5.2}{\meter} on Mag~5, without any neural network, using only the linear TL
 basis carried as graph variables. All compared numbers are our own runs under one
 protocol; 1007.06 is the line on which the baseline tuning is anchored, and the
 same baseline carries to the other lines in the breadth study
@@ -1020,10 +1020,11 @@ margin to the window look-ahead: the coefficients are identified from data on bo
 sides of each committed epoch, whereas the EKF must commit with past data only.
 
 The window length itself trades under-determination against staleness.
-Fig.~\ref{fig:winlen} plots DRMS at the three lengths evaluated on this line: the
-\SI{2}{\minute} window under-determines the coefficients, the full-line static
-batch cannot track their drift, and the \SI{5}{\minute} window is the best of the
-three. The tradeoff mirrors the expressiveness discussion of
+Fig.~\ref{fig:winlen} plots DRMS across window lengths on this line: the full-line
+static batch cannot track the coefficient drift, windows that are too short
+under-determine them, and the \SI{5}{\minute} window and longer stay bounded, with
+\SI{5}{\minute} balancing adaptation against under-determination. The tradeoff
+mirrors the expressiveness discussion of
 Section~\ref{sec:observability} and makes $L_w$ a physically interpretable knob
 rather than a free hyperparameter; a denser sweep across more lines, where the
 balance can shift toward longer windows, is left to future work.
@@ -1045,9 +1046,8 @@ DRMS [m]. INS \SI{318}{\meter}; compensated-Mag~1 EKF $\approx\SI{20}{\meter}$.}
 Method (no NN unless noted) & Mag 4 & Mag 5 \\
 \midrule
 FGO-online, static batch TL & 123.7 & 68.1 \\
-FGO-online, window \SI{2}{\minute} & 45.9 & 17.1 \\
-FGO-online, window \SI{5}{\minute} & 37.0 & 15.1 \\
-\textbf{FGO-online, window \SI{5}{\minute} + Huber} & \textbf{32.6} & \textbf{14.2} \\
+FGO-online, window \SI{5}{\minute} & 33.0 & 13.5 \\
+\textbf{FGO-online, window \SI{5}{\minute} + Huber} & \textbf{30.7} & \textbf{13.1} \\
 \midrule
 EKF+TL+NN, online~\cite{gnadt2022,hager2026} & 48.8 & 18.3 \\
 \bottomrule
@@ -1188,9 +1188,9 @@ though a full Bayesian estimator, is only erratically bounded and never competit
 (preceding paragraph). Reliable cold-start compensation without a network requires
 the batch/window re-smoothing, not merely a non-Gaussian representation. An ablation within our own estimator locates the
 mechanism more precisely: running the same window with the robust kernel disabled
-still stays bounded on all eight counted cases (e.g.\ \SI{66.3}{\meter} on
+still stays bounded on all eight counted cases (e.g.\ \SI{60.3}{\meter} on
 1003.02/Mag~4 where the causal filter reads \SI{41626}{\meter}, refined to
-\SI{42.6}{\meter} by Huber), so the robustness comes from the windowed
+\SI{43.1}{\meter} by Huber), so the robustness comes from the windowed
 relinearization of Section~\ref{sec:method}-A, and the kernel buys accuracy, not
 survival. The recorded platform currents let us check the absorption account of
 Section~\ref{sec:method}-A directly on line 1003.02: the fourteen onboard current
