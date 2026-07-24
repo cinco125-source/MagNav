@@ -33,7 +33,7 @@ jobs:
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@v3
         if: steps.check.outputs.exists != 'true'
         with:
           version: '1'
