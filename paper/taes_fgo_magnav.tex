@@ -1326,11 +1326,12 @@ not the flight. The one-time overhead relative to an EKF is the window
 factorization and the IRLS reweighting, which in our unoptimized research
 implementation runs comfortably faster than real time on the SGL sampling rate.
 
-These same properties make the estimator compatible with real-time operation. Its
-committed output lags real time by the overlap $L_o$, here \SI{90}{\second}, a
-latency that suits the map-aiding role, in which the INS supplies the high-rate
-solution and the smoother corrects it periodically, and that the designer trades
-against accuracy through $L_o$. The factor interface is modular, so
+These same properties make the estimator compatible with online, fixed-lag
+operation rather than zero-latency filtering. Its committed output lags real time by
+the overlap $L_o$, here \SI{90}{\second}, a latency that suits the map-aiding role,
+in which the INS supplies the high-rate real-time solution and the smoother corrects
+it periodically at the commit cadence ($L_w-L_o$, here \SI{3.5}{\minute}), and that
+the designer trades against accuracy through $L_o$. The factor interface is modular, so
 compensation and map factors can be added or removed without touching
 the solver, and one implementation then covers both the calibrated case with frozen
 coefficients and the cold-start case with adaptive coefficients. Integrating it with an operational system amounts to feeding
