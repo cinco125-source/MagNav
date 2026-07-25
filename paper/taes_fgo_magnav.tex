@@ -68,7 +68,7 @@ adapts along the flight with no neural network. That single problem is solved
 across a spectrum of lags under one cost function: a full-line batch that sets the
 offline accuracy bound, a fixed-lag sliding window, and a per-epoch incremental
 smoother that reaches the real-time limit at \SI{14}{\milli\second} per epoch. The
-lag is the sole design variable, trading the future data that corrects a committed
+lag is the primary design variable, trading the future data that corrects a committed
 state against latency. A linear condition states when position can be separated
 from compensation and predicts a cold-start transient that the experiments
 decompose into a warm-prior half and a map-observability half. Across cold-start
@@ -322,8 +322,8 @@ solve that one problem across a spectrum of lags: a full-line batch that uses ev
 measurement and sets the offline accuracy bound, a fixed-lag sliding window that
 commits a state once it has seen a bounded amount of future data, and a per-epoch
 incremental smoother, built on iSAM2~\cite{kaess2012}, that takes the lag to its
-real-time limit. The lag is the single design variable along this spectrum, trading
-observability---how much future data corrects a committed state---against latency and
+real-time limit. The lag is the primary design variable along this spectrum, trading
+observability, the amount of future data that corrects a committed state, against latency and
 computation. What unites every point on it, and separates all of them from the causal
 filters of clusters~A and~B, is that each committed state can be relinearized and
 revised as later measurements arrive, so late calibration corrects early navigation;
@@ -347,7 +347,7 @@ The paper makes the following contributions:
   \item \textbf{A MAP estimation spectrum.} We solve that one MAP problem across a
         spectrum of lags under a single cost function: an offline full-line batch, a
         fixed-lag sliding window, and a per-epoch incremental smoother built on
-        iSAM2. The lag is a single design variable trading observability against
+        iSAM2. The lag is the primary design variable trading observability against
         latency and computation, so the batch fixes the offline accuracy bound and
         the incremental smoother runs in real time (\SI{14}{\milli\second} per
         epoch). This places recursive filtering and batch smoothing as two limits of
@@ -447,7 +447,8 @@ z_t = h(\mathbf{p}_t) + c_t + \eta_t, \qquad \eta_t\sim\mathcal{N}(0,R),
 \end{equation}
 where $h(\cdot)$ interpolates the crustal anomaly map (with the IGRF core field
 restored) at the aircraft position $\mathbf{p}_t=\bar{\mathbf{p}}_t+\delta\mathbf{p}_t$
-and $c_t$ is the aircraft interference. Linearizing about the nominal position,
+and $c_t$ is the aircraft interference, decomposed below into a Tolles--Lawson part
+and a first-order Gauss--Markov remainder $S_t$. Linearizing about the nominal position,
 \begin{equation}
 z_t \approx h(\bar{\mathbf{p}}_t)+\mathbf{g}_t^{\top}\delta\mathbf{p}_t+c_t+\eta_t,
 \qquad \mathbf{g}_t=\left.\frac{\partial h}{\partial\mathbf{p}}\right|_{\bar{\mathbf{p}}_t},
@@ -497,7 +498,7 @@ over a lag of $L$ epochs traces a spectrum under one cost function: the full-lin
 batch ($L=N$) uses every measurement and is the offline accuracy bound; a per-epoch
 recursion (small $L$) commits each state as soon as it is measured, for real-time
 use; and the fixed-lag sliding window sits between, committing a state once it has
-seen a bounded amount of future data. The lag is thus the single design variable that
+seen a bounded amount of future data. The lag is thus the primary design variable that
 trades observability, through the future data each committed estimate sees, against
 latency and computation, and every point on the spectrum solves the same factor
 graph. This section develops that graph and its batch solution, then the fixed-lag
@@ -653,7 +654,7 @@ separable, $S_t$ and $\boldsymbol{\beta}_t$ absorb only signal that is not colli
 with the map gradient $\mathbf{g}_t$, so genuine map information is not silently
 explained away as interference. The trade it makes, a higher compensation residual than the
 network in exchange for navigation robustness, is quantified with the cold-start
-results in Section~\ref{sec:results}-C, where the account is also checked
+results in Section~\ref{sec:results}-D, where the account is also checked
 against the recorded platform-current channels.
 
 \begin{figure*}[t]
@@ -677,14 +678,14 @@ fixed-lag and incremental smoothing~\cite{kaess2012,sibley2010,leutenegger2015}.
 Window $k$ spans epochs $[s_k,s_k+L_w)$; it is solved as a batch and commits only its
 leading stride of $L_w-L_o$ epochs. When the window slides, the states that leave it
 are marginalized out and their information is carried forward as a Gaussian prior on
-the retained states of window $k{+}1$ (Fig.~\ref{fig:window})---the standard fixed-lag
+the retained states of window $k{+}1$ (Fig.~\ref{fig:window}), the standard fixed-lag
 marginalization of square-root SAM and sliding-window visual--inertial
 estimators~\cite{dellaert2006,kaess2012,leutenegger2015,qin2018}. Because the graph is
 a chain, the marginal of the departing sub-graph reduces to the forward-filtered state
 at the commit boundary (a Schur complement computed for free by the forward Kalman
 pass), so each overlap measurement enters the estimate exactly once. The trailing
-overlap $L_o$ thus acts as bounded smoother look-ahead---each committed estimate has
-seen $L_o$ epochs of future data---while the marginalized handoff keeps both the mean
+overlap $L_o$ thus acts as bounded smoother look-ahead, giving each committed estimate
+$L_o$ epochs of future data, while the marginalized handoff keeps both the mean
 and the covariance consistent across window boundaries.
 Algorithm~\ref{alg:window} summarizes the procedure; its per-window cost is
 constant in the line length, giving overall linear complexity.
@@ -1290,7 +1291,9 @@ are instantaneous linear regressions, hence lower bounds on the current
 contribution. What the window adds is that it reaches the same bounded
 regime without the network, its online-training machinery, or the verification
 burden that comes with it. The second is about accuracy, where the window is the
-best of the four on all eight full-length cases. This margin is real, but it should
+best of the four on all eight full-length cases; under a paired sign test on the
+per-case DRMS the one-sided probability of this count arising by chance is
+$2^{-8}\approx0.004$. This margin is real, but it should
 be read with care, because our EKF+TL+NN is a tuned reference implementation and part of its
 deficit is that its online-learned states add variance on the well-conditioned
 sensor, where the linear TL basis already suffices. The defensible reading is that a
@@ -1410,18 +1413,19 @@ regressor rows $\mathbf{A}_t$, the scalar measurements, and the INS mechanizatio
 to the bit across the two languages, and the interpolated anomaly-map grid agrees to a
 \SI{0.9}{\nano\tesla} standard deviation, so the two estimators see the same problem.
 
-On the full \SI{87}{\minute} cold-start line the two agree closely: the GTSAM window
-returns \SI{12.4}{\meter} horizontal DRMS against the Julia smoother's
-\SI{13.8}{\meter}, and on the first ten-minute segment \SI{17.5}{} against
-\SI{21.4}{\meter}; the free-inertial drift matches at \SI{317.5}{} against
+On the full \SI{87}{\minute} cold-start line the two land within a metre of each
+other: the GTSAM window returns \SI{12.4}{\meter} horizontal DRMS against the Julia
+smoother's \SI{13.1}{\meter} (Table~\ref{tab:breadth}), and on the first ten-minute
+segment \SI{17.5}{} against \SI{21.4}{\meter}, the GTSAM side slightly the better of
+the two in both cases; the free-inertial drift matches at \SI{317.5}{} against
 \SI{318}{\meter}, a further check that the two share the same trajectory and map. The
 residual differences trace to modeling choices left deliberately independent:
 Levenberg--Marquardt versus plain Gauss--Newton, bicubic versus bilinear map
-interpolation, and a slightly different window handoff. Both are single runs, so this
-is a statement about implementation independence rather than a statistical comparison;
-its value is that the bounded, sub-\SI{15}{\meter} cold-start result survives a
-complete change of language, library, and solver; Fig.~\ref{fig:crossimpl} overlays
-the GTSAM error trace on the segment.
+interpolation, and a slightly different window handoff. The comparison covers one
+line and both runs are single, so this is a statement about implementation
+independence rather than a statistical one; its value is that the bounded cold-start
+result survives a complete change of language, library, and solver.
+Fig.~\ref{fig:crossimpl} overlays the GTSAM error trace on the segment.
 
 \begin{figure}[t]
 \centering
@@ -1452,30 +1456,36 @@ fixed-lag smoother on line 1007.06 with a \SI{30}{\second} lag, one update per
 faster than the \SI{10}{\hertz} sample rate and comfortably real-time; the figure
 includes the Python measurement-factor callbacks and is therefore a conservative upper
 bound, since native factors would be faster. A causal, zero-latency estimate exists at
-every step. After it converges, the \SI{30}{\second}-lag realtime DRMS is
-\SI{16.5}{\meter} from a cold Tolles--Lawson start and \SI{15.1}{\meter} with a warm
-prior, close to the \SI{14.8}{\meter} of the \SI{300}{\second}-lag smoothed estimate
-and far below the free-inertial drift (Fig.~\ref{fig:realtime}).
+every step. Through the weakly observable first minutes that estimate is poor: counted
+from \SI{60}{\second} onward, the causal DRMS is \SI{82.4}{\meter} from a cold
+Tolles--Lawson start and \SI{49.5}{\meter} with a warm prior, the transient of
+Section~\ref{sec:observability}. Once the smoother locks on, counted from
+\SI{300}{\second} onward, the \SI{30}{\second}-lag causal DRMS is \SI{16.5}{\meter}
+cold and \SI{15.1}{\meter} warm, against \SI{11.0}{\meter} for the
+\SI{300}{\second}-lag smoothed estimate over the same interval and far below the
+free-inertial drift (Fig.~\ref{fig:realtime}).
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figs/fig_realtime.pdf}
 \caption{Causal per-epoch estimates on the ten-minute segment: the
 \SI{30}{\second}-lag realtime error locks onto the map feature near four and a half
-minutes and settles close to the \SI{300}{\second}-lag smoothed estimate, far below
+minutes and converges toward the \SI{300}{\second}-lag smoothed estimate, far below
 free-inertial drift.}
 \label{fig:realtime}
 \end{figure}
 
 The lag behaves as Section~\ref{sec:method} predicts. Lengthening it improves the
-estimate, to \SI{14.8}{\meter} smoothed at a \SI{300}{\second} lag, but at a cost our
-unoptimized Python callbacks cannot yet meet in real time at that lag, so a long lag is
-presently an offline setting in this implementation; native factors would move it
-online. Shortening the lag to \SI{30}{\second} restores real time at the price of the
-cold-start transient analyzed in Section~\ref{sec:observability}: a warm compensation
-prior halves that transient, and lag scheduling removes the rest by running a long lag
-through the early, weakly observable minutes and contracting to \SI{30}{\second} once
-the compensation has converged.
+committed estimate, from \SI{13.4}{\meter} smoothed at a \SI{30}{\second} lag to
+\SI{11.0}{\meter} at a \SI{300}{\second} lag (both counted from \SI{300}{\second}
+onward), but at a cost our unoptimized Python callbacks cannot yet meet in real time
+at the long lag, so that setting is presently offline in this implementation; native
+factors would move it online. Shortening the lag to \SI{30}{\second} restores real
+time at the price of the cold-start transient analyzed in
+Section~\ref{sec:observability}: a warm compensation prior halves that transient, and
+lag scheduling, running a long lag through the early, weakly observable minutes and
+contracting once the compensation has converged, would address the rest; we have not
+yet evaluated such a schedule.
 
 These same properties make the estimator compatible with online, fixed-lag
 operation rather than zero-latency filtering. Its committed output lags real time by

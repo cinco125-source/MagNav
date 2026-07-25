@@ -219,9 +219,8 @@ def fig_crossimpl():
     ax.axvspan(0, 1.0, color="0.5", alpha=0.08, zorder=0)
     ax.axvline(1.0, color="0.5", lw=0.7, ls=":", zorder=1)
 
-    ax.fill_between(t_min, e_win, JULIA_SEGMENT_DRMS,
-                     where=(e_win <= JULIA_SEGMENT_DRMS), color=C_PROPOSED,
-                     alpha=0.10, interpolate=True, zorder=1)
+    # no shading of instantaneous error against the scalar Julia DRMS level:
+    # that visual invites an apples-to-oranges reading (see fig_crossimpl_note.txt)
     ax.plot(t_min, e_ins, ":", color=C_REF, lw=1.3,
              label="INS (%.0f m DRMS)" % ins_drms)
     ax.plot(t_min, e_win, "-", color=C_PROPOSED, lw=1.7,
@@ -296,7 +295,14 @@ def _load_realtime_series():
              drms_ins=drms(ilat, ilon, tlat, tlon, t_s),
              drms_l300=drms(d_l300["est_lat"], d_l300["est_lon"], tlat, tlon, t_s),
              drms_cold=drms(lat_cold, lon_cold, tlat, tlon, t_s),
-             drms_warm=drms(lat_warm, lon_warm, tlat, tlon, t_s))
+             drms_warm=drms(lat_warm, lon_warm, tlat, tlon, t_s),
+             # converged-regime DRMS (t >= 300 s), the convention of paper
+             # Sec. V "Real-time incremental smoothing" for post-lock-on accuracy
+             drms300_ins=drms(ilat, ilon, tlat, tlon, t_s, warm_s=300.0),
+             drms300_l300=drms(d_l300["est_lat"], d_l300["est_lon"], tlat, tlon,
+                               t_s, warm_s=300.0),
+             drms300_cold=drms(lat_cold, lon_cold, tlat, tlon, t_s, warm_s=300.0),
+             drms300_warm=drms(lat_warm, lon_warm, tlat, tlon, t_s, warm_s=300.0))
     return d
 
 
@@ -330,14 +336,18 @@ def fig_realtime():
     fig, ax = plt.subplots(figsize=(COL_W, 3.05))
     fig.subplots_adjust(bottom=0.30)
     YMAX = 120.0
+    # legend DRMS uses the converged regime (t >= 300 s), matching the paper's
+    # Sec. V real-time text; the early transient is fig_warmstart's story
     ax.plot(t, d["e_ins"], ":", color=C_REF, lw=1.2,
-             label="INS (%.0f m DRMS)" % d["drms_ins"])
+             label="INS (%.0f m)" % d["drms300_ins"])
     ax.plot(t, d["e_cold"], "--", color=C_BASE3, lw=1.2,
-             label="lag=30 s realtime, cold TL (%.1f m)" % d["drms_cold"])
+             label="lag=30 s realtime, cold TL (%.1f m)" % d["drms300_cold"])
     ax.plot(t, d["e_warm"], "-.", color=C_BASE2, lw=1.2,
-             label="lag=30 s realtime, warm TL (%.1f m)" % d["drms_warm"])
+             label="lag=30 s realtime, warm TL (%.1f m)" % d["drms300_warm"])
     ax.plot(t, d["e_l300"], "-", color=C_PROPOSED, lw=1.7,
-             label="lag=300 s, smoothed (%.1f m)" % d["drms_l300"])
+             label="lag=300 s, smoothed (%.1f m)" % d["drms300_l300"])
+    ax.set_title("DRMS in legend: converged regime, $t\\geq$300 s",
+                 fontsize=6.6, color="0.3", loc="right", pad=2)
 
     peak_xoff = {id(d["e_cold"]): (-1.0, 0.92), id(d["e_warm"]): (0.75, 0.74)}
     for e, c in ((d["e_cold"], C_BASE3), (d["e_warm"], C_BASE2)):
