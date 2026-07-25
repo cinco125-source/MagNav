@@ -1,0 +1,307 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex.fmt)
+ restricted \write18 enabled.
+entering extended mode
+(taes_fgo_magnav.tex
+LaTeX2e <2025-11-01>
+L3 programming layer <2025-12-24>
+(IEEEtaes.cls
+
+LaTeX Warning: You have requested document class `IEEEtaes',
+               but the document class provides `IEEEphot'.
+
+Document Class: IEEEphot 2009/06/23 V1.2
+-- See the "IEEEphot_HOWTO" manual for usage information.
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\ot1ptm.fd)
+-- Using 8.25in x 10.75in (IEEE Photonics PaperSize) paper.
+-- Using PDF output.
+-- This is a 10 point document.
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/graphics\color.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\color.cfg)
+
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/graphics-def\pdftex.def
+)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/graphics\mathcolor.ltx)
+) (C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/generic/iftex\ifpdf.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/generic/iftex\iftex.sty))
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/wrapfig\wrapfig.sty)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/tools\array.sty)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\hyperref.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/graphics\keyval.sty)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/kvsetkeys\kvsetkeys.sty
+)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/generic/kvdefinekeys\kvdefine
+keys.sty)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/generic/pdfescape\pdfescape.s
+ty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/generic/ltxcmds\ltxcmds.sty)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/generic/pdftexcmds\pdftexcmds
+.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/generic/infwarerr\infwarerr.s
+ty)))
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/hycolor\hycolor.sty)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\nameref.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/refcount\refcount.sty)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/generic/gettitlestring\gettit
+lestring.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/kvoptions\kvoptions.sty
+)))
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/etoolbox\etoolbox.sty)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/generic/stringenc\stringenc.s
+ty) (C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\pd1enc.def
+) (C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/generic/intcalc\intcalc.sty
+) (C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\puenc.def)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/url\url.sty)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/generic/bitset\bitset.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/generic/bigintcalc\bigintcalc
+.sty)))
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\hpdftex.def
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/rerunfilecheck\rerunfil
+echeck.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/generic/uniquecounter\uniquec
+ounter.sty))))
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsmath.sty
+For additional information on amsmath, use the `?' option.
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amstext.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsgen.sty))
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsbsy.sty)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsopn.sty))
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\amssymb.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\amsfonts.sty))
+ (C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphicx.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphics.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/graphics\trig.sty)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\graphics.c
+fg)))
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/booktabs\booktabs.sty)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/siunitx\siunitx.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/translations\translatio
+ns.sty))
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/algorithms\algorithm.st
+y (C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/float\float.sty)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/base\ifthen.sty))
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/algorithmicx\algpseudoc
+ode.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/algorithmicx\algorithmi
+cx.sty
+Document Style algorithmicx 1.2 - a greatly improved `algorithmic' style
+)
+Document Style - pseudocode environments for use with the `algorithmicx' style
+) (C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\pifont.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\upzd.fd)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\upsy.fd))
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3backend-pdf
+tex.def) (taes_fgo_magnav.aux)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\supp-pdf.mk
+ii
+[Loading MPS to PDF converter (version 2006.09.02).]
+)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/epstopdf-pkg\epstopdf-b
+ase.sty
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/00miktex\epstopdf-sys.c
+fg)) (taes_fgo_magnav.out) (taes_fgo_magnav.out)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/translations/dicts\tran
+slations-basic-dictionary-english.trsl)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\ot1phv.fd)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsa.fd)
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsb.fd)
+Underfull \hbox (badness 1796) in paragraph at lines 57--57
+\OT1/ptm/m/n/8.25 Dae-jeon 34141, Re-pub-lic of Ko-rea (e-mail: []cin6474@kaist
+.ac.kr[];
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\ts1ptm.fd)
+Underfull \vbox (badness 1320) has occurred while \output is active [1{C:/Users
+/cin64/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}{C:/Users/cin64/AppData
+/Local/Programs/MiKTeX/fonts/enc/dvips/base/8r.enc}]
+Underfull \hbox (badness 1895) in paragraph at lines 152--167
+[]\OT1/ptm/m/n/10.28844 Magnetic-anomaly nav-i-ga-tion (Mag-Nav) es-ti-mates
+
+Underfull \vbox (badness 10000) has occurred while \output is active
+Underfull \vbox (badness 10000) has occurred while \output is active [2]
+Underfull \hbox (badness 1406) in paragraph at lines 269--293
+\OT1/ptm/m/n/10.28844 root smoothers (square-root SAM [[]], iSAM [[]],
+
+Underfull \vbox (badness 10000) has occurred while \output is active
+Underfull \vbox (badness 10000) has occurred while \output is active [3
+pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.325   \item
+              \textbf{Fixed-lag factor-graph joint compensation.} We carry t...
+ <./figs/fig_concept.pdf>]
+Underfull \hbox (badness 2150) in paragraph at lines 325--335
+\OT1/ptm/m/n/10.28844 time-varying vari-ables of a fixed-lag sliding-
+
+Underfull \hbox (badness 2932) in paragraph at lines 325--335
+\OT1/ptm/m/n/10.28844 window graph so that nav-i-ga-tion and com-
+[4] [5
+pdfTeX warning (ext4): destination with the same identifier (name{figure.2}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.529 \begin{equation}
+                       <./figs/fig_pipeline.pdf>]
+Underfull \vbox (badness 10000) has occurred while \output is active [6]
+Underfull \vbox (badness 10000) has occurred while \output is active
+Underfull \vbox (badness 10000) has occurred while \output is active [7
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.734 
+      
+pdfTeX warning (ext4): destination with the same identifier (name{figure.4}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.734 
+       <./figs/fig_graph.pdf> <./figs/fig_window.pdf>]
+Underfull \vbox (badness 1107) has occurred while \output is active [8]
+Underfull \vbox (badness 10000) has occurred while \output is active [9
+pdfTeX warning (ext4): destination with the same identifier (name{figure.5}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.927 
+       <./figs/fig_obs.pdf>]
+Underfull \vbox (badness 6741) has occurred while \output is active
+(C:\Users\cin64\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\ot1pcr.fd)
+Underfull \hbox (badness 10000) in paragraph at lines 1021--1043
+[]\OT1/ptm/m/n/10.28844 The strong causal com-peti-tor is the on-line
+
+Underfull \hbox (badness 1596) in paragraph at lines 1021--1043
+\OT1/ptm/m/n/10.28844 a position-dependent in-put car-ries sen-si-tiv-ity $\OT1
+/cmr/bx/n/10 g[]$\OT1/ptm/m/n/10.28844 , so
+
+Underfull \hbox (badness 3536) in paragraph at lines 1021--1043
+\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 ^^[; ^^\\OT1/cmr/m/n/10 ) = (3 []\OML/cmm/m/i
+t/10 ; \OT1/cmr/m/n/10 180 s)$\OT1/ptm/m/n/10.28844 , and mea-sure-ment vari-an
+ce
+
+Underfull \vbox (badness 10000) has occurred while \output is active [10
+pdfTeX warning (ext4): destination with the same identifier (name{table.1}) has
+ been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1043 
+       
+pdfTeX warning (ext4): destination with the same identifier (name{figure.6}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1043 
+        <./figs/fig_map.pdf>] [11
+pdfTeX warning (ext4): destination with the same identifier (name{figure.7}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1121 
+       
+pdfTeX warning (ext4): destination with the same identifier (name{figure.8}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1121 
+       
+pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has
+ been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1121 
+        <./figs/fig_poserr.pdf> <./figs/fig_winlen.pdf>]
+Underfull \hbox (badness 1521) in paragraph at lines 1123--1132
+\OT1/ptm/m/n/10.28844 base-lines: the plain online-TL EKF and the on-line
+
+Underfull \hbox (badness 1694) in paragraph at lines 1159--1167
+[]\OT1/ptm/m/n/10.28844 We also ran the short calibration-maneuver line
+
+Underfull \vbox (badness 10000) has occurred while \output is active [12
+pdfTeX warning (ext4): destination with the same identifier (name{figure.9}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1259 
+        <./figs/fig_coldstart.pdf>]
+Underfull \vbox (badness 1442) has occurred while \output is active [13
+pdfTeX warning (ext4): destination with the same identifier (name{table.3}) has
+ been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1299 
+       
+pdfTeX warning (ext4): destination with the same identifier (name{figure.10}) h
+as been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1299 
+       
+pdfTeX warning (ext4): destination with the same identifier (name{table.4}) has
+ been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1299 
+        <./figs/fig_breadth.pdf>] [14
+pdfTeX warning (ext4): destination with the same identifier (name{figure.11}) h
+as been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1382 
+       
+pdfTeX warning (ext4): destination with the same identifier (name{figure.12}) h
+as been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1382 
+        <./figs/fig_consistency.pdf> <./figs/fig_sigma.pdf>] [15]
+** ATTENTION: \biography is deprecated (line 1528). Use \IEEEbiography instead.
+
+
+Underfull \vbox (badness 5175) has occurred while \output is active
+** ATTENTION: \biography is deprecated (line 1536). Use \IEEEbiography instead.
+
+** ATTENTION: \biography is deprecated (line 1543). Use \IEEEbiography instead.
+
+(taes_fgo_magnav.bbl [16 <./figs/author_lee.png> <./figs/author_placeholder.png
+> <./figs/author_bang.jpg>]
+Underfull \hbox (badness 3482) in paragraph at lines 125--126
+[]\OT1/ptm/m/n/8 Aeromagnetic com-pen-sa-tion in gradiometry---performance,
+
+Underfull \vbox (badness 1400) has occurred while \output is active [17])
+[18] (taes_fgo_magnav.aux) )
+(see the transcript file for additional information)<C:/Users/cin64/AppData/Loc
+al/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx10.pfb><C:/Users/cin64/Ap
+pData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx7.pfb><C:/Users/
+cin64/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx8.pfb><C
+:/Users/cin64/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmex
+10.pfb><C:/Users/cin64/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfont
+s/cm/cmmi10.pfb><C:/Users/cin64/AppData/Local/Programs/MiKTeX/fonts/type1/publi
+c/amsfonts/cm/cmmi5.pfb><C:/Users/cin64/AppData/Local/Programs/MiKTeX/fonts/typ
+e1/public/amsfonts/cm/cmmi6.pfb><C:/Users/cin64/AppData/Local/Programs/MiKTeX/f
+onts/type1/public/amsfonts/cm/cmmi7.pfb><C:/Users/cin64/AppData/Local/Programs/
+MiKTeX/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Users/cin64/AppData/Local/P
+rograms/MiKTeX/fonts/type1/public/amsfonts/cm/cmmib10.pfb><C:/Users/cin64/AppDa
+ta/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cmextra/cmmib7.pfb><C:/Use
+rs/cin64/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cmextra/cmmi
+b8.pfb><C:/Users/cin64/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfont
+s/cm/cmr10.pfb><C:/Users/cin64/AppData/Local/Programs/MiKTeX/fonts/type1/public
+/amsfonts/cm/cmr5.pfb><C:/Users/cin64/AppData/Local/Programs/MiKTeX/fonts/type1
+/public/amsfonts/cm/cmr6.pfb><C:/Users/cin64/AppData/Local/Programs/MiKTeX/font
+s/type1/public/amsfonts/cm/cmr7.pfb><C:/Users/cin64/AppData/Local/Programs/MiKT
+eX/fonts/type1/public/amsfonts/cm/cmr8.pfb><C:/Users/cin64/AppData/Local/Progra
+ms/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/cin64/AppData/Loc
+al/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy5.pfb><C:/Users/cin64/App
+Data/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy6.pfb><C:/Users/c
+in64/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy7.pfb><C:
+/Users/cin64/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy8
+.pfb><C:/Users/cin64/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/
+symbols/msam10.pfb><C:/Users/cin64/AppData/Local/Programs/MiKTeX/fonts/type1/pu
+blic/amsfonts/symbols/msbm10.pfb><C:/Users/cin64/AppData/Local/Programs/MiKTeX/
+fonts/type1/urw/courier/ucrr8a.pfb><C:/Users/cin64/AppData/Local/Programs/MiKTe
+X/fonts/type1/urw/helvetic/uhvr8a.pfb><C:/Users/cin64/AppData/Local/Programs/Mi
+KTeX/fonts/type1/urw/times/utmb8a.pfb><C:/Users/cin64/AppData/Local/Programs/Mi
+KTeX/fonts/type1/urw/times/utmbi8a.pfb><C:/Users/cin64/AppData/Local/Programs/M
+iKTeX/fonts/type1/urw/times/utmr8a.pfb><C:/Users/cin64/AppData/Local/Programs/M
+iKTeX/fonts/type1/urw/times/utmri8a.pfb><C:/Users/cin64/AppData/Local/Programs/
+MiKTeX/fonts/type1/urw/zapfding/uzdr.pfb>
+Output written on taes_fgo_magnav.pdf (18 pages, 1961795 bytes).
+Transcript written on taes_fgo_magnav.log.
+pdflatex: major issue: So far, you have not checked for MiKTeX updates.

@@ -1,0 +1,8 @@
+fig_crossimpl.pdf -- data provenance note (not for the tex; keep with the figure)
+=================================================================
+GTSAM curve: measured horizontal error time series, research/gtsam_poc/est_window.npz (line 1007.06, first 10-min segment, mag_5_uc cold start).
+GTSAM DRMS shown in the legend (17.47 m) is computed with the exact drms_of() formula in research/gtsam_poc/run_gtsam_window.py (warm=60 s exclusion) and matches research/gtsam_poc/gtsam_poc_result_window.txt line 2 (17.47 m).
+
+Julia curve: NOT plotted as a time series -- only a scalar segment DRMS (21.4 m) is available (research/gtsam_poc/julia_ref.txt, warm=60 s), because the Julia horizontal-error trajectory for this segment was not exported alongside the DRMS summary. It is shown as a horizontal reference line. Caption should say so explicitly, e.g.: "the Julia curve is a scalar DRMS reference, not a time series, because only the summary statistic was exported for this run."
+
+Full-line reference (not shown on this segment plot, mention in text/caption if useful): GTSAM window 12.4 m vs Julia 13.8 m DRMS over the full 87.3-min line (README.md headline table).

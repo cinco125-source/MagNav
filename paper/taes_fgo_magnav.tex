@@ -59,21 +59,25 @@
 Airborne magnetic-anomaly navigation bounds inertial drift in GNSS-denied flight
 by matching a scalar magnetometer against a magnetic-anomaly map. Its central
 obstacle is aeromagnetic interference: the aircraft's own field must be
-compensated online when no calibration flight is available (the cold-start
-regime). A recent approach augments an extended Kalman filter (EKF) with online
-Tolles--Lawson (TL) coefficients and a residual neural network. We show that a
-factor-graph formulation reaches the same accuracy without a neural network by
-carrying the TL coefficients as graph variables of a fixed-lag sliding-window
-smoother, so the compensation adapts along the flight. Across four long lines from
-two flights and two maps, spanning free-flight navigation and survey
-missions, the smoother is the best of four
-cold-start estimators on every full-length line (\num{8} of \num{8} cases): it stays bounded where a plain
-online-TL EKF diverges and a marginalized particle filter is erratic, and it beats a
-tuned online EKF+TL+NN baseline, which the neural network keeps bounded, without using a
-neural network. A simulation Monte-Carlo
-confirms that the reported covariance is consistent and never over-confident. We
-also give a linear condition for when position can be separated from the
-compensation.
+compensated online when no calibration flight is available, the cold-start
+regime. A recent approach augments an extended Kalman filter (EKF) with online
+Tolles--Lawson (TL) coefficients and a residual neural network. We instead cast
+navigation and compensation as one maximum-a-posteriori problem on a factor graph,
+carrying the TL coefficients as time-varying graph variables so the compensation
+adapts along the flight with no neural network. That single problem is solved
+across a spectrum of lags under one cost function: a full-line batch that sets the
+offline accuracy bound, a fixed-lag sliding window, and a per-epoch incremental
+smoother that reaches the real-time limit at \SI{14}{\milli\second} per epoch. The
+lag is the sole design variable, trading the future data that corrects a committed
+state against latency. A linear condition states when position can be separated
+from compensation and predicts a cold-start transient that the experiments
+decompose into a warm-prior half and a map-observability half. Across cold-start
+lines from two flights and two maps, the smoother is the most accurate of four
+estimators on every full-length case (\num{8} of \num{8}): it stays bounded where an
+online-TL EKF diverges and a marginalized particle filter is erratic, and it beats
+a tuned EKF+TL+NN baseline with no learned component. A simulation Monte-Carlo
+confirms the reported covariance is consistent, and an independent GTSAM
+reimplementation sharing no code reproduces the bounded result.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -242,8 +246,8 @@ improve consistency under nonlinearity. However, these estimators are causal:
 they commit each state online with no access to future measurements, and the
 position-centric ones carry no compensation state of their own. When a large
 uncompensated cold-start residual enters, a causal filter has no mechanism to
-attribute the mismatch to the aircraft field rather than to position, and the
-estimate can diverge.
+attribute the mismatch to the aircraft field rather than to position, and, unable to
+revise a committed state, the estimate can diverge.
 
 % P5: Cluster B -- online / learned compensation
 A second line of work makes the compensation itself adaptive. Classical
@@ -311,53 +315,70 @@ This paper supplies all three.
 
 % P7: Proposed approach + contributions
 In this work we cast magnetic-anomaly navigation as a factor graph and, within it,
-carry the online Tolles--Lawson coefficients as time-varying variables, solving the
-joint compensation-and-navigation problem as a fixed-lag sliding-window smoother
-(Fig.~\ref{fig:concept}). Making the compensation a set of graph variables that the
-window relinearizes is what lets it adapt along the flight, and deferring commitment
-over the window is what lets late-arriving calibration correct early navigation. We
-are explicit about scope: for the linear--Gaussian INS error model the batch MAP
-estimate on the factor-graph chain equals the Rauch--Tung--Striebel (RTS)
-smoother~\cite{rauch1965}, so smoothing per se is not the contribution; the joint,
-windowed estimation of a time-varying compensation is.
+carry the online Tolles--Lawson coefficients as time-varying variables, so that
+navigation and compensation are solved jointly as one maximum-a-posteriori (MAP)
+problem (Fig.~\ref{fig:concept}). Rather than fix a single filter or smoother, we
+solve that one problem across a spectrum of lags: a full-line batch that uses every
+measurement and sets the offline accuracy bound, a fixed-lag sliding window that
+commits a state once it has seen a bounded amount of future data, and a per-epoch
+incremental smoother, built on iSAM2~\cite{kaess2012}, that takes the lag to its
+real-time limit. The lag is the single design variable along this spectrum, trading
+observability---how much future data corrects a committed state---against latency and
+computation. What unites every point on it, and separates all of them from the causal
+filters of clusters~A and~B, is that each committed state can be relinearized and
+revised as later measurements arrive, so late calibration corrects early navigation;
+a causal filter commits each state once and cannot revise it. We are explicit about
+scope: for the linear--Gaussian INS error model the batch MAP estimate on the
+factor-graph chain equals the Rauch--Tung--Striebel (RTS) smoother~\cite{rauch1965},
+so smoothing per se is not the contribution; the joint estimation of a time-varying
+compensation, realized across the lag spectrum, is.
 The paper makes the following contributions:
 \begin{enumerate}
-  \item \textbf{Fixed-lag factor-graph joint compensation.} We carry the online
-        Tolles--Lawson coefficients as time-varying variables of a fixed-lag
-        sliding-window graph so that navigation and compensation are estimated jointly
-        from the same scalar measurements. To the authors' knowledge this is the first
-        fixed-lag factor-graph formulation that jointly estimates time-varying
-        Tolles--Lawson compensation coefficients and navigation states in the
-        calibration-cold-start regime. The per-window relinearization makes the
+  \item \textbf{Factor-graph joint compensation.} We carry the online
+        Tolles--Lawson coefficients as time-varying variables of a factor graph so
+        that navigation and compensation are estimated jointly from the same scalar
+        measurements. To the authors' knowledge this is the first factor-graph
+        formulation that jointly estimates time-varying Tolles--Lawson compensation
+        coefficients and navigation states in the calibration-cold-start regime.
+        Relinearizing the coefficients as the graph is re-solved makes the
         compensation adapt along the flight, the role a learned online model plays in
         the competing filter, while the graph keeps every quantity an explicit,
         physically interpretable state.
-  \item \textbf{Position--compensation separability.} We give a linear-algebraic
-        condition, evaluated over a window, for when a position error can be told
-        apart from a change in the compensation, separating three failure modes: an
-        unexcited trajectory, a rank-deficient compensation basis, and the subtle
-        one, a compensation subspace aligned with the anomaly gradient.
-  \item \textbf{Cold-start capability, validated against a reproduced baseline.}
-        Deferring commitment over the window lets the estimator stay bounded from a
-        cold start with no calibration flight and no learned component. To measure
-        this fairly we run, rather than merely cite, the online EKF+TL+NN lineage
-        of~\cite{gnadt2022,hager2026}, its reference implementation, tuned for a
-        stable cold start, and compare it, a weak online-TL EKF, and a marginalized
-        particle filter carrying the TL coefficients against the proposed smoother on
-        the uncompensated cabin magnetometers, across eight cold-start cases spanning
-        four lines, two flights, and two maps. The comparison isolates what the
-        network buys (it keeps the causal filter bounded where online TL alone
-        diverges and the particle filter is erratic) from what it does not (on every
-        full-length line the smoother is the most accurate of the four under this
-        calibration-cold-start protocol), a like-for-like comparison not previously
-        reported.
+  \item \textbf{A MAP estimation spectrum.} We solve that one MAP problem across a
+        spectrum of lags under a single cost function: an offline full-line batch, a
+        fixed-lag sliding window, and a per-epoch incremental smoother built on
+        iSAM2. The lag is a single design variable trading observability against
+        latency and computation, so the batch fixes the offline accuracy bound and
+        the incremental smoother runs in real time (\SI{14}{\milli\second} per
+        epoch). This places recursive filtering and batch smoothing as two limits of
+        one estimator rather than competing methods, and every point on the spectrum
+        can re-smooth the past, the property the cold start needs.
+  \item \textbf{Position--compensation separability and the cold-start transient.}
+        We give a linear-algebraic condition, evaluated over a window, for when a
+        position error can be told apart from a change in the compensation, separating
+        three failure modes: an unexcited trajectory, a rank-deficient compensation
+        basis, and the subtle one, a compensation subspace aligned with the anomaly
+        gradient. The condition predicts the cold-start transient, which the
+        experiments decompose: a warm compensation prior halves it, and the remaining
+        transient tracks map-gradient observability rather than compensation error.
+  \item \textbf{Flight-data validation.} On uncompensated cabin magnetometers across
+        eight cold-start cases spanning four lines, two flights, and two maps, the
+        smoother is the most accurate of four cold-start estimators. Run rather than
+        merely cited, the online EKF+TL+NN lineage of~\cite{gnadt2022,hager2026} is
+        kept bounded by its network where a weak online-TL EKF diverges and a
+        marginalized particle filter is erratic, yet the smoother beats it with no
+        learned component. A simulation Monte-Carlo confirms the reported covariance
+        is consistent, and an independent GTSAM reimplementation~\cite{dellaert2012}
+        that shares no code reproduces the bounded cold-start result, separating the
+        estimator from its implementation.
 \end{enumerate}
 
 % P8: Organization
 The remainder of this paper is organized as follows.
 Section~\ref{sec:background} states the INS error model, the measurement, and the
-batch MAP problem. Section~\ref{sec:method} develops the sliding-window smoother
-and the compensation factors. Section~\ref{sec:observability}
+batch MAP problem. Section~\ref{sec:method} develops the factor graph and solves it
+across the lag spectrum, from the batch bound to the per-epoch incremental smoother.
+Section~\ref{sec:observability}
 establishes the separability condition. Section~\ref{sec:results} describes the
 baselines and reports and
 interprets the experiments. Section~\ref{sec:conclusion} concludes and states the
@@ -381,8 +402,7 @@ $\boldsymbol{\chi}_t=(\mathbf{x}_t,\boldsymbol{\beta}_t)$.
 \end{problem}
 
 The rest of the section supplies the three models that make
-Problem~\ref{prob:joint} concrete: how the navigation error evolves, what the scalar magnetometer measures, and how the aircraft field enters it, and then casts the whole as maximum-a-posteriori
-estimation on a factor graph.
+Problem~\ref{prob:joint} concrete: how the navigation error evolves, what the scalar magnetometer measures, and how the aircraft field enters it. Section~\ref{sec:method} then casts the joint estimation as maximum-a-posteriori inference on a factor graph and solves it across a spectrum of lags.
 
 \begin{figure*}[t]
 \centering
@@ -470,8 +490,35 @@ we treat it as a time-varying state with a random-walk prior
 $\boldsymbol{\beta}_{t+1}=\boldsymbol{\beta}_t+\mathbf{w}^{\beta}_t$,
 $\mathbf{w}^{\beta}_t\sim\mathcal{N}(\mathbf{0},\mathbf{Q}^{\beta})$.
 
-\subsection{MAP estimation on the factor graph}
-The three models couple through a single scalar stream: the same measurement $z_t$
+\section{MAP Estimation Spectrum}\label{sec:method}
+Problem~\ref{prob:joint} has a single maximum-a-posteriori solution; what a designer
+chooses is how much of the flight to weigh before committing an estimate. Solving it
+over a lag of $L$ epochs traces a spectrum under one cost function: the full-line
+batch ($L=N$) uses every measurement and is the offline accuracy bound; a per-epoch
+recursion (small $L$) commits each state as soon as it is measured, for real-time
+use; and the fixed-lag sliding window sits between, committing a state once it has
+seen a bounded amount of future data. The lag is thus the single design variable that
+trades observability, through the future data each committed estimate sees, against
+latency and computation, and every point on the spectrum solves the same factor
+graph. This section develops that graph and its batch solution, then the fixed-lag
+window, then the per-epoch incremental smoother that is the window's real-time limit,
+and finally the robust kernel and sparse solver common to all three; the estimator is
+drawn in Fig.~\ref{fig:pipeline}, and the three realizations of the spectrum are
+sketched in Fig.~\ref{fig:spectrum}.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figs/fig_spectrum.pdf}
+\caption{The MAP estimation spectrum: the same factor graph solved at three lags,
+from the full-line batch bound through the fixed-lag window to the per-epoch
+incremental smoother, trading the future data each committed estimate sees against
+latency.}
+\label{fig:spectrum}
+\end{figure}
+
+\subsection{Batch MAP estimation (offline bound)}
+The three models of Section~\ref{sec:background} couple through a single scalar
+stream: the same measurement $z_t$
 must simultaneously fix position through the map term $h(\mathbf{p}_t)$ and
 identify the compensation $\mathbf{A}_t^{\top}\boldsymbol{\beta}_t$. We take the
 maximum-a-posteriori (MAP) estimate of Problem~\ref{prob:joint}. Because the
@@ -522,9 +569,8 @@ J(\boldsymbol{\chi})=\;&\lVert\boldsymbol{\chi}_1-\boldsymbol{\chi}_0\rVert^2_{\
 \end{equation}
 Its four terms are, in order, the prior, the INS dynamics, the compensation
 random walk, and the measurement misfit under a possibly robust kernel $\rho$;
-the measurement residual is what the model cannot yet explain,
-$r_t(\boldsymbol{\chi}_t)=z_t-h(\mathbf{p}_t)-
-\mathbf{A}_t^{\top}\boldsymbol{\beta}_t-S_t$. The prior anchors both blocks of
+the measurement residual $r_t(\boldsymbol{\chi}_t)$ of~\eqref{eq:resid} is what the
+model cannot yet explain. The prior anchors both blocks of
 $\boldsymbol{\chi}_1=(\mathbf{x}_1,\boldsymbol{\beta}_1)$, at cold start with a
 diffuse $\boldsymbol{\beta}$-block $\mathbf{P}_0^{\beta}$
 (Table~\ref{tab:params}).
@@ -543,15 +589,9 @@ map-matching is exactly the second chain: navigation and compensation are estima
 from the same evidence, and Section~\ref{sec:observability} characterizes when that
 joint problem is well-posed.
 
-\section{Method}\label{sec:method}
-The proposed estimator (Fig.~\ref{fig:pipeline}) represents navigation and online
-compensation as variables of a single factor
-graph, and solves it over a fixed-lag sliding window by robust Gauss--Newton. This
-section develops the factors, the windowing, and the robust solver.
-
-\subsection{Online TL coefficients as graph variables}
-We append the compensation coefficients $\boldsymbol{\beta}$ to the state, so the
-measurement factor of~\eqref{eq:meas} becomes, in residual form,
+With the compensation coefficients $\boldsymbol{\beta}$ carried as graph variables
+throughout $\boldsymbol{\chi}_t$, the measurement factor of~\eqref{eq:meas} is, in
+residual form,
 \begin{equation}
 r_t(\boldsymbol{\chi}_t)=z_t-h(\mathbf{p}_t)-\mathbf{A}_t^{\top}\boldsymbol{\beta}_t-S_t,
 \label{eq:resid}
@@ -564,28 +604,12 @@ with Gaussian information $R^{-1}$, and its Jacobian row is
 \underbrace{1}_{S}\Big].
 \label{eq:jac}
 \end{equation}
-The window posterior over the joint states
-$\boldsymbol{\chi}_t=(\mathbf{x}_t,\boldsymbol{\beta}_t)$ is the product of four
-factor families, drawn explicitly in Fig.~\ref{fig:graph}:
-\begin{enumerate}
-  \item a joint prior on $\boldsymbol{\chi}_1$: $\mathbf{P}_0$ at cold
-        start, or the smoothed mean and covariance carried from the previous
-        window;
-  \item Pinson--FOGM process factors
-        $\lVert\mathbf{x}_{t+1}-\boldsymbol{\Phi}_t\mathbf{x}_t\rVert^2_{\mathbf{Q}_t^{-1}}$,
-        parameterized by the INS mechanization (specific force $\mathbf{f}^n$,
-        attitude $\mathbf{C}^n_b$) through~\eqref{eq:pinson};
-  \item compensation random-walk factors
-        $\lVert\boldsymbol{\beta}_{t+1}-\boldsymbol{\beta}_t\rVert^2_{(\mathbf{Q}^{\beta})^{-1}}$,
-        which set how quickly the compensation may adapt:%
-        $\mathbf{Q}^{\beta}\!\to\!\mathbf{0}$ recovers a single static
-        $\boldsymbol{\beta}$;
-  \item robust scalar-magnetometer factors $\rho(r_t/\sqrt{R})$
-        with the residual~\eqref{eq:resid}, each coupling $\delta\mathbf{p}_t$
-        (through the map gradient $\mathbf{g}_t$), the disturbance state $S_t$,
-        and $\boldsymbol{\beta}_t$ (through the fluxgate regressor
-        $\mathbf{A}_t$).
-\end{enumerate}
+These robust scalar-magnetometer factors, together with the Pinson--FOGM process
+factors, the compensation random-walk factors, and the joint prior on
+$\boldsymbol{\chi}_1$, form the four factor families of the graph in
+Fig.~\ref{fig:graph}. The random-walk factor sets how quickly the coefficients may
+adapt, with $\mathbf{Q}^{\beta}\!\to\!\mathbf{0}$ recovering a single static
+$\boldsymbol{\beta}$ over the line.
 The INS mechanization, the fluxgate (through $\mathbf{A}_t$), and the anomaly map
 (through $h$ and $\mathbf{g}_t$) enter as known factor parameters, not as
 estimated variables. Two
@@ -602,29 +626,6 @@ solution uses future as well as past measurements, early navigation states benef
 from calibration information that only becomes observable after later
 maneuvers, the property a causal filter lacks.
 
-It is worth being precise about the causal failure this repairs, because the same
-time-varying model~\eqref{eq:tl} can be, and is, carried inside an EKF. At cold
-start the coefficient error makes the residual hundreds of nanotesla, and a
-one-pass filter must apportion that residual between position and
-$\boldsymbol{\beta}$ immediately, using only its current covariance, before the
-maneuvers that would separate the two have occurred. A wrong apportionment moves the
-position estimate, and the next update then evaluates the map gradient
-$\mathbf{g}_t$ at the wrong place, so even a correct residual is charged to the
-wrong direction: the linearization point and the estimate corrupt each other, and
-because the filter cannot revise committed states, the loop runs open until
-divergence. Innovation gating does not repair this, because the cold-start residual
-is not an outlier but a systematic bias present in every early measurement:
-a chi-square gate rejects essentially all of them, which removes the only evidence
-from which $\boldsymbol{\beta}$ could be identified and leaves free-inertial drift.
-The window changes both halves of the failure. Each Gauss--Newton iteration
-relinearizes every epoch in the window, so once the coefficients begin to converge
-mid-window, the residual attribution and the linearization points of the
-early epochs are revised retroactively; and the robust kernel, unlike a
-gate, keeps every measurement, merely down-weighting what the current model cannot
-yet explain. The breadth study isolates the two effects: the window alone, with no
-robust kernel, already stays bounded on every counted case, so the load-bearing mechanism is the windowed
-relinearization, with the kernel as an accuracy refinement.
-
 \smallskip\noindent\textbf{Absorbing the non-Tolles--Lawson remainder.}
 On this dataset the cabin interference is dominated by platform currents and other
 sources the attitude-only TL basis $\mathbf{A}_t$ cannot span, and the online
@@ -632,19 +633,19 @@ EKF+TL+NN lineage~\cite{gnadt2022,hager2026} devotes a neural network precisely 
 this remainder.
 The proposed graph carries no network; instead three of the factors above combine
 to absorb the remainder as a structured, robust regression problem. The
-random-walk factor~(iii) makes $\boldsymbol{\beta}_t$ time-varying: writing
+random-walk factor makes $\boldsymbol{\beta}_t$ time-varying: writing
 the true interference as $\mathbf{A}_t^{\top}\boldsymbol{\beta}^\star+e_t$, a static
 fit ($\mathbf{Q}^{\beta}\!\to\!\mathbf{0}$) forces the entire current signature
 into the residual $e_t$, whereas a nonzero $\mathbf{Q}^{\beta}$ lets the estimated
 coefficients track the slowly drifting, maneuver-correlated projection of the
 currents onto $\mathbf{A}_t$, the low-frequency part a single calibration fit
 cannot recover. The disturbance state $S_t$ in the residual~\eqref{eq:resid}, a
-first-order Gauss--Markov process folded into the Pinson--FOGM factor~(ii), then
+first-order Gauss--Markov process folded into the Pinson--FOGM process factor, then
 carries the temporally correlated component of $e_t$ that is orthogonal to
 $\mathbf{A}_t$; it is the linear--Gaussian, single-scalar analogue of the learned
 residual, cheaper and far less expressive but requiring no training data. What
 neither term explains, the heavy-tailed switching transients of onboard
-electronics, is handled not by fitting but by the robust kernel in factor~(iv),
+electronics, is handled not by fitting but by the robust kernel of the measurement factor,
 which the reweighting of Section~\ref{sec:method}-D down-weights so that such
 samples cannot pull the position estimate. The separability condition of
 Section~\ref{sec:observability} speaks to this: where position and compensation are
@@ -712,7 +713,7 @@ window $L_w$, overlap $L_o$, prior $(\hat{\boldsymbol{\chi}}_0,\mathbf{P}_0)$
            \eqref{eq:irls}
     \State solve the linearized chain by an iterated RTS pass~\cite{rauch1965}
            (equivalently, sparse QR / square-root SAM~\cite{dellaert2006};
-           Sec.~\ref{sec:method}-E)
+           Sec.~\ref{sec:method}-D)
     \State update $\boldsymbol{\chi}\gets\boldsymbol{\chi}+\Delta\boldsymbol{\chi}$
   \Until{converged}
   \State commit epochs $[s,s{+}L_w{-}L_o)$; recover $(\hat{\boldsymbol{\chi}},
@@ -724,7 +725,29 @@ window $L_w$, overlap $L_o$, prior $(\hat{\boldsymbol{\chi}}_0,\mathbf{P}_0)$
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Window design and initialization}
+It is worth being precise about the causal failure this repairs, because the same
+time-varying model~\eqref{eq:tl} can be, and is, carried inside an EKF. At cold
+start the coefficient error makes the residual hundreds of nanotesla, and a
+one-pass filter must apportion that residual between position and
+$\boldsymbol{\beta}$ immediately, using only its current covariance, before the
+maneuvers that would separate the two have occurred. A wrong apportionment moves the
+position estimate, and the next update then evaluates the map gradient
+$\mathbf{g}_t$ at the wrong place, so even a correct residual is charged to the
+wrong direction: the linearization point and the estimate corrupt each other, and
+because the filter cannot revise committed states, the loop runs open until
+divergence. Innovation gating does not repair this, because the cold-start residual
+is not an outlier but a systematic bias present in every early measurement:
+a chi-square gate rejects essentially all of them, which removes the only evidence
+from which $\boldsymbol{\beta}$ could be identified and leaves free-inertial drift.
+The window changes both halves of the failure. Each Gauss--Newton iteration
+relinearizes every epoch in the window, so once the coefficients begin to converge
+mid-window, the residual attribution and the linearization points of the
+early epochs are revised retroactively; and the robust kernel, unlike a
+gate, keeps every measurement, merely down-weighting what the current model cannot
+yet explain. The breadth study isolates the two effects: the window alone, with no
+robust kernel, already stays bounded on every counted case, so the load-bearing mechanism is the windowed
+relinearization, with the kernel as an accuracy refinement.
+
 Two parameters govern the window: the length $L_w$ and the overlap $L_o$. $L_w$ sets
 how much data each compensation estimate sees and thus the effective adaptation
 time; too short and $\boldsymbol{\beta}$ is under-determined, too long and it cannot
@@ -737,11 +760,45 @@ with a diffuse prior on $\boldsymbol{\beta}$ (large $\mathbf{P}_0$ block) so the
 start is not biased toward zero interference, and the FOGM disturbance state absorbs
 the initial mismatch while the coefficients converge; subsequent windows inherit the
 tight carried covariance and converge in a few Gauss--Newton iterations
-(typically $3$--$5$; Sec.~\ref{sec:results}-E). This
+(typically $3$--$5$; Sec.~\ref{sec:results}-G). This
 warm-start is why the per-window iteration count stays low despite the nonlinearity
 of the map term.
 
-\subsection{Robust kernel and reweighting}
+\subsection{Per-epoch incremental smoothing}\label{sec:incremental}
+Taking the lag to its lower limit turns the window into a per-epoch recursion: instead
+of re-solving a batch every stride, the graph is extended and re-solved once per
+measurement. We realize this with an incremental fixed-lag smoother built on the
+Bayes-tree factorization of iSAM2~\cite{kaess2012}. At each epoch the two chain
+factors and the scalar-magnetometer factor of that epoch are added to the graph;
+iSAM2 identifies the variables whose linearization the new factors disturb and
+re-eliminates only that part of the Bayes tree, so the per-epoch cost does not grow
+with the flight. States that leave the lag are marginalized rather than dropped: their
+information is compressed into a Gaussian prior on the oldest retained state, the same
+boundary marginal the sliding window carries across its handoff. The window and the
+incremental smoother are therefore one estimator at two strides. The window
+re-optimizes a batch every $L_w-L_o$ epochs and hands the filtered boundary forward so
+each overlap measurement is counted once; the incremental smoother is the limit in
+which the stride is a single epoch, with a causal estimate available at every step
+from the current linearization point. Along the whole spectrum the lag alone sets how
+much future data corrects a committed state, hence its accuracy, latency, and
+per-epoch cost together.
+
+One numerical point matters for reproduction. The position channel of the discrete
+process covariance $\mathbf{Q}_t$ is minute, of order $10^{-31}\,\mathrm{rad}^2$ in
+the horizontal-position states, because position error is driven only through velocity
+over a single sample; whitening the process factor by $\mathbf{Q}_t^{-1/2}$ then spans
+some thirty orders of magnitude. A Cholesky factorization of the information matrix
+squares this conditioning and fails outright, returning an indeterminate variable. Two
+changes remove the failure: a floor of $10^{-20}\mathbf{I}$ added to $\mathbf{Q}_t$,
+which injects under a millimetre of position uncertainty per step and is dynamically
+negligible, and a QR factorization of the square-root information matrix in place of
+Cholesky, which operates on the square root and so tolerates the residual spread. A
+larger floor or per-epoch regularizing priors also suppress the exception, but by
+pinning the estimate onto the propagated INS they defeat the correction; the
+floor-plus-QR combination keeps the estimate free while remaining numerically stable,
+and is what both the incremental and the batch solvers use.
+
+\subsection{Robust kernel and sparse solver}
 Map error and transient interference produce heavy-tailed
 residuals that a quadratic cost over-weights. We use a Huber kernel~\cite{huber1964}
 \begin{equation}
@@ -764,7 +821,6 @@ constraints~\cite{sunderhauf2012} and dynamic covariance
 scaling~\cite{agarwal2013} fit the same graph interface and could replace
 \eqref{eq:huber} unchanged.
 
-\subsection{Sparse solver}
 Each Gauss--Newton iteration solves a sparse linear system whose Jacobian has the
 block-bidiagonal structure of the two chains in Fig.~\ref{fig:graph} (in the
 static-$\boldsymbol{\beta}$ limit the coefficient blocks collapse to one shared
@@ -882,6 +938,34 @@ flat map $\mathbf{G}\!\approx\!\mathbf{0}$ and condition (i) fails, so position 
 unobservable regardless of the compensation, a map-information floor that bounds
 every estimator, which we observe on the shortest line in Section~\ref{sec:results}.
 \end{remark}
+
+The cold-start transient observed in real time makes this confounding visible. A
+per-epoch smoother with a short lag (Section~\ref{sec:incremental}), run from a cold
+start on line 1007.06, holds a horizontal DRMS near \SI{82}{\meter} through the first
+several minutes before locking on (Section~\ref{sec:results}-G). Seeding the
+compensation with a warm Tolles--Lawson prior, tightening its initial standard
+deviation from \num{1.0} to \num{0.1}, removes only about half of this transient, to
+roughly \SI{50}{\meter}; the remainder is not a compensation error but a
+map-observability one, precisely conditions~(i) and~(iii) of
+Proposition~\ref{prop:obs} early in the flight. Two observations separate the causes.
+First, the same cold start with a long lag shows no transient at all: given enough
+future gradient, the smoother resolves the position--compensation ambiguity that the
+short lag cannot. Second, the cold and warm runs lock on at the same instant, when the
+aircraft crosses a strong map feature about four and a half minutes in, rather than
+after a fixed compensation-learning time. Both point to the map gradient, not the
+compensation prior, as what ultimately breaks the confounding: where
+$\mathrm{range}(\mathbf{G})$ is rich the two unknowns separate, and a warm prior only
+shortens the wait; Fig.~\ref{fig:warmstart} shows the decomposition on the first six
+minutes of the segment.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figs/fig_warmstart.pdf}
+\caption{First six minutes of the cold-start transient at a \SI{30}{\second} lag: a
+warm compensation prior roughly halves the penalty, but both runs lock on only at
+the strong map feature near four and a half minutes.}
+\label{fig:warmstart}
+\end{figure}
 
 \section{Experiments and Results}\label{sec:results}
 
@@ -1191,7 +1275,7 @@ mechanism more precisely: running the same window with the robust kernel disable
 still stays bounded on all eight counted cases (e.g.\ \SI{60.3}{\meter} on
 1003.02/Mag~4 where the causal filter reads \SI{41626}{\meter}, refined to
 \SI{43.1}{\meter} by Huber), so the robustness comes from the windowed
-relinearization of Section~\ref{sec:method}-A, and the kernel buys accuracy, not
+relinearization of Section~\ref{sec:method}-B, and the kernel buys accuracy, not
 survival. The recorded platform currents let us check the absorption account of
 Section~\ref{sec:method}-A directly on line 1003.02: the fourteen onboard current
 channels linearly explain \SIrange{28}{39}{\percent} of the raw cabin interference
@@ -1313,7 +1397,42 @@ behaviour consistent with the ANEES below \num{2}.}
 \label{fig:sigma}
 \end{figure}
 
-\subsection{Computational considerations}
+\subsection{Cross-implementation validation}
+Because every number above comes from our own code, a fair question is whether the
+advantage belongs to the estimator or to one implementation. To separate the two we
+reran the primary line 1007.06 through a second, independent estimator: a Python
+factor graph built on the GTSAM library~\cite{dellaert2012}, with its own
+Levenberg--Marquardt and iSAM2 solvers and sharing no code with the in-house Julia
+smoother, whose back end is an iterated Rauch--Tung--Striebel and Gauss--Newton pass.
+Both solve the same factor graph of Section~\ref{sec:method} from the same inputs. We
+first checked the port itself: the state-transition slices $\boldsymbol{\Phi}_t$, the
+regressor rows $\mathbf{A}_t$, the scalar measurements, and the INS mechanization match
+to the bit across the two languages, and the interpolated anomaly-map grid agrees to a
+\SI{0.9}{\nano\tesla} standard deviation, so the two estimators see the same problem.
+
+On the full \SI{87}{\minute} cold-start line the two agree closely: the GTSAM window
+returns \SI{12.4}{\meter} horizontal DRMS against the Julia smoother's
+\SI{13.8}{\meter}, and on the first ten-minute segment \SI{17.5}{} against
+\SI{21.4}{\meter}; the free-inertial drift matches at \SI{317.5}{} against
+\SI{318}{\meter}, a further check that the two share the same trajectory and map. The
+residual differences trace to modeling choices left deliberately independent:
+Levenberg--Marquardt versus plain Gauss--Newton, bicubic versus bilinear map
+interpolation, and a slightly different window handoff. Both are single runs, so this
+is a statement about implementation independence rather than a statistical comparison;
+its value is that the bounded, sub-\SI{15}{\meter} cold-start result survives a
+complete change of language, library, and solver; Fig.~\ref{fig:crossimpl} overlays
+the GTSAM error trace on the segment.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figs/fig_crossimpl.pdf}
+\caption{Horizontal error of the independent GTSAM sliding window on the first
+ten-minute segment of line 1007.06, with the Julia smoother's segment DRMS shown as
+a reference level (no Julia time series was exported for this run).}
+\label{fig:crossimpl}
+\end{figure}
+
+\subsection{Real-time incremental smoothing}
 Each window is a sparse nonlinear least-squares problem of fixed size
 $O\big(L_w(n+m)\big)$; the block-bidiagonal Jacobian of the two chains
 (Fig.~\ref{fig:graph}) is factored in $O(L_w)$ by the square-root
@@ -1325,6 +1444,38 @@ asymptotic cost while retaining the look-ahead. Memory is bounded by the window,
 not the flight. The one-time overhead relative to an EKF is the window
 factorization and the IRLS reweighting, which in our unoptimized research
 implementation runs comfortably faster than real time on the SGL sampling rate.
+
+The per-epoch incremental smoother of Section~\ref{sec:incremental} realizes this
+budget at the finest stride and lets us measure it directly. Running the iSAM2
+fixed-lag smoother on line 1007.06 with a \SI{30}{\second} lag, one update per
+\SI{0.1}{\second} sample, takes \SI{14}{\milli\second} per epoch, about seven times
+faster than the \SI{10}{\hertz} sample rate and comfortably real-time; the figure
+includes the Python measurement-factor callbacks and is therefore a conservative upper
+bound, since native factors would be faster. A causal, zero-latency estimate exists at
+every step. After it converges, the \SI{30}{\second}-lag realtime DRMS is
+\SI{16.5}{\meter} from a cold Tolles--Lawson start and \SI{15.1}{\meter} with a warm
+prior, close to the \SI{14.8}{\meter} of the \SI{300}{\second}-lag smoothed estimate
+and far below the free-inertial drift (Fig.~\ref{fig:realtime}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figs/fig_realtime.pdf}
+\caption{Causal per-epoch estimates on the ten-minute segment: the
+\SI{30}{\second}-lag realtime error locks onto the map feature near four and a half
+minutes and settles close to the \SI{300}{\second}-lag smoothed estimate, far below
+free-inertial drift.}
+\label{fig:realtime}
+\end{figure}
+
+The lag behaves as Section~\ref{sec:method} predicts. Lengthening it improves the
+estimate, to \SI{14.8}{\meter} smoothed at a \SI{300}{\second} lag, but at a cost our
+unoptimized Python callbacks cannot yet meet in real time at that lag, so a long lag is
+presently an offline setting in this implementation; native factors would move it
+online. Shortening the lag to \SI{30}{\second} restores real time at the price of the
+cold-start transient analyzed in Section~\ref{sec:observability}: a warm compensation
+prior halves that transient, and lag scheduling removes the rest by running a long lag
+through the early, weakly observable minutes and contracting to \SI{30}{\second} once
+the compensation has converged.
 
 These same properties make the estimator compatible with online, fixed-lag
 operation rather than zero-latency filtering. Its committed output lags real time by
@@ -1344,49 +1495,61 @@ all of which have clear physical meaning.
 This paper formulated airborne magnetic-anomaly navigation as factor-graph MAP
 estimation and used the formulation to solve the cold-start compensation problem
 jointly with navigation. The Tolles--Lawson coefficients enter the graph as
-time-varying variables of a fixed-lag sliding-window smoother, so the compensation
-adapts along the flight and late-arriving calibration information corrects early
-navigation states, the mechanism a one-pass causal filter lacks; and a
-linear condition states when position and compensation can be separated at all. On real SGL~2020 data the estimator stays bounded from a cold
-start on all eight full-length cabin-magnetometer cases, where the plain
-online-TL EKF diverges and a marginalized particle filter is erratic, and it is more accurate
-on every such case than the tuned online EKF+TL+NN baseline, with no neural network
-and no calibration flight. A simulation Monte-Carlo shows its reported covariance
-is consistent and conservative where the toolbox particle filter's is over-confident, and
-the recorded platform currents confirm the absorption mechanism: the current
-channels explain a third of the raw cabin interference but almost none of the
-post-fit residual.
+time-varying variables, so the compensation adapts along the flight and
+late-arriving calibration information corrects early navigation states, the
+mechanism a one-pass causal filter lacks; and a linear condition states when
+position and compensation can be separated at all. That single MAP problem is
+realized across a lag spectrum, from a full-line batch that fixes the offline
+accuracy bound, through a fixed-lag window, to a per-epoch incremental smoother that
+runs in real time at \SI{14}{\milli\second} per epoch. On real SGL~2020 data the
+estimator stays bounded from a cold start on all eight full-length
+cabin-magnetometer cases, where the plain online-TL EKF diverges and a marginalized
+particle filter is erratic, and it is more accurate on every such case than the
+tuned online EKF+TL+NN baseline, with no neural network and no calibration flight. A
+simulation Monte-Carlo shows its reported covariance is consistent and conservative
+where the toolbox particle filter's is over-confident; the recorded platform
+currents confirm the absorption mechanism, explaining a third of the raw cabin
+interference but almost none of the post-fit residual; and an independent GTSAM
+reimplementation that shares no code reproduces the bounded cold-start result,
+separating the estimator from its implementation.
 
 Several limitations bound the study. Each real line is a single physical
-realization, so its DRMS is a point estimate; the Monte-Carlo supplies
-distributional statements in simulation only. The baseline set, though it now
-spans a weak causal filter, the strongest reported causal method, and a particle
-filter, still lacks a grid or point-mass MMSE
+realization, so its DRMS is a point estimate, and the cross-implementation check is
+likewise a single run that establishes implementation independence rather than a
+statistical claim; distributional statements come from the simulation Monte-Carlo
+only. The baseline set, though it now spans a weak causal filter, the strongest
+reported causal method, and a particle filter, still lacks a grid or point-mass MMSE
 map-matcher~\cite{bergman1999,nordlund2009}. The compensation basis is
 attitude-only: physically structured sensor-error states (heading harmonics, dead
 zones) and direct regression of current telemetry are natural graph extensions, but
 our exploratory tests show that applying either blindly, without documented sensor
-hardware and orientation, or with na\"{\i}vely scaled telemetry, can help or hurt
-by tens of percent depending on the line, so neither is claimed here. And none of
-the SGL~2020 lines is a long,
-straight-and-level operational transit: the attitude content that stresses
-compensation also excites the TL regressor and aids its observability, so
-performance under the weak excitation of a pure cruise is not established here.
-Short lines remain hard for every method, an information limit rather than an
-estimator one.
+hardware and orientation, or with na\"{\i}vely scaled telemetry, can help or hurt by
+tens of percent depending on the line, so neither is claimed here. The warm-start
+prior used above is drawn from the same line rather than transferred from a separate
+calibration flight, so a true cross-line warm start remains untested, and the
+observability gate the separability condition suggests is analyzed but not yet
+folded into the online estimator. In its present Python form the per-epoch smoother
+meets real time only at a short lag; the long lag that removes the cold-start
+transient still runs offline, a limit we expect native factors to lift. And none of
+the SGL~2020 lines is a long, straight-and-level operational transit: the attitude
+content that stresses compensation also excites the TL regressor and aids its
+observability, so performance under the weak excitation of a pure cruise is not
+established here. Short lines remain hard for every method, an information limit
+rather than an estimator one.
 
 These limitations set the agenda for further work: extending the evaluation to the
-full SGL line set and a grid or point-mass baseline; making the graph extensions
-robust enough to claim: sensor-error states on a campaign whose sensor hardware
-and mounting are documented, and current-telemetry regressors with principled
-channel scaling and gating, both of which stay within the attitude-derived,
-position-independent basis the separability condition requires;
-testing a low-excitation operational cruise; and sharpening the geometric
-separability condition into a quantitative identifiability screen. None of these qualifications affects the central and
-reproducible finding: carrying the compensation as time-varying variables of a
-windowed factor graph is sufficient to survive the cold start and to match or beat
-an NN-augmented causal filter on this benchmark, with every estimated quantity a
-physically interpretable state.
+full SGL line set and a grid or point-mass baseline; lag scheduling that runs a long
+lag through the early, weakly observable minutes and contracts once the compensation
+has converged, moved online by native factors; transferring a compensation prior
+across lines for a true warm start; folding the separability condition into an
+online observability gate; making the sensor-error and current-telemetry extensions
+robust enough to claim, both staying within the attitude-derived,
+position-independent basis the condition requires; and testing a low-excitation
+operational cruise. None of these qualifications affects the central and reproducible
+finding: carrying the compensation as time-varying variables of a windowed factor
+graph, solved anywhere along the lag spectrum, is sufficient to survive the cold
+start and to match or beat an NN-augmented causal filter on this benchmark, with
+every estimated quantity a physically interpretable state.
 
 \appendices
 \section{Pinson Error-State Dynamics}\label{app:pinson}
