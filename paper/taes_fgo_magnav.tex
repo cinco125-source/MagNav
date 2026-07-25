@@ -74,9 +74,9 @@ from compensation and predicts a cold-start transient that the experiments
 decompose into a warm-prior half and a map-observability half. Across cold-start
 lines from two flights and two maps, the smoother is the most accurate of four
 estimators on every full-length case (\num{8} of \num{8}): it stays bounded where an
-online-TL EKF diverges and a marginalized particle filter is erratic, and it beats
-a tuned EKF+TL+NN baseline with no learned component. A simulation Monte-Carlo
-confirms the reported covariance is consistent, and an independent GTSAM
+online-TL EKF diverges and a marginalized particle filter is erratic, and, carrying no
+learned component of its own, it beats a tuned EKF+TL+NN baseline. A Monte-Carlo
+simulation confirms the reported covariance is consistent, and an independent GTSAM
 reimplementation sharing no code reproduces the bounded result.
 \end{abstract}
 
@@ -367,7 +367,7 @@ The paper makes the following contributions:
         merely cited, the online EKF+TL+NN lineage of~\cite{gnadt2022,hager2026} is
         kept bounded by its network where a weak online-TL EKF diverges and a
         marginalized particle filter is erratic, yet the smoother beats it with no
-        learned component. A simulation Monte-Carlo confirms the reported covariance
+        learned component. A Monte-Carlo simulation confirms the reported covariance
         is consistent, and an independent GTSAM reimplementation~\cite{dellaert2012}
         that shares no code reproduces the bounded cold-start result, separating the
         estimator from its implementation.
@@ -497,7 +497,7 @@ chooses is how much of the flight to weigh before committing an estimate. Solvin
 over a lag of $L$ epochs traces a spectrum under one cost function: the full-line
 batch ($L=N$) uses every measurement and is the offline accuracy bound; a per-epoch
 recursion (small $L$) commits each state as soon as it is measured, for real-time
-use; and the fixed-lag sliding window sits between, committing a state once it has
+use; and the fixed-lag sliding window sits in between, committing a state once it has
 seen a bounded amount of future data. The lag is thus the primary design variable that
 trades observability, through the future data each committed estimate sees, against
 latency and computation, and every point on the spectrum solves the same factor
@@ -1346,10 +1346,10 @@ Averaged over the \num{30} seeds, after a \SI{30}{\second} warm-up, the horizont
 DRMS is \SI{1.4}{\meter} for the factor graph, \SI{4.1}{\meter} for the EKF, and
 \SI{4.9}{\meter} for the particle filter, with \SI{95}{\percent} confidence
 half-widths of \SI{0.2}{}, \SI{0.4}{}, and \SI{0.8}{\meter}. Even on this clean
-sensor the factor graph separates cleanly from both recursive baselines, its
-interval does not overlap theirs, while the EKF and the particle filter are
+sensor the factor graph separates cleanly from both recursive baselines (its
+interval does not overlap theirs), while the EKF and the particle filter are
 statistically indistinguishable in accuracy. The larger cold-start separations are
-in Sections~\ref{sec:results}-B and \ref{sec:results}-C; the purpose of this study
+in Sections~\ref{sec:results}-B and~\ref{sec:results}-C; the purpose of this study
 is consistency.
 
 For consistency we use the per-axis two-degree-of-freedom position NEES,
@@ -1363,7 +1363,7 @@ particles after resampling on a high-resolution map cluster far more tightly tha
 true error and the empirical covariance collapses. This over-confidence is a
 configuration artifact, not a property of the estimator class: adding regularization
 roughening restores consistency (ANEES \num{1.8} at \SI{1}{\meter} roughening) at a
-small accuracy cost. Even so the factor graph dominates both recursive baselines, more
+small accuracy cost. Even so, the factor graph dominates both recursive baselines, more
 accurate (\SI{1.4}{} versus \SIrange{4.1}{4.6}{\meter}) and consistent at once.
 Fig.~\ref{fig:consistency} shows the EKF and factor-graph NEES staying inside the
 \SI{95}{\percent} $\chi^2_2$ band throughout a representative run while the toolbox
@@ -1402,10 +1402,10 @@ behaviour consistent with the ANEES below \num{2}.}
 
 \subsection{Cross-implementation validation}
 Because every number above comes from our own code, a fair question is whether the
-advantage belongs to the estimator or to one implementation. To separate the two we
+advantage belongs to the estimator or to one implementation. To separate the two, we
 reran the primary line 1007.06 through a second, independent estimator: a Python
 factor graph built on the GTSAM library~\cite{dellaert2012}, with its own
-Levenberg--Marquardt and iSAM2 solvers and sharing no code with the in-house Julia
+Levenberg--Marquardt and iSAM2 solvers, sharing no code with the in-house Julia
 smoother, whose back end is an iterated Rauch--Tung--Striebel and Gauss--Newton pass.
 Both solve the same factor graph of Section~\ref{sec:method} from the same inputs. We
 first checked the port itself: the state-transition slices $\boldsymbol{\Phi}_t$, the
@@ -1413,16 +1413,16 @@ regressor rows $\mathbf{A}_t$, the scalar measurements, and the INS mechanizatio
 to the bit across the two languages, and the interpolated anomaly-map grid agrees to a
 \SI{0.9}{\nano\tesla} standard deviation, so the two estimators see the same problem.
 
-On the full \SI{87}{\minute} cold-start line the two land within a metre of each
+On the full \SI{87}{\minute} cold-start line, the two land within a metre of each
 other: the GTSAM window returns \SI{12.4}{\meter} horizontal DRMS against the Julia
 smoother's \SI{13.1}{\meter} (Table~\ref{tab:breadth}), and on the first ten-minute
-segment \SI{17.5}{} against \SI{21.4}{\meter}, the GTSAM side slightly the better of
+segment \SI{17.5}{} against \SI{21.4}{\meter}, the GTSAM side being slightly the better of
 the two in both cases; the free-inertial drift matches at \SI{317.5}{} against
 \SI{318}{\meter}, a further check that the two share the same trajectory and map. The
 residual differences trace to modeling choices left deliberately independent:
 Levenberg--Marquardt versus plain Gauss--Newton, bicubic versus bilinear map
 interpolation, and a slightly different window handoff. The comparison covers one
-line and both runs are single, so this is a statement about implementation
+line and each side is a single run, so this is a statement about implementation
 independence rather than a statistical one; its value is that the bounded cold-start
 result survives a complete change of language, library, and solver.
 Fig.~\ref{fig:crossimpl} overlays the GTSAM error trace on the segment.
@@ -1456,7 +1456,7 @@ fixed-lag smoother on line 1007.06 with a \SI{30}{\second} lag, one update per
 faster than the \SI{10}{\hertz} sample rate and comfortably real-time; the figure
 includes the Python measurement-factor callbacks and is therefore a conservative upper
 bound, since native factors would be faster. A causal, zero-latency estimate exists at
-every step. Through the weakly observable first minutes that estimate is poor: counted
+every step. Through the weakly observable first minutes, that estimate is poor: counted
 from \SI{60}{\second} onward, the causal DRMS is \SI{82.4}{\meter} from a cold
 Tolles--Lawson start and \SI{49.5}{\meter} with a warm prior, the transient of
 Section~\ref{sec:observability}. Once the smoother locks on, counted from
@@ -1515,8 +1515,8 @@ runs in real time at \SI{14}{\milli\second} per epoch. On real SGL~2020 data the
 estimator stays bounded from a cold start on all eight full-length
 cabin-magnetometer cases, where the plain online-TL EKF diverges and a marginalized
 particle filter is erratic, and it is more accurate on every such case than the
-tuned online EKF+TL+NN baseline, with no neural network and no calibration flight. A
-simulation Monte-Carlo shows its reported covariance is consistent and conservative
+tuned online EKF+TL+NN baseline, with no neural network and no calibration flight. A Monte-Carlo
+simulation shows its reported covariance is consistent and conservative
 where the toolbox particle filter's is over-confident; the recorded platform
 currents confirm the absorption mechanism, explaining a third of the raw cabin
 interference but almost none of the post-fit residual; and an independent GTSAM
@@ -1526,7 +1526,7 @@ separating the estimator from its implementation.
 Several limitations bound the study. Each real line is a single physical
 realization, so its DRMS is a point estimate, and the cross-implementation check is
 likewise a single run that establishes implementation independence rather than a
-statistical claim; distributional statements come from the simulation Monte-Carlo
+statistical claim; distributional statements come from the Monte-Carlo simulation
 only. The baseline set, though it now spans a weak causal filter, the strongest
 reported causal method, and a particle filter, still lacks a grid or point-mass MMSE
 map-matcher~\cite{bergman1999,nordlund2009}. The compensation basis is
