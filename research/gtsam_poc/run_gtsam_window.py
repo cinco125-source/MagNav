@@ -31,11 +31,12 @@ def load(path):
     return d
 
 class Grid:
-    def __init__(self, glat, glon, gh):
+    def __init__(self, glat, glon, gh, rowmajor=False):
         self.glat = np.asarray(glat).ravel()
         self.glon = np.asarray(glon).ravel()
-        # undo h5py's transpose of Julia's column-major grid (see run_gtsam.py)
-        self.gh = np.asarray(gh).T
+        # Julia-written grids arrive transposed via h5py (see run_gtsam.py);
+        # Python-written exports (gh_rowmajor) are already (lat, lon)
+        self.gh = np.asarray(gh) if rowmajor else np.asarray(gh).T
         assert self.gh.shape == (self.glat.size, self.glon.size)
         self.dlat = self.glat[1] - self.glat[0]
         self.dlon = self.glon[1] - self.glon[0]
@@ -60,14 +61,16 @@ class Grid:
 
 def main():
     path = sys.argv[1] if len(sys.argv) > 1 else "research/gtsam_poc/line_1007_06.h5"
+    tag = sys.argv[2] if len(sys.argv) > 2 else ""
     d = load(path)
     N   = int(d["N"]); nx = int(d["nx"]); nTL = int(d["nTL"])
     dt  = float(d["dt"]); Rm = float(d["R"]); warm = float(d["warm"])
     win = float(d["win"]); overlap = float(d["overlap"]); ref = float(d["ref_drms"])
     Phi = np.asarray(d["Phi"], dtype=float)
+    py_export = "gh_rowmajor" in d               # Python-written: no axis surgery
     if Phi.shape[0] == nx:
         Phi = np.moveaxis(Phi, 2, 0)
-    else:
+    elif not py_export:
         # undo h5py's per-slice transpose of Julia's column-major tensor
         Phi = Phi.transpose(0, 2, 1)
     A = np.asarray(d["A"], dtype=float)
@@ -78,7 +81,8 @@ def main():
     P0 = np.asarray(d["P0"], dtype=float); Qd_raw = np.asarray(d["Qd"], dtype=float)
     # scale-aware floor (see run_gtsam.py): position Qd diag is 1e-31 rad^2
     Qd = Qd_raw + 1e-20 * np.eye(nx)
-    grid = Grid(d["glat"], d["glon"], d["gh"])
+    grid = Grid(d["glat"], d["glon"],
+                d["gh_rowmajor"] if py_export else d["gh"], rowmajor=py_export)
 
     iS  = nx - 1
     iTL = slice(17, 17 + nTL)
@@ -185,7 +189,7 @@ def main():
         i0 += stride
 
     est_lat = ins_lat + est[:, 0]; est_lon = ins_lon + est[:, 1]
-    np.savez("research/gtsam_poc/est_window.npz", est=est, est_lat=est_lat,
+    np.savez(f"research/gtsam_poc/est_window{tag}.npz", est=est, est_lat=est_lat,
              est_lon=est_lon, ins_lat=ins_lat, ins_lon=ins_lon,
              true_lat=true_lat, true_lon=true_lon)
 
@@ -204,7 +208,7 @@ def main():
         lines.append(f"warm={wv:g}s  gtsam_window_drms={g:.2f} m  ins_drms={i:.2f} m")
         print(lines[-1], flush=True)
     print(f"(Julia FGO reference = {ref:.2f} m, exported warm={warm:g}s)", flush=True)
-    with open("research/gtsam_poc/gtsam_poc_result_window.txt", "w") as f:
+    with open(f"research/gtsam_poc/gtsam_poc_result_window{tag}.txt", "w") as f:
         f.write("\n".join(lines) + f"\njulia_ref {ref:.3f}\nN {N} nx {nx} nTL {nTL}\n")
 
 if __name__ == "__main__":

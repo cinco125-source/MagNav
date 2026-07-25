@@ -1,0 +1,291 @@
+#!/usr/bin/env python3
+"""Python port of export_line.jl for the FULL line 1007.06 (no Julia needed).
+
+Rebuilds every ingredient the GTSAM scripts consume — Pinson Phi tensor,
+Tolles-Lawson A, INS/truth positions, (map+IGRF) grid — directly from the raw
+SGL 2020 flight HDF5 and the Renfrew_395 map, mirroring src/get_XYZ.jl,
+src/model_functions.jl (get_pinson/get_Phi), src/tolles_lawson.jl
+(create_TL_A, central fdm), and research/fgo_breadth.jl parameters
+(win=300, overlap=90, Huber, MEAS_VAR=12^2, FOGM 3/180).
+
+Self-check: the first 6000 samples must reproduce research/gtsam_poc/
+line_1007_06.h5 (which Julia exported for the same line) to float32 accuracy.
+
+Usage:
+  export_full_line.py <Flt1007_train.h5> <Renfrew_395_map.h5> <out.h5> \
+      [--validate line_1007_06.h5]
+"""
+import sys
+import numpy as np
+import h5py
+from scipy.linalg import expm
+
+R_EARTH  = 6378137.0
+W_EARTH  = 7.2921151467e-5
+G_EARTH  = 9.80665
+
+T_START, T_END, LINE = 57770.0, 63010.0, 1007.06   # df_nav Flt1007 1007.06
+FOGM_TAU = 180.0
+TAU      = 3600.0                                   # baro/acc/gyro tau
+DT_EXP   = 0.1
+DATE     = 2020 + (185 - 0.5) / 366.0               # get_years(2020,185), 2020 is leap
+
+
+def euler2dcm(roll, pitch, yaw):
+    """body2nav DCM, Titterton & Weston p.41 (mirrors src/dcm.jl)."""
+    cr, sr = np.cos(roll), np.sin(roll)
+    cp, sp = np.cos(pitch), np.sin(pitch)
+    cy, sy = np.cos(yaw), np.sin(yaw)
+    dcm = np.zeros((3, 3) + np.shape(roll))
+    dcm[0, 0] = cp*cy
+    dcm[0, 1] = -cr*sy + sr*sp*cy
+    dcm[0, 2] = sr*sy + cr*sp*cy
+    dcm[1, 0] = cp*sy
+    dcm[1, 1] = cr*cy + sr*sp*sy
+    dcm[1, 2] = -sr*cy + cr*sp*sy
+    dcm[2, 0] = -sp
+    dcm[2, 1] = sr*cp
+    dcm[2, 2] = cr*cp
+    return dcm
+
+
+def fdm(x):
+    """central finite difference, mirrors src/tolles_lawson.jl fdm."""
+    x = np.asarray(x, dtype=float)
+    d = np.empty_like(x)
+    d[0] = x[1] - x[0]
+    d[-1] = x[-1] - x[-2]
+    d[1:-1] = (x[2:] - x[:-2]) / 2
+    return d
+
+
+def create_TL_A(Bx, By, Bz, Bt_scale=50000.0):
+    """terms = [:permanent,:induced,:eddy,:bias] -> 19 columns."""
+    Bt = np.sqrt(Bx**2 + By**2 + Bz**2)
+    bxh, byh, bzh = Bx/Bt, By/Bt, Bz/Bt
+    bxd, byd, bzd = fdm(Bx), fdm(By), fdm(Bz)
+    s = Bt_scale
+    cols = [bxh, byh, bzh,
+            bxh*Bx/s, bxh*By/s, bxh*Bz/s, byh*By/s, byh*Bz/s, bzh*Bz/s,
+            bxh*bxd/s, bxh*byd/s, bxh*bzd/s,
+            byh*bxd/s, byh*byd/s, byh*bzd/s,
+            bzh*bxd/s, bzh*byd/s, bzh*bzd/s,
+            np.ones_like(Bt)]
+    return np.column_stack(cols)
+
+
+def get_pinson(nx, lat, vn, ve, vd, fn, fe, fd, Cnb,
+               k1=3e-2, k2=3e-4, k3=1e-6, fogm_tau=FOGM_TAU, tau=TAU):
+    """mirrors src/model_functions.jl get_pinson (fogm_state=true)."""
+    tl, cl, sl = np.tan(lat), np.cos(lat), np.sin(lat)
+    r = R_EARTH
+    F = np.zeros((nx, nx))
+    F[0, 2] = -vn / r**2
+    F[0, 3] = 1 / r
+    F[1, 0] = ve * tl / (r * cl)
+    F[1, 2] = -ve / (cl * r**2)
+    F[1, 4] = 1 / (r * cl)
+    F[2, 2] = -k1
+    F[2, 5] = -1
+    F[2, 9] = k1
+    F[3, 0] = -ve * (2*W_EARTH*cl + ve / (r * cl**2))
+    F[3, 2] = (ve**2 * tl - vn*vd) / r**2
+    F[3, 3] = vd / r
+    F[3, 4] = -2*(W_EARTH*sl + ve*tl / r)
+    F[3, 5] = vn / r
+    F[3, 7] = -fd
+    F[3, 8] = fe
+    F[4, 0] = 2*W_EARTH*(vn*cl - vd*sl) + vn*ve / (r * cl**2)
+    F[4, 2] = -ve*((vn*tl + vd) / r**2)
+    F[4, 3] = 2*W_EARTH*sl + ve*tl / r
+    F[4, 4] = (vn*tl + vd) / r
+    F[4, 5] = 2*W_EARTH*cl + ve / r
+    F[4, 6] = fd
+    F[4, 8] = -fn
+    F[5, 0] = 2*W_EARTH*ve*sl
+    F[5, 2] = (vn**2 + ve**2) / r**2 + k2
+    F[5, 3] = -2*vn / r
+    F[5, 4] = -2*(W_EARTH*cl + ve / r)
+    F[5, 6] = -fe
+    F[5, 7] = fn
+    F[5, 9] = -k2
+    F[5, 10] = 1
+    F[6, 0] = -W_EARTH*sl
+    F[6, 2] = -ve**2 / r**2
+    F[6, 4] = 1 / r
+    F[6, 7] = -W_EARTH*sl - ve*tl / r
+    F[6, 8] = vn / r
+    F[7, 2] = vn / r**2
+    F[7, 3] = -1 / r
+    F[7, 6] = W_EARTH*sl + ve*tl / r
+    F[7, 8] = W_EARTH*cl + ve / r
+    F[8, 0] = -W_EARTH*cl - ve / (r * cl**2)
+    F[8, 2] = ve*tl / r**2
+    F[8, 4] = -tl / r
+    F[8, 6] = -vn / r
+    F[8, 7] = -W_EARTH*cl - ve / r
+    F[9, 9] = -1 / tau
+    F[10, 2] = k3
+    F[10, 9] = -k3
+    for i in range(11, 17):
+        F[i, i] = -1 / tau
+    F[3:6, 11:14] = Cnb
+    F[6:9, 14:17] = -Cnb
+    F[nx-1, nx-1] = -1 / fogm_tau
+    return F
+
+
+def main():
+    flt_path, map_path, out_path = sys.argv[1], sys.argv[2], sys.argv[3]
+    val_path = sys.argv[sys.argv.index("--validate") + 1] if "--validate" in sys.argv else None
+
+    f = h5py.File(flt_path, "r")
+    tt = f["tt"][()]
+    line = f["line"][()]
+    ind = (tt >= T_START) & (tt <= T_END) & (np.round(line, 2) == LINE)
+    N = int(ind.sum())
+    dt = float(f["dt"][()])
+    print(f"line {LINE}: N={N} ({N*dt/60:.1f} min)", flush=True)
+
+    # truth (deg -> rad) and INS (already rad; mirrors get_XYZ20)
+    true_lat = np.deg2rad(f["lat"][()][ind]); true_lon = np.deg2rad(f["lon"][()][ind])
+    ins_lat = f["ins_lat"][()][ind].astype(float)
+    ins_lon = f["ins_lon"][()][ind].astype(float)
+    ins_alt = f["ins_alt"][()][ind].astype(float)
+    vn = f["ins_vn"][()][ind].astype(float)
+    ve = -f["ins_vw"][()][ind].astype(float)
+    vd = -f["ins_vu"][()][ind].astype(float)
+    wander = f["ins_wander"][()][ind].astype(float)
+    roll  = np.deg2rad(f["ins_roll"][()][ind])
+    pitch = np.deg2rad(f["ins_pitch"][()][ind])
+    yaw   = np.deg2rad(f["ins_yaw"][()][ind])
+    ax = f["ins_acc_x"][()][ind].astype(float)
+    ay = f["ins_acc_y"][()][ind].astype(float)
+    az = f["ins_acc_z"][()][ind].astype(float)
+    Bx = f["flux_d_x"][()][ind].astype(float)
+    By = f["flux_d_y"][()][ind].astype(float)
+    Bz = f["flux_d_z"][()][ind].astype(float)
+    meas = f["mag_5_uc"][()][ind].astype(float)
+    f.close()
+
+    # specific force: rotate wander (CW for NED), mirrors get_XYZ20
+    cw, sw = np.cos(-wander), np.sin(-wander)
+    fx, fy, fz = ax, -ay, -az
+    fn = cw*fx - sw*fy
+    fe = sw*fx + cw*fy
+    fd = fz
+
+    Cnb = euler2dcm(roll, pitch, yaw)      # (3,3,N)
+
+    # zero_ins_ll N_zero=1: remove the initial INS-truth offset everywhere
+    ins_lat = ins_lat - (ins_lat[0] - true_lat[0])
+    ins_lon = ins_lon - (ins_lon[0] - true_lon[0])
+
+    A = create_TL_A(Bx, By, Bz)
+    nTL = A.shape[1]
+
+    # P0/Qd/R from the Julia segment export: same create_model params and the
+    # SAME lat[1] (the segment is the first 10 min of this very line)
+    with h5py.File("research/gtsam_poc/line_1007_06.h5", "r") as g:
+        P0 = np.asarray(g["P0"], dtype=float)
+        Qd = np.asarray(g["Qd"], dtype=float)
+        Rm = float(g["R"][()])
+    nx = P0.shape[0]
+
+    print("building Phi tensor...", flush=True)
+    Phi = np.zeros((N-1, nx, nx), dtype=np.float32)
+    for t in range(N-1):
+        F = get_pinson(nx, ins_lat[t], vn[t], ve[t], vd[t],
+                       fn[t], fe[t], fd[t], Cnb[:, :, t])
+        Phi[t] = expm(F * dt).astype(np.float32)
+        if t % 10000 == 0:
+            print(f"  Phi {t}/{N-1}", flush=True)
+
+    # ---- map + IGRF grid ----
+    print("building map grid...", flush=True)
+    import ppigrf
+    from scipy.interpolate import RectBivariateSpline
+    with h5py.File(map_path, "r") as m:
+        mmap = np.asarray(m["map"], dtype=float)
+        mxx = np.asarray(m["xx"]).ravel()     # lon [rad]? (validated below)
+        myy = np.asarray(m["yy"]).ravel()     # lat [rad]?
+        malt_map = float(np.asarray(m["alt"]).ravel()[0])
+    # normalize orientation: map[i,j] should be (yy[i], xx[j])
+    if mmap.shape == (mxx.size, myy.size) and mxx.size != myy.size:
+        mmap = mmap.T
+    if mmap.shape != (myy.size, mxx.size):
+        mmap = mmap.T
+    assert mmap.shape == (myy.size, mxx.size)
+    if np.max(np.abs(myy)) > np.pi:           # deg -> rad if needed
+        myy = np.deg2rad(myy); mxx = np.deg2rad(mxx)
+    itp = RectBivariateSpline(myy, mxx, mmap, kx=3, ky=3, s=0)
+
+    malt = float(np.mean(ins_alt))
+    pad = 0.02 * np.pi / 180
+    Ng = 600                                   # ~full-line bbox at fine spacing
+    glat = np.linspace(true_lat.min()-pad, true_lat.max()+pad, Ng)
+    glon = np.linspace(true_lon.min()-pad, true_lon.max()+pad, Ng)
+    gmap = itp(glat, glon)                     # (Ng, Ng) map anomaly [nT]
+    # IGRF magnitude on the grid (geodetic), date 2020.5
+    from datetime import datetime, timedelta
+    date_dt = datetime(2020, 1, 1) + timedelta(days=184.5)
+    LON, LAT = np.meshgrid(np.rad2deg(glon), np.rad2deg(glat))
+    Be, Bn, Bu = ppigrf.igrf(LON, LAT, malt/1000.0, date_dt)
+    gigrf = np.sqrt(Be**2 + Bn**2 + Bu**2)[0 if np.ndim(Be) == 3 else ...]
+    gigrf = np.squeeze(gigrf)
+    gh = gmap + gigrf
+    print(f"grid {Ng}x{Ng}, malt={malt:.1f} m, map alt={malt_map:.1f} m, "
+          f"spacing ~{(glat[1]-glat[0])*R_EARTH:.0f} m", flush=True)
+
+    # ---- validation against the Julia 10-min export ----
+    if val_path:
+        with h5py.File(val_path, "r") as g:
+            Nv = int(g["N"][()])
+            vPhi = np.asarray(g["Phi"], dtype=float)
+            if vPhi.shape[0] == nx:
+                vPhi = np.moveaxis(vPhi, 2, 0)
+            else:
+                vPhi = vPhi.transpose(0, 2, 1)
+            vA = np.asarray(g["A"], dtype=float)
+            if vA.shape[0] != Nv: vA = vA.T
+            vmeas = np.asarray(g["meas"]).ravel()
+            vins_lat = np.asarray(g["ins_lat"]).ravel()
+            vins_lon = np.asarray(g["ins_lon"]).ravel()
+            vtrue_lat = np.asarray(g["true_lat"]).ravel()
+            vglat = np.asarray(g["glat"]).ravel()
+            vglon = np.asarray(g["glon"]).ravel()
+            vgh = np.asarray(g["gh"], dtype=float).T
+            vmalt = float(g["malt"][()])
+        print("=== validation vs Julia segment export ===", flush=True)
+        print(f"meas   max|diff| : {np.abs(meas[:Nv]-vmeas).max():.3e} nT")
+        print(f"insLat max|diff| : {np.abs(ins_lat[:Nv]-vins_lat).max()*R_EARTH:.3e} m")
+        print(f"insLon max|diff| : {np.abs(ins_lon[:Nv]-vins_lon).max()*R_EARTH:.3e} m")
+        print(f"truLat max|diff| : {np.abs(true_lat[:Nv]-vtrue_lat).max()*R_EARTH:.3e} m")
+        print(f"A      max|diff| : {np.abs(A[:Nv]-vA).max():.3e}")
+        dP = np.abs(Phi[:Nv-1].astype(float) - vPhi[:Nv-1])
+        print(f"Phi    max|diff| : {dP.max():.3e}  (float32 eps ~1e-7 rel)")
+        # map grid: evaluate our itp+igrf on the Julia grid and compare
+        vg_map = itp(vglat, vglon)
+        LONv, LATv = np.meshgrid(np.rad2deg(vglon), np.rad2deg(vglat))
+        Bev, Bnv, Buv = ppigrf.igrf(LONv, LATv, vmalt/1000.0, date_dt)
+        vg = vg_map + np.squeeze(np.sqrt(Bev**2 + Bnv**2 + Buv**2))
+        dmap = vg - vgh
+        print(f"grid   diff mean/std/max: {dmap.mean():.2f} / {dmap.std():.2f} / "
+              f"{np.abs(dmap).max():.2f} nT", flush=True)
+
+    with h5py.File(out_path, "w") as o:
+        o["N"] = N; o["dt"] = dt; o["nx"] = nx; o["nTL"] = nTL
+        o.create_dataset("Phi", data=Phi, compression="gzip", compression_opts=1)
+        o["A"] = A; o["meas"] = meas
+        o["ins_lat"] = ins_lat; o["ins_lon"] = ins_lon; o["ins_alt"] = ins_alt
+        o["true_lat"] = true_lat; o["true_lon"] = true_lon
+        o["P0"] = P0; o["Qd"] = Qd; o["R"] = Rm
+        o["glat"] = glat; o["glon"] = glon
+        o["gh_rowmajor"] = gh                  # ALREADY (lat, lon) row-major
+        o["malt"] = malt
+        o["warm"] = 600.0; o["win"] = 300.0; o["overlap"] = 90.0
+        o["ref_drms"] = 13.8                   # Julia breadth FGO window, Mag 5
+    print("wrote", out_path, flush=True)
+
+if __name__ == "__main__":
+    main()
