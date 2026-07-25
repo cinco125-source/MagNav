@@ -102,7 +102,7 @@ traj_s = get_traj(xyz,segmask); ins_s = get_ins(xyz,segmask;N_zero_ll=1)
 fr  = fgo_online(ins_s,meas,xyz.flux_d(segmask),itp,zeros(nTL),P0,Qd,R;terms=TERMS,
                  core=true,win=WIN,overlap=OVERLAP,robust=:huber)
 fo  = MagNav.eval_filt(traj_s,ins_s,fr)
-ref_drms = drms(traj_s.tt,traj_s.lat,traj_s.lon,fo.lat,fo.lon)
+ref_drms = drms(traj_s.tt,traj_s.lat,traj_s.lon,fo.lat,fo.lon;warm=60.0)
 println("Julia fixed-lag FGO reference DRMS ($(MAGSYM), $(round(Nseg*dt/60,digits=1)) min) = $(round(ref_drms,digits=2)) m")
 
 out = joinpath(@__DIR__,"line_1007_06.h5")
@@ -126,7 +126,7 @@ h5open(out,"w") do f
     f["glon"]     = glon
     f["gh"]       = gh
     f["malt"]     = malt
-    f["warm"]     = 600.0
+    f["warm"]     = 60.0
     f["win"]      = WIN
     f["overlap"]  = OVERLAP
     f["ref_drms"] = ref_drms
