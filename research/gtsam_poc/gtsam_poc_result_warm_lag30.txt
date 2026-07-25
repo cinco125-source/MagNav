@@ -1,0 +1,6 @@
+warm=0s  smoothed_drms=39.08 m  realtime_drms=47.04 m  ins_drms=39.05 m
+warm=60s  smoothed_drms=41.05 m  realtime_drms=49.54 m  ins_drms=41.14 m
+warm=120s  smoothed_drms=38.52 m  realtime_drms=51.60 m  ins_drms=43.52 m
+warm=300s  smoothed_drms=12.07 m  realtime_drms=15.14 m  ins_drms=52.00 m
+warm=600s  smoothed_drms=nan m  realtime_drms=nan m  ins_drms=nan m
+N 6000 nx 37 nTL 19
