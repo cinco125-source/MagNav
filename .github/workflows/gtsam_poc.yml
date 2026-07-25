@@ -51,21 +51,37 @@ jobs:
           python-version: '3.11'
       - name: Install gtsam + h5py
         run: pip install gtsam h5py numpy
-      - name: Run GTSAM fixed-lag smoother
-        run: python research/gtsam_poc/run_gtsam.py research/gtsam_poc/line_1007_06.h5
+      - name: Commit h5 + extract Julia ref_drms (before any slow smoother)
+        if: always()
+        run: |
+          python -c "import h5py; f=h5py.File('research/gtsam_poc/line_1007_06.h5'); open('research/gtsam_poc/julia_ref.txt','w').write('julia_ref_drms %.3f  warm %.0f\n' % (float(f['ref_drms'][()]), float(f['warm'][()])))" || echo "no h5"
+          cat research/gtsam_poc/julia_ref.txt || true
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f research/gtsam_poc/line_1007_06.h5 research/gtsam_poc/julia_ref.txt 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "GTSAM PoC: cache export h5 + Julia ref_drms [skip ci]"
+            git pull --rebase --autostash origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+      - name: Run GTSAM fixed-lag smoother (bounded window variant; timed out cap)
+        if: always()
+        run: timeout 600 python research/gtsam_poc/run_gtsam_window.py research/gtsam_poc/line_1007_06.h5 || echo "window run capped/failed"
       - name: Show result
         if: always()
-        run: cat research/gtsam_poc/gtsam_poc_result.txt || echo "no result"
-      - name: Commit h5 + result back to the branch
+        run: cat research/gtsam_poc/gtsam_poc_result_window.txt || echo "no result"
+      - name: Commit window result
         if: always()
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f research/gtsam_poc/line_1007_06.h5 research/gtsam_poc/gtsam_poc_result.txt 2>/dev/null || true
+          git add -f research/gtsam_poc/gtsam_poc_result_window.txt 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "nothing to commit"
           else
-            git commit -m "GTSAM PoC: cache export h5 + result [skip ci]"
+            git commit -m "GTSAM PoC: window result [skip ci]"
             git pull --rebase --autostash origin ${{ github.ref_name }} || true
             git push origin HEAD:${{ github.ref_name }}
           fi
