@@ -71,7 +71,7 @@ smoother that reaches the real-time limit at \SI{14}{\milli\second} per epoch. T
 lag is the primary design variable, trading the future data that corrects a committed
 state against latency. A linear condition states when position can be separated
 from compensation and predicts a cold-start transient that the experiments
-decompose into a warm-prior half and a map-observability half. Across cold-start
+decompose into a warm-prior part and a map-observability part. Across cold-start
 lines from two flights and two maps, the smoother is the most accurate of four
 estimators on every full-length case (\num{8} of \num{8}): it stays bounded where an
 online-TL EKF diverges and a marginalized particle filter is erratic, and, carrying no
@@ -359,7 +359,7 @@ The paper makes the following contributions:
         three failure modes: an unexcited trajectory, a rank-deficient compensation
         basis, and the subtle one, a compensation subspace aligned with the anomaly
         gradient. The condition predicts the cold-start transient, which the
-        experiments decompose: a warm compensation prior halves it, and the remaining
+        experiments decompose: a warm compensation prior cuts it by \SI{40}{\percent}, and the remaining
         transient tracks map-gradient observability rather than compensation error.
   \item \textbf{Flight-data validation.} On uncompensated cabin magnetometers across
         eight cold-start cases spanning four lines, two flights, and two maps, the
@@ -447,8 +447,9 @@ z_t = h(\mathbf{p}_t) + c_t + \eta_t, \qquad \eta_t\sim\mathcal{N}(0,R),
 \end{equation}
 where $h(\cdot)$ interpolates the crustal anomaly map (with the IGRF core field
 restored) at the aircraft position $\mathbf{p}_t=\bar{\mathbf{p}}_t+\delta\mathbf{p}_t$
-and $c_t$ is the aircraft interference, decomposed below into a Tolles--Lawson part
-and a first-order Gauss--Markov remainder $S_t$. Linearizing about the nominal position,
+and $c_t$ is the Tolles--Lawson part of the aircraft interference; the
+non-Tolles--Lawson remainder is carried by the first-order Gauss--Markov state
+$S_t$ introduced below. Linearizing about the nominal position,
 \begin{equation}
 z_t \approx h(\bar{\mathbf{p}}_t)+\mathbf{g}_t^{\top}\delta\mathbf{p}_t+c_t+\eta_t,
 \qquad \mathbf{g}_t=\left.\frac{\partial h}{\partial\mathbf{p}}\right|_{\bar{\mathbf{p}}_t},
@@ -945,7 +946,7 @@ per-epoch smoother with a short lag (Section~\ref{sec:incremental}), run from a 
 start on line 1007.06, holds a horizontal DRMS near \SI{82}{\meter} through the first
 several minutes before locking on (Section~\ref{sec:results}-G). Seeding the
 compensation with a warm Tolles--Lawson prior, tightening its initial standard
-deviation from \num{1.0} to \num{0.1}, removes only about half of this transient, to
+deviation from \num{1.0} to \num{0.1}, removes only about \SI{40}{\percent} of this transient, to
 roughly \SI{50}{\meter}; the remainder is not a compensation error but a
 map-observability one, precisely conditions~(i) and~(iii) of
 Proposition~\ref{prop:obs} early in the flight. Two observations separate the causes.
@@ -963,7 +964,7 @@ minutes of the segment.
 \centering
 \includegraphics[width=\columnwidth]{figs/fig_warmstart.pdf}
 \caption{First six minutes of the cold-start transient at a \SI{30}{\second} lag: a
-warm compensation prior roughly halves the penalty, but both runs lock on only at
+warm compensation prior cuts the penalty by \SI{40}{\percent}, but both runs lock on only at
 the strong map feature near four and a half minutes.}
 \label{fig:warmstart}
 \end{figure}
@@ -1181,8 +1182,9 @@ confirming that its residual network is what buys cold-start robustness for the
 causal filter. The window smoother matches that robustness without any neural
 network (it is bounded on all eight) and improves on accuracy: across the four
 full-length lines (\SIrange{63}{87}{\minute}, eight mag-cases) it is the best of
-the three on all eight, beating the NN-augmented filter by \SIrange{5}{90}{\meter}
-(Fig.~\ref{fig:breadth}).
+the four estimators on all eight, beating the NN-augmented filter by
+\SIrange{5}{90}{\meter} (Fig.~\ref{fig:breadth}); the particle filter, reported
+separately, diverges on these cases.
 
 The marginalized particle filter is reported separately because it resists a
 single-number summary. Implemented as the reference RBPF (bootstrap proposal,
@@ -1349,7 +1351,7 @@ half-widths of \SI{0.2}{}, \SI{0.4}{}, and \SI{0.8}{\meter}. Even on this clean
 sensor the factor graph separates cleanly from both recursive baselines (its
 interval does not overlap theirs), while the EKF and the particle filter are
 statistically indistinguishable in accuracy. The larger cold-start separations are
-in Sections~\ref{sec:results}-B and~\ref{sec:results}-C; the purpose of this study
+in Sections~\ref{sec:results}-C and~\ref{sec:results}-D; the purpose of this study
 is consistency.
 
 For consistency we use the per-axis two-degree-of-freedom position NEES,
@@ -1482,7 +1484,8 @@ onward), but at a cost our unoptimized Python callbacks cannot yet meet in real 
 at the long lag, so that setting is presently offline in this implementation; native
 factors would move it online. Shortening the lag to \SI{30}{\second} restores real
 time at the price of the cold-start transient analyzed in
-Section~\ref{sec:observability}: a warm compensation prior halves that transient, and
+Section~\ref{sec:observability}: a warm compensation prior cuts that transient by
+\SI{40}{\percent}, and
 lag scheduling, running a long lag through the early, weakly observable minutes and
 contracting once the compensation has converged, would address the rest; we have not
 yet evaluated such a schedule.
