@@ -1,0 +1,7 @@
+warm=0s  smoothed_drms=64.59 m  realtime_drms=79.95 m  ins_drms=39.05 m
+warm=60s  smoothed_drms=67.18 m  realtime_drms=82.35 m  ins_drms=41.14 m
+warm=120s  smoothed_drms=63.87 m  realtime_drms=84.53 m  ins_drms=43.52 m
+warm=300s  smoothed_drms=13.36 m  realtime_drms=16.53 m  ins_drms=52.00 m
+warm=600s  smoothed_drms=nan m  realtime_drms=nan m  ins_drms=nan m
+julia_ref nan
+N 6000 nx 37 nTL 19

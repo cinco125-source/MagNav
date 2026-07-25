@@ -1,0 +1,7 @@
+warm=0s  gtsam_batch_drms=12.22 m  ins_drms=39.05 m
+warm=60s  gtsam_batch_drms=12.78 m  ins_drms=41.14 m
+warm=120s  gtsam_batch_drms=13.02 m  ins_drms=43.52 m
+warm=300s  gtsam_batch_drms=10.94 m  ins_drms=52.00 m
+warm=600s  gtsam_batch_drms=nan m  ins_drms=nan m
+julia_ref nan
+N 6000 nx 37 nTL 19

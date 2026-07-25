@@ -39,11 +39,12 @@ class Grid:
     def __init__(self, glat, glon, gh):
         self.glat = np.asarray(glat).ravel()
         self.glon = np.asarray(glon).ravel()
-        gh = np.asarray(gh)
-        # ensure gh[i,j] corresponds to (glat[i], glon[j])
-        if gh.shape != (self.glat.size, self.glon.size):
-            gh = gh.T
-        self.gh = gh
+        # Julia writes gh[i=lat, j=lon]; h5py's column-major reversal hands us
+        # the transpose, for ANY shape — including the square 200x200 grid the
+        # old shape-check silently passed through (verified: residual std vs
+        # meas is 31 nT transposed, 242 nT as-is). Always undo it.
+        self.gh = np.asarray(gh).T
+        assert self.gh.shape == (self.glat.size, self.glon.size)
         self.dlat = self.glat[1] - self.glat[0]
         self.dlon = self.glon[1] - self.glon[0]
 
@@ -72,19 +73,31 @@ def main():
     N   = int(d["N"]); nx = int(d["nx"]); nTL = int(d["nTL"])
     dt  = float(d["dt"]); Rm = float(d["R"]); warm = float(d["warm"])
     win = float(d["win"]); ref = float(d["ref_drms"])
+    # optional CLI override of the smoother lag [s] (default: exported win=300)
+    if len(sys.argv) > 2:
+        win = float(sys.argv[2])
+    tag = f"_lag{win:g}" if len(sys.argv) > 2 else ""
     Phi = np.asarray(d["Phi"], dtype=float)     # want [N-1, nx, nx]
     if Phi.shape[0] == nx:      # stored [nx,nx,N-1] -> transpose to [N-1,nx,nx]
         Phi = np.moveaxis(Phi, 2, 0)
+    else:
+        # h5py reads Julia's column-major [nx,nx,N-1] as [N-1,nx,nx] with each
+        # slice TRANSPOSED (verified: dt/R shows up at [3,0] instead of [0,3]).
+        Phi = Phi.transpose(0, 2, 1)
     A   = np.asarray(d["A"], dtype=float)
     if A.shape[0] != N: A = A.T                  # -> [N, nTL]
     meas = np.asarray(d["meas"], dtype=float).ravel()
     ins_lat = np.asarray(d["ins_lat"]).ravel(); ins_lon = np.asarray(d["ins_lon"]).ravel()
     true_lat = np.asarray(d["true_lat"]).ravel(); true_lon = np.asarray(d["true_lon"]).ravel()
     P0 = np.asarray(d["P0"], dtype=float); Qd = np.asarray(d["Qd"], dtype=float)
-    # the Pinson position process noise is ~0 (position error propagates
-    # deterministically from velocity), so Covariance(Qd) is near-singular; floor
-    # the diagonal so the dynamics factor is representable (cf. fgo_gn_step q_floor).
-    Qd = Qd + 1e-8 * np.eye(nx)
+    # the Pinson position process noise is ~0 (diag 1e-31 rad^2: position error
+    # propagates deterministically from velocity), so whitening Covariance(Qd)
+    # spans ~30 orders of magnitude and elimination can go indeterminate (x226).
+    # Floor at 1e-20: for lat/lon that is sigma ~0.6 mm/step (5 cm random walk
+    # over the whole 600 s segment, negligible), and caps whitened weights at
+    # ~1e10. A 1e-8 floor would be sigma ~640 m/step in rad states — it destroys
+    # the dynamics and the estimate collapses onto the INS.
+    Qd = Qd + 1e-20 * np.eye(nx)
     grid = Grid(d["glat"], d["glon"], d["gh"])
 
     # data sanity: a NaN/Inf in Phi/meas/INS shows up as an ISAM2 "indeterminate"
@@ -137,41 +150,75 @@ def main():
         return f
 
     params = gtsam.ISAM2Params()
+    # Cholesky squares the conditioning: with Qd floored at 1e-20 the info
+    # diagonal spans ~1e20 and elimination goes indeterminate at t=1. QR works
+    # on the whitened Jacobian (kappa ~1e10), which double precision handles.
+    params.setFactorization("QR")
     sm = gtsam_unstable.IncrementalFixedLagSmoother(win, params)
-    # weak prior on every variable: MagNav position is only observable where the map
-    # has gradient, so ISAM2's exact factorization can hit a momentarily
-    # underconstrained variable (the Julia RTS smoother tolerates this via the
-    # covariance). A diffuse prior regularizes without materially biasing the estimate.
-    reg_nm = gtsam.noiseModel.Gaussian.Covariance(P0 * 1e4)
+    # NO per-variable reg prior: P0*1e4 gives a per-epoch pull to dpos=0 of
+    # sigma ~10 m; 6000 of them aggregate to sigma ~0.13 m, which pins the
+    # whole trajectory onto the INS (measured: gtsam DRMS == INS DRMS to cm).
+    # With the x0 prior and a nonsingular Qd the chain is fully constrained.
 
     KTM = gtsam_unstable.FixedLagSmootherKeyTimestampMap
     graph = gtsam.NonlinearFactorGraph(); vals = gtsam.Values(); ts = KTM()
-    est = np.zeros((N, nx))
+    est = np.zeros((N, nx))       # smoothed: value when the state leaves the lag window
+    est_rt = np.zeros((N, nx))    # real-time: value of the NEWEST state right after update
     graph.push_back(gtsam.PriorFactorVector(X(0), np.zeros(nx), prior_nm))
     vals.insert(X(0), np.zeros(nx)); ts.insert((X(0), 0.0))
     graph.add(gtsam.CustomFactor(meas_nm, [X(0)], meas_err(0)))
 
+    import time
+    t0 = time.time()
     for t in range(1, N):
         graph.add(gtsam.CustomFactor(dyn_nm, [X(t-1), X(t)], dyn_err(Phi[t-1])))
         graph.add(gtsam.CustomFactor(meas_nm, [X(t)], meas_err(t)))
-        graph.push_back(gtsam.PriorFactorVector(X(t), np.zeros(nx), reg_nm))
         vals.insert(X(t), np.zeros(nx)); ts.insert((X(t), t * dt))
-        sm.update(graph, vals, ts)
+        try:
+            sm.update(graph, vals, ts)
+        except RuntimeError:
+            print(f"FAILED at t={t}", flush=True)
+            raise
         graph = gtsam.NonlinearFactorGraph(); vals = gtsam.Values(); ts = KTM()
         cur = sm.calculateEstimate()
+        est_rt[t] = cur.atVector(X(t))   # causal estimate available at time t
         # record the freshest available estimate for each key still in the window
         for k in range(max(0, t - int(round(win/dt))), t + 1):
             if cur.exists(X(k)):
                 est[k] = cur.atVector(X(k))
+        if t % 100 == 0:
+            el = time.time() - t0
+            print(f"t={t}/{N}  elapsed={el:.0f}s  ({el/t*1000:.0f} ms/epoch)", flush=True)
 
     est_lat = ins_lat + est[:, 0]; est_lon = ins_lon + est[:, 1]
-    m = (np.arange(N) * dt) >= warm
-    dn = (est_lat[m] - true_lat[m]) * R_EARTH
-    de = (est_lon[m] - true_lon[m]) * R_EARTH * np.cos(true_lat[m])
-    drms = math.sqrt(np.mean(dn**2 + de**2))
-    print(f"GTSAM fixed-lag DRMS = {drms:.2f} m   (Julia FGO reference = {ref:.2f} m)")
-    with open("research/gtsam_poc/gtsam_poc_result.txt", "w") as f:
-        f.write(f"gtsam_drms {drms:.3f}\njulia_ref {ref:.3f}\nN {N} nx {nx} nTL {nTL}\n")
+    rt_lat  = ins_lat + est_rt[:, 0]; rt_lon = ins_lon + est_rt[:, 1]
+    np.savez(f"research/gtsam_poc/est_gtsam{tag}.npz", est=est, est_rt=est_rt,
+             est_lat=est_lat, est_lon=est_lon, rt_lat=rt_lat, rt_lon=rt_lon,
+             ins_lat=ins_lat, ins_lon=ins_lon,
+             true_lat=true_lat, true_lon=true_lon)
+
+    # NOTE: the exported warm (600 s) equals the segment length (N*dt = 600 s),
+    # so the shipped mask is empty and ref_drms is NaN. Report a warm sweep.
+    def drms_of(lat_, lon_, warm_v):
+        m = (np.arange(N) * dt) >= warm_v
+        if not m.any():
+            return float("nan")
+        dn = (lat_[m] - true_lat[m]) * R_EARTH
+        de = (lon_[m] - true_lon[m]) * R_EARTH * np.cos(true_lat[m])
+        return math.sqrt(np.mean(dn**2 + de**2))
+
+    lines = []
+    for wv in (0.0, 60.0, 120.0, 300.0, warm):
+        g = drms_of(est_lat, est_lon, wv)
+        r = drms_of(rt_lat, rt_lon, wv)
+        i = drms_of(ins_lat, ins_lon, wv)
+        lines.append(f"warm={wv:g}s  smoothed_drms={g:.2f} m  "
+                     f"realtime_drms={r:.2f} m  ins_drms={i:.2f} m")
+        print(lines[-1], flush=True)
+    print(f"(Julia FGO reference = {ref:.2f} m, exported warm={warm:g}s, lag={win:g}s)",
+          flush=True)
+    with open(f"research/gtsam_poc/gtsam_poc_result{tag}.txt", "w") as f:
+        f.write("\n".join(lines) + f"\njulia_ref {ref:.3f}\nN {N} nx {nx} nTL {nTL}\n")
 
 if __name__ == "__main__":
     import traceback
