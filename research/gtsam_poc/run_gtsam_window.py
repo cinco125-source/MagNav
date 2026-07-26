@@ -75,7 +75,10 @@ def main():
         Phi = Phi.transpose(0, 2, 1)
     A = np.asarray(d["A"], dtype=float)
     if A.shape[0] != N: A = A.T
-    meas = np.asarray(d["meas"], dtype=float).ravel()
+    mag = sys.argv[3] if len(sys.argv) > 3 else "5"
+    meas_key = f"meas_mag{mag}" if f"meas_mag{mag}" in d else "meas"
+    meas = np.asarray(d[meas_key], dtype=float).ravel()
+    print(f"mag={mag} ({meas_key})", flush=True)
     ins_lat = np.asarray(d["ins_lat"]).ravel(); ins_lon = np.asarray(d["ins_lon"]).ravel()
     true_lat = np.asarray(d["true_lat"]).ravel(); true_lon = np.asarray(d["true_lon"]).ravel()
     P0 = np.asarray(d["P0"], dtype=float); Qd_raw = np.asarray(d["Qd"], dtype=float)

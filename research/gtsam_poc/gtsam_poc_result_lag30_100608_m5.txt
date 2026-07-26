@@ -1,0 +1,7 @@
+warm=0s  smoothed_drms=109.60 m  realtime_drms=132.74 m  ins_drms=137.26 m
+warm=60s  smoothed_drms=110.66 m  realtime_drms=132.11 m  ins_drms=142.42 m
+warm=120s  smoothed_drms=109.67 m  realtime_drms=128.14 m  ins_drms=148.00 m
+warm=300s  smoothed_drms=121.40 m  realtime_drms=134.62 m  ins_drms=166.28 m
+warm=600s  smoothed_drms=115.63 m  realtime_drms=104.14 m  ins_drms=197.65 m
+julia_ref nan
+N 8391 nx 37 nTL 19

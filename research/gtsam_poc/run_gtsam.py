@@ -73,20 +73,25 @@ def main():
     N   = int(d["N"]); nx = int(d["nx"]); nTL = int(d["nTL"])
     dt  = float(d["dt"]); Rm = float(d["R"]); warm = float(d["warm"])
     win = float(d["win"]); ref = float(d["ref_drms"])
-    # optional CLI override of the smoother lag [s] (default: exported win=300)
+    # optional CLI: [lag_s] [mag 4|5] [tag]
     if len(sys.argv) > 2:
         win = float(sys.argv[2])
-    tag = f"_lag{win:g}" if len(sys.argv) > 2 else ""
+    mag = sys.argv[3] if len(sys.argv) > 3 else "5"
+    tag = sys.argv[4] if len(sys.argv) > 4 else (
+        f"_lag{win:g}" if len(sys.argv) > 2 else "")
+    py_export = "gh_rowmajor" in d               # Python-written: no axis surgery
     Phi = np.asarray(d["Phi"], dtype=float)     # want [N-1, nx, nx]
     if Phi.shape[0] == nx:      # stored [nx,nx,N-1] -> transpose to [N-1,nx,nx]
         Phi = np.moveaxis(Phi, 2, 0)
-    else:
+    elif not py_export:
         # h5py reads Julia's column-major [nx,nx,N-1] as [N-1,nx,nx] with each
         # slice TRANSPOSED (verified: dt/R shows up at [3,0] instead of [0,3]).
         Phi = Phi.transpose(0, 2, 1)
     A   = np.asarray(d["A"], dtype=float)
     if A.shape[0] != N: A = A.T                  # -> [N, nTL]
-    meas = np.asarray(d["meas"], dtype=float).ravel()
+    meas_key = f"meas_mag{mag}" if f"meas_mag{mag}" in d else "meas"
+    meas = np.asarray(d[meas_key], dtype=float).ravel()
+    print(f"lag={win:g}s  mag={mag} ({meas_key})  tag={tag}", flush=True)
     ins_lat = np.asarray(d["ins_lat"]).ravel(); ins_lon = np.asarray(d["ins_lon"]).ravel()
     true_lat = np.asarray(d["true_lat"]).ravel(); true_lon = np.asarray(d["true_lon"]).ravel()
     P0 = np.asarray(d["P0"], dtype=float); Qd = np.asarray(d["Qd"], dtype=float)
@@ -98,7 +103,12 @@ def main():
     # ~1e10. A 1e-8 floor would be sigma ~640 m/step in rad states — it destroys
     # the dynamics and the estimate collapses onto the INS.
     Qd = Qd + 1e-20 * np.eye(nx)
-    grid = Grid(d["glat"], d["glon"], d["gh"])
+    if py_export:
+        grid = Grid(d["glat"], d["glon"], np.asarray(d["gh_rowmajor"]))
+        grid.gh = np.asarray(d["gh_rowmajor"])   # already (lat, lon) row-major
+        assert grid.gh.shape == (grid.glat.size, grid.glon.size)
+    else:
+        grid = Grid(d["glat"], d["glon"], d["gh"])
 
     # data sanity: a NaN/Inf in Phi/meas/INS shows up as an ISAM2 "indeterminate"
     for nm_, arr in (("Phi", Phi), ("A", A), ("meas", meas),
@@ -182,13 +192,21 @@ def main():
         graph = gtsam.NonlinearFactorGraph(); vals = gtsam.Values(); ts = KTM()
         cur = sm.calculateEstimate()
         est_rt[t] = cur.atVector(X(t))   # causal estimate available at time t
-        # record the freshest available estimate for each key still in the window
-        for k in range(max(0, t - int(round(win/dt))), t + 1):
-            if cur.exists(X(k)):
-                est[k] = cur.atVector(X(k))
+        # record the smoothed value only for the state about to leave the lag
+        # window (its final value): O(1) per step instead of O(window), which
+        # dominated the earlier per-epoch wall clock (300 atVector calls/step)
+        k = t - int(round(win/dt))
+        if k >= 0 and cur.exists(X(k)):
+            est[k] = cur.atVector(X(k))
         if t % 100 == 0:
             el = time.time() - t0
             print(f"t={t}/{N}  elapsed={el:.0f}s  ({el/t*1000:.0f} ms/epoch)", flush=True)
+
+    # states still inside the window at the end never left it: extract once
+    cur = sm.calculateEstimate()
+    for k in range(max(0, N - int(round(win/dt))), N):
+        if cur.exists(X(k)):
+            est[k] = cur.atVector(X(k))
 
     est_lat = ins_lat + est[:, 0]; est_lon = ins_lon + est[:, 1]
     rt_lat  = ins_lat + est_rt[:, 0]; rt_lon = ins_lon + est_rt[:, 1]

@@ -24,7 +24,15 @@ R_EARTH  = 6378137.0
 W_EARTH  = 7.2921151467e-5
 G_EARTH  = 9.80665
 
-T_START, T_END, LINE = 57770.0, 63010.0, 1007.06   # df_nav Flt1007 1007.06
+# df_nav (examples/dataframes/df_nav.csv) line windows; overridable via CLI
+LINES = {
+    "1003.02": (50713.0, 54497.0, 1003.02),
+    "1003.08": (60243.0, 64586.0, 1003.08),
+    "1006.08": (55770.0, 56609.0, 1006.08),
+    "1007.02": (48024.0, 51880.0, 1007.02),
+    "1007.06": (57770.0, 63010.0, 1007.06),
+}
+T_START, T_END, LINE = LINES["1007.06"]
 FOGM_TAU = 180.0
 TAU      = 3600.0                                   # baro/acc/gyro tau
 DT_EXP   = 0.1
@@ -138,14 +146,18 @@ def get_pinson(nx, lat, vn, ve, vd, fn, fe, fd, Cnb,
 def main():
     flt_path, map_path, out_path = sys.argv[1], sys.argv[2], sys.argv[3]
     val_path = sys.argv[sys.argv.index("--validate") + 1] if "--validate" in sys.argv else None
+    if "--line" in sys.argv:
+        t_start, t_end, line_no = LINES[sys.argv[sys.argv.index("--line") + 1]]
+    else:
+        t_start, t_end, line_no = T_START, T_END, LINE
 
     f = h5py.File(flt_path, "r")
     tt = f["tt"][()]
     line = f["line"][()]
-    ind = (tt >= T_START) & (tt <= T_END) & (np.round(line, 2) == LINE)
+    ind = (tt >= t_start) & (tt <= t_end) & (np.round(line, 2) == line_no)
     N = int(ind.sum())
     dt = float(f["dt"][()])
-    print(f"line {LINE}: N={N} ({N*dt/60:.1f} min)", flush=True)
+    print(f"line {line_no}: N={N} ({N*dt/60:.1f} min)", flush=True)
 
     # truth (deg -> rad) and INS (already rad; mirrors get_XYZ20)
     true_lat = np.deg2rad(f["lat"][()][ind]); true_lon = np.deg2rad(f["lon"][()][ind])
@@ -166,6 +178,7 @@ def main():
     By = f["flux_d_y"][()][ind].astype(float)
     Bz = f["flux_d_z"][()][ind].astype(float)
     meas = f["mag_5_uc"][()][ind].astype(float)
+    meas4 = f["mag_4_uc"][()][ind].astype(float)
     f.close()
 
     # specific force: rotate wander (CW for NED), mirrors get_XYZ20
@@ -218,11 +231,31 @@ def main():
     assert mmap.shape == (myy.size, mxx.size)
     if np.max(np.abs(myy)) > np.pi:           # deg -> rad if needed
         myy = np.deg2rad(myy); mxx = np.deg2rad(mxx)
-    itp = RectBivariateSpline(myy, mxx, mmap, kx=3, ky=3, s=0)
 
     malt = float(np.mean(ins_alt))
+    dz = malt - malt_map
+    if dz > 20.0:
+        # upward continuation to flight altitude (mirrors Julia upward_fft):
+        # FFT, multiply by e^{-k dz}, IFFT. Skipped when dz is a few metres
+        # (validated harmless for 1007.06); essential for the ~400 m gap of
+        # 1007.02 over Eastern_395.
+        ny_, nx_ = mmap.shape
+        dy_m = (myy[1] - myy[0]) * R_EARTH
+        dx_m = (mxx[1] - mxx[0]) * R_EARTH * np.cos(myy.mean())
+        # mirror-pad to soften wrap-around
+        py_, px_ = ny_ // 4, nx_ // 4
+        big = np.pad(mmap, ((py_, py_), (px_, px_)), mode="reflect")
+        ky = np.fft.fftfreq(big.shape[0], d=dy_m) * 2 * np.pi
+        kx = np.fft.fftfreq(big.shape[1], d=dx_m) * 2 * np.pi
+        K = np.sqrt(ky[:, None]**2 + kx[None, :]**2)
+        big = np.real(np.fft.ifft2(np.fft.fft2(big) * np.exp(-K * dz)))
+        mmap = big[py_:py_+ny_, px_:px_+nx_]
+        print(f"upward-continued map {dz:.0f} m to flight altitude", flush=True)
+    itp = RectBivariateSpline(myy, mxx, mmap, kx=3, ky=3, s=0)
     pad = 0.02 * np.pi / 180
-    Ng = 600                                   # ~full-line bbox at fine spacing
+    # grid density: 113 m spacing (Ng=600) was enough for Mag 5 but is a prime
+    # suspect for the Mag 4 hard-regime divergence (gradient fidelity)
+    Ng = int(sys.argv[sys.argv.index("--ng") + 1]) if "--ng" in sys.argv else 600
     glat = np.linspace(true_lat.min()-pad, true_lat.max()+pad, Ng)
     glon = np.linspace(true_lon.min()-pad, true_lon.max()+pad, Ng)
     gmap = itp(glat, glon)                     # (Ng, Ng) map anomaly [nT]
@@ -276,7 +309,8 @@ def main():
     with h5py.File(out_path, "w") as o:
         o["N"] = N; o["dt"] = dt; o["nx"] = nx; o["nTL"] = nTL
         o.create_dataset("Phi", data=Phi, compression="gzip", compression_opts=1)
-        o["A"] = A; o["meas"] = meas
+        o["A"] = A; o["meas"] = meas               # mag_5_uc (back-compat)
+        o["meas_mag4"] = meas4; o["meas_mag5"] = meas
         o["ins_lat"] = ins_lat; o["ins_lon"] = ins_lon; o["ins_alt"] = ins_alt
         o["true_lat"] = true_lat; o["true_lon"] = true_lon
         o["P0"] = P0; o["Qd"] = Qd; o["R"] = Rm
@@ -284,7 +318,7 @@ def main():
         o["gh_rowmajor"] = gh                  # ALREADY (lat, lon) row-major
         o["malt"] = malt
         o["warm"] = 600.0; o["win"] = 300.0; o["overlap"] = 90.0
-        o["ref_drms"] = 13.8                   # Julia breadth FGO window, Mag 5
+        o["ref_drms"] = float("nan")
     print("wrote", out_path, flush=True)
 
 if __name__ == "__main__":
