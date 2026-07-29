@@ -1,0 +1,118 @@
+########## 1003_02 ##########
+TL prior sigma scaled by 1000
+mag4 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  7.1453e+03 ->  3.3983e+00   drms       7.5 m (ins    1.5)   |TL|max    840.3  S     -0.0  [0s]
+W=  100 (   100 s)  err  2.2132e+04 ->  3.4122e+01   drms      27.3 m (ins    5.7)   |TL|max   1365.8  S     -0.5  [0s]
+W=  200 (   200 s)  err  4.4175e+04 ->  7.7102e+01   drms      24.5 m (ins   11.0)   |TL|max   1413.3  S     -0.6  [0s]
+W=  300 (   300 s)  err  6.6200e+04 ->  1.0915e+02   drms      20.2 m (ins   16.4)   |TL|max   1037.0  S     -0.1  [1s]
+W=  400 (   400 s)  err  8.8805e+04 ->  1.5184e+02   drms      15.2 m (ins   22.0)   |TL|max    955.3  S     -0.1  [1s]
+W=  500 (   500 s)  err  1.1307e+05 ->  1.7316e+02   drms      17.8 m (ins   27.9)   |TL|max    935.9  S     -0.0  [2s]
+W=  600 (   600 s)  err  1.3781e+05 ->  2.0982e+02   drms      53.8 m (ins   34.5)   |TL|max   1209.5  S     -0.1  [2s]
+W=  900 (   900 s)  err  1.9751e+05 ->  3.5340e+02   drms      10.6 m (ins   56.7)   |TL|max   1029.7  S     -1.2  [4s]
+TL prior sigma scaled by 1000
+mag5 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  7.2353e+01 ->  8.8369e-01   drms      12.3 m (ins    1.5)   |TL|max    306.8  S      0.0  [0s]
+W=  100 (   100 s)  err  2.2030e+02 ->  1.4986e+00   drms      54.9 m (ins    5.7)   |TL|max    343.4  S     -0.0  [0s]
+W=  200 (   200 s)  err  3.3045e+02 ->  6.8334e+00   drms      11.2 m (ins   11.0)   |TL|max    404.1  S     -0.1  [0s]
+W=  300 (   300 s)  err  3.9817e+02 ->  9.3901e+00   drms      11.9 m (ins   16.4)   |TL|max    365.7  S      0.0  [1s]
+W=  400 (   400 s)  err  5.4139e+02 ->  1.0769e+01   drms      10.7 m (ins   22.0)   |TL|max    406.7  S      0.0  [1s]
+W=  500 (   500 s)  err  7.9506e+02 ->  1.2647e+01   drms      13.8 m (ins   27.9)   |TL|max    627.9  S      0.0  [5s]
+W=  600 (   600 s)  err  2.7849e+03 ->  1.5166e+01   drms      16.0 m (ins   34.5)   |TL|max    773.3  S     -0.0  [2s]
+W=  900 (   900 s)  err  9.9823e+03 ->  2.5775e+01   drms      11.4 m (ins   56.7)   |TL|max   1354.1  S     -0.3  [4s]
+########## 1003_08 ##########
+TL prior sigma scaled by 1000
+mag4 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  6.0057e+03 ->  8.8751e+00   drms       7.9 m (ins    2.5)   |TL|max    738.1  S     -0.0  [0s]
+W=  100 (   100 s)  err  2.0187e+04 ->  3.6300e+01   drms     122.6 m (ins    9.1)   |TL|max   1108.8  S     -0.2  [0s]
+W=  200 (   200 s)  err  4.0147e+04 ->  6.9403e+01   drms      26.6 m (ins   19.3)   |TL|max   1132.8  S     -0.2  [0s]
+W=  300 (   300 s)  err  6.0049e+04 ->  1.0224e+02   drms      23.8 m (ins   30.3)   |TL|max    999.0  S      0.2  [1s]
+W=  400 (   400 s)  err  7.9654e+04 ->  1.2984e+02   drms      41.2 m (ins   41.8)   |TL|max    904.0  S      0.4  [1s]
+W=  500 (   500 s)  err  9.8856e+04 ->  2.0955e+02   drms      42.1 m (ins   53.5)   |TL|max   1041.5  S      0.1  [2s]
+W=  600 (   600 s)  err  1.1777e+05 ->  2.4761e+02   drms      37.4 m (ins   65.3)   |TL|max   1113.8  S      0.4  [2s]
+W=  900 (   900 s)  err  1.9019e+05 ->  3.6600e+02   drms      28.1 m (ins  100.7)   |TL|max   1243.5  S     -1.0  [12s]
+TL prior sigma scaled by 1000
+mag5 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  7.4282e+02 ->  2.9688e-01   drms       3.3 m (ins    2.5)   |TL|max    246.1  S      0.0  [0s]
+W=  100 (   100 s)  err  2.4612e+03 ->  9.6658e-01   drms      17.7 m (ins    9.1)   |TL|max    444.4  S     -0.0  [0s]
+W=  200 (   200 s)  err  4.7019e+03 ->  2.4653e+00   drms      11.0 m (ins   19.3)   |TL|max    530.5  S     -0.1  [0s]
+W=  300 (   300 s)  err  7.0637e+03 ->  4.8463e+00   drms       3.4 m (ins   30.3)   |TL|max    517.7  S      0.0  [1s]
+W=  400 (   400 s)  err  9.2189e+03 ->  1.3076e+01   drms      12.2 m (ins   41.8)   |TL|max   1184.9  S      0.1  [1s]
+W=  500 (   500 s)  err  1.1587e+04 ->  3.1929e+01   drms      14.7 m (ins   53.5)   |TL|max   1157.5  S      0.1  [2s]
+W=  600 (   600 s)  err  1.4257e+04 ->  3.3704e+01   drms      10.8 m (ins   65.3)   |TL|max   1150.5  S      0.1  [6s]
+W=  900 (   900 s)  err  1.9998e+04 ->  3.9994e+01   drms       9.5 m (ins  100.7)   |TL|max   1317.2  S      0.0  [7s]
+########## 1006_08 ##########
+TL prior sigma scaled by 1000
+mag4 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  8.1354e+03 ->  3.3781e+00   drms       0.3 m (ins    5.0)   |TL|max    788.2  S     -0.0  [0s]
+W=  100 (   100 s)  err  2.7413e+04 ->  4.5254e+02   drms      46.2 m (ins   17.9)   |TL|max   2625.4  S      0.8  [0s]
+W=  200 (   200 s)  err  5.0412e+04 ->  8.1210e+02   drms     307.8 m (ins   37.1)   |TL|max   2569.1  S      0.4  [1s]
+W=  300 (   300 s)  err  6.8052e+04 ->  1.7159e+03   drms     847.3 m (ins   54.7)   |TL|max   3363.2  S      1.5  [2s]
+W=  400 (   400 s)  err  8.9323e+04 ->  2.6322e+03   drms     163.6 m (ins   71.2)   |TL|max   7339.7  S      2.3  [4s]
+W=  500 (   500 s)  err  1.1604e+05 ->  2.8283e+03   drms     255.1 m (ins   87.7)   |TL|max   6040.5  S      0.4  [3s]
+W=  600 (   600 s)  err  1.3944e+05 ->  3.6777e+03   drms      87.7 m (ins  103.7)   |TL|max   4613.4  S     -0.3  [5s]
+Traceback (most recent call last):
+  File "/mnt/c/Users/cin64/Desktop/MagNav/research/gtsam_poc/diag_window1.py", line 210, in <module>
+    main()
+  File "/mnt/c/Users/cin64/Desktop/MagNav/research/gtsam_poc/diag_window1.py", line 182, in main
+    gtsam.noiseModel.Gaussian.Covariance(QdK[s - 1]),
+                                         ~~~^^^^^^^
+IndexError: index 839 is out of bounds for axis 0 with size 839
+TL prior sigma scaled by 1000
+mag5 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  9.0881e+01 ->  8.5569e-01   drms       5.6 m (ins    5.0)   |TL|max    518.9  S      0.0  [0s]
+W=  100 (   100 s)  err  9.7217e+02 ->  8.6841e+01   drms      66.8 m (ins   17.9)   |TL|max    971.6  S      0.7  [0s]
+W=  200 (   200 s)  err  1.3831e+03 ->  1.1830e+02   drms     112.7 m (ins   37.1)   |TL|max   1267.1  S      0.4  [0s]
+W=  300 (   300 s)  err  2.4879e+03 ->  1.4701e+02   drms      34.6 m (ins   54.7)   |TL|max   1645.6  S      0.2  [1s]
+W=  400 (   400 s)  err  5.1240e+03 ->  2.0833e+02   drms      80.7 m (ins   71.2)   |TL|max   1915.9  S      0.8  [1s]
+W=  500 (   500 s)  err  6.8044e+03 ->  2.4203e+02   drms      26.2 m (ins   87.7)   |TL|max   1873.3  S      0.0  [2s]
+W=  600 (   600 s)  err  7.4821e+03 ->  4.0783e+02   drms      31.2 m (ins  103.7)   |TL|max   1839.4  S     -0.0  [3s]
+Traceback (most recent call last):
+  File "/mnt/c/Users/cin64/Desktop/MagNav/research/gtsam_poc/diag_window1.py", line 210, in <module>
+    main()
+  File "/mnt/c/Users/cin64/Desktop/MagNav/research/gtsam_poc/diag_window1.py", line 182, in main
+    gtsam.noiseModel.Gaussian.Covariance(QdK[s - 1]),
+                                         ~~~^^^^^^^
+IndexError: index 839 is out of bounds for axis 0 with size 839
+########## 1007_02 ##########
+TL prior sigma scaled by 1000
+mag4 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  6.2961e+03 ->  2.2294e+00   drms       1.5 m (ins    0.4)   |TL|max    955.4  S     -0.0  [0s]
+W=  100 (   100 s)  err  2.1810e+04 ->  2.2968e+01   drms      43.3 m (ins    3.8)   |TL|max   1167.1  S     -0.8  [0s]
+W=  200 (   200 s)  err  4.2811e+04 ->  5.8965e+01   drms      94.2 m (ins    9.4)   |TL|max   1843.3  S     -0.7  [0s]
+W=  300 (   300 s)  err  6.3646e+04 ->  1.0392e+02   drms      51.1 m (ins   15.1)   |TL|max   1762.5  S     -0.2  [1s]
+W=  400 (   400 s)  err  8.3736e+04 ->  1.3255e+02   drms      42.7 m (ins   20.8)   |TL|max   1783.1  S      0.4  [1s]
+W=  500 (   500 s)  err  1.0488e+05 ->  1.6834e+02   drms      38.2 m (ins   26.7)   |TL|max   1097.5  S      0.2  [2s]
+W=  600 (   600 s)  err  1.2879e+05 ->  1.8908e+02   drms      63.4 m (ins   33.4)   |TL|max   1271.4  S      0.2  [2s]
+W=  900 (   900 s)  err  1.8429e+05 ->  2.9078e+02   drms      25.0 m (ins   56.5)   |TL|max   1377.1  S     -0.7  [5s]
+TL prior sigma scaled by 1000
+mag5 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  7.9591e+01 ->  1.6797e+00   drms       2.8 m (ins    0.4)   |TL|max    247.0  S     -0.0  [0s]
+W=  100 (   100 s)  err  3.0489e+02 ->  7.0694e+00   drms      18.5 m (ins    3.8)   |TL|max    505.2  S      0.1  [0s]
+W=  200 (   200 s)  err  5.4897e+02 ->  1.7245e+01   drms      22.2 m (ins    9.4)   |TL|max    369.0  S      0.0  [0s]
+W=  300 (   300 s)  err  6.9313e+02 ->  2.8612e+01   drms      23.0 m (ins   15.1)   |TL|max    519.0  S      0.0  [1s]
+W=  400 (   400 s)  err  9.1121e+02 ->  3.5759e+01   drms      41.4 m (ins   20.8)   |TL|max    491.6  S      0.0  [1s]
+W=  500 (   500 s)  err  1.1443e+03 ->  4.5868e+01   drms      37.1 m (ins   26.7)   |TL|max    578.0  S     -0.0  [2s]
+W=  600 (   600 s)  err  2.6000e+03 ->  5.4798e+01   drms      66.1 m (ins   33.4)   |TL|max    625.0  S      0.1  [2s]
+W=  900 (   900 s)  err  9.6441e+03 ->  7.3283e+01   drms      34.9 m (ins   56.5)   |TL|max   1024.9  S     -0.2  [4s]
+########## 1007_06 ##########
+TL prior sigma scaled by 1000
+mag4 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  5.7275e+03 ->  9.8826e+00   drms       2.4 m (ins    1.4)   |TL|max    603.6  S      0.3  [0s]
+W=  100 (   100 s)  err  1.9081e+04 ->  2.9805e+01   drms      33.4 m (ins    5.6)   |TL|max    889.7  S      0.3  [0s]
+W=  200 (   200 s)  err  3.8618e+04 ->  1.2521e+02   drms     124.8 m (ins   11.8)   |TL|max    845.0  S     -0.9  [0s]
+W=  300 (   300 s)  err  5.7842e+04 ->  1.6980e+02   drms      72.0 m (ins   18.6)   |TL|max   1035.2  S      0.1  [1s]
+W=  400 (   400 s)  err  7.6868e+04 ->  1.9685e+02   drms      93.1 m (ins   25.3)   |TL|max   1140.8  S     -0.1  [1s]
+W=  500 (   500 s)  err  9.5441e+04 ->  2.2817e+02   drms      68.5 m (ins   32.2)   |TL|max   1140.2  S     -0.2  [5s]
+W=  600 (   600 s)  err  1.1337e+05 ->  2.5847e+02   drms      47.1 m (ins   39.0)   |TL|max   1410.1  S      0.3  [6s]
+W=  900 (   900 s)  err  1.6780e+05 ->  4.0312e+02   drms      25.4 m (ins   57.9)   |TL|max   1737.1  S      0.1  [4s]
+TL prior sigma scaled by 1000
+mag5 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  1.0494e+03 ->  1.9081e-01   drms       1.2 m (ins    1.4)   |TL|max    143.4  S      0.0  [0s]
+W=  100 (   100 s)  err  3.5300e+03 ->  5.5928e-01   drms       7.7 m (ins    5.6)   |TL|max    180.2  S      0.0  [0s]
+W=  200 (   200 s)  err  6.9931e+03 ->  3.2238e+00   drms      26.3 m (ins   11.8)   |TL|max    238.3  S     -0.2  [0s]
+W=  300 (   300 s)  err  1.0291e+04 ->  4.7477e+00   drms      11.1 m (ins   18.6)   |TL|max    315.8  S      0.0  [1s]
+W=  400 (   400 s)  err  1.3685e+04 ->  5.7505e+00   drms      12.7 m (ins   25.3)   |TL|max    485.8  S      0.0  [1s]
+W=  500 (   500 s)  err  1.6578e+04 ->  7.2785e+00   drms      11.7 m (ins   32.2)   |TL|max    678.0  S     -0.1  [2s]
+W=  600 (   600 s)  err  1.9270e+04 ->  8.5868e+00   drms       9.8 m (ins   39.0)   |TL|max    765.1  S      0.0  [2s]
+W=  900 (   900 s)  err  2.8300e+04 ->  3.7021e+01   drms       7.2 m (ins   57.9)   |TL|max    854.1  S     -0.0  [4s]
+KNEE_PRIOR_DONE

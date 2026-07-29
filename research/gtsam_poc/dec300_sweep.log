@@ -1,0 +1,137 @@
+lag=300s K=10 mag=4 (meas_mag4) N=37841 -> 3784 states
+s=500/3785  elapsed=3s  (5 ms/state)
+s=1000/3785  elapsed=6s  (6 ms/state)
+s=1500/3785  elapsed=10s  (6 ms/state)
+s=2000/3785  elapsed=13s  (7 ms/state)
+s=2500/3785  elapsed=17s  (7 ms/state)
+s=3000/3785  elapsed=21s  (7 ms/state)
+s=3500/3785  elapsed=25s  (7 ms/state)
+total 31s  (8 ms/state, 0.8 ms/raw-epoch)
+warm=0s  smoothed_drms=24877.55 m  realtime_drms=28895.34 m  ins_drms=114.38 m
+warm=60s  smoothed_drms=25076.78 m  realtime_drms=29127.02 m  ins_drms=115.30 m
+warm=300s  smoothed_drms=25878.31 m  realtime_drms=30072.94 m  ins_drms=119.11 m
+warm=600s  smoothed_drms=26810.53 m  realtime_drms=31116.44 m  ins_drms=123.79 m
+lag=300s K=10 mag=5 (meas_mag5) N=37841 -> 3784 states
+s=500/3785  elapsed=3s  (6 ms/state)
+s=1000/3785  elapsed=7s  (7 ms/state)
+s=1500/3785  elapsed=10s  (7 ms/state)
+s=2000/3785  elapsed=14s  (7 ms/state)
+s=2500/3785  elapsed=18s  (7 ms/state)
+s=3000/3785  elapsed=22s  (7 ms/state)
+s=3500/3785  elapsed=27s  (8 ms/state)
+total 29s  (8 ms/state, 0.8 ms/raw-epoch)
+warm=0s  smoothed_drms=12.01 m  realtime_drms=26.26 m  ins_drms=114.38 m
+warm=60s  smoothed_drms=12.08 m  realtime_drms=26.25 m  ins_drms=115.30 m
+warm=300s  smoothed_drms=12.29 m  realtime_drms=25.16 m  ins_drms=119.11 m
+warm=600s  smoothed_drms=12.59 m  realtime_drms=24.40 m  ins_drms=123.79 m
+lag=300s K=10 mag=4 (meas_mag4) N=43431 -> 4343 states
+s=500/4344  elapsed=3s  (7 ms/state)
+s=1000/4344  elapsed=8s  (8 ms/state)
+s=1500/4344  elapsed=13s  (8 ms/state)
+s=2000/4344  elapsed=18s  (9 ms/state)
+s=2500/4344  elapsed=24s  (9 ms/state)
+s=3000/4344  elapsed=28s  (9 ms/state)
+s=3500/4344  elapsed=36s  (10 ms/state)
+s=4000/4344  elapsed=40s  (10 ms/state)
+total 43s  (10 ms/state, 1.0 ms/raw-epoch)
+warm=0s  smoothed_drms=10554.67 m  realtime_drms=10938.70 m  ins_drms=253.55 m
+warm=60s  smoothed_drms=10628.23 m  realtime_drms=11015.03 m  ins_drms=255.32 m
+warm=300s  smoothed_drms=10924.67 m  realtime_drms=11327.52 m  ins_drms=262.66 m
+warm=600s  smoothed_drms=11261.64 m  realtime_drms=11679.75 m  ins_drms=271.86 m
+lag=300s K=10 mag=5 (meas_mag5) N=43431 -> 4343 states
+s=500/4344  elapsed=3s  (6 ms/state)
+s=1000/4344  elapsed=7s  (7 ms/state)
+s=1500/4344  elapsed=11s  (7 ms/state)
+s=2000/4344  elapsed=14s  (7 ms/state)
+s=2500/4344  elapsed=18s  (7 ms/state)
+s=3000/4344  elapsed=22s  (7 ms/state)
+s=3500/4344  elapsed=30s  (9 ms/state)
+s=4000/4344  elapsed=34s  (8 ms/state)
+total 36s  (8 ms/state, 0.8 ms/raw-epoch)
+warm=0s  smoothed_drms=12.56 m  realtime_drms=30.27 m  ins_drms=253.55 m
+warm=60s  smoothed_drms=12.64 m  realtime_drms=30.26 m  ins_drms=255.32 m
+warm=300s  smoothed_drms=12.17 m  realtime_drms=23.47 m  ins_drms=262.66 m
+warm=600s  smoothed_drms=10.94 m  realtime_drms=22.44 m  ins_drms=271.86 m
+lag=300s K=10 mag=4 (meas_mag4) N=8391 -> 839 states
+s=500/840  elapsed=2s  (5 ms/state)
+total 5s  (6 ms/state, 0.6 ms/raw-epoch)
+warm=0s  smoothed_drms=4180.88 m  realtime_drms=4654.42 m  ins_drms=137.28 m
+warm=60s  smoothed_drms=4338.39 m  realtime_drms=4829.80 m  ins_drms=142.43 m
+warm=300s  smoothed_drms=5148.95 m  realtime_drms=5375.17 m  ins_drms=166.29 m
+warm=600s  smoothed_drms=6573.69 m  realtime_drms=7028.54 m  ins_drms=197.66 m
+lag=300s K=10 mag=5 (meas_mag5) N=8391 -> 839 states
+s=500/840  elapsed=2s  (5 ms/state)
+total 5s  (6 ms/state, 0.6 ms/raw-epoch)
+warm=0s  smoothed_drms=57.57 m  realtime_drms=131.95 m  ins_drms=137.28 m
+warm=60s  smoothed_drms=59.63 m  realtime_drms=133.82 m  ins_drms=142.43 m
+warm=300s  smoothed_drms=63.10 m  realtime_drms=96.55 m  ins_drms=166.29 m
+warm=600s  smoothed_drms=83.89 m  realtime_drms=52.37 m  ins_drms=197.66 m
+lag=300s K=10 mag=4 (meas_mag4) N=38561 -> 3856 states
+s=500/3857  elapsed=3s  (5 ms/state)
+s=1000/3857  elapsed=6s  (6 ms/state)
+s=1500/3857  elapsed=10s  (7 ms/state)
+s=2000/3857  elapsed=18s  (9 ms/state)
+s=2500/3857  elapsed=22s  (9 ms/state)
+s=3000/3857  elapsed=27s  (9 ms/state)
+s=3500/3857  elapsed=31s  (9 ms/state)
+total 34s  (9 ms/state, 0.9 ms/raw-epoch)
+warm=0s  smoothed_drms=298.74 m  realtime_drms=1273.50 m  ins_drms=111.66 m
+warm=60s  smoothed_drms=297.94 m  realtime_drms=1283.27 m  ins_drms=112.54 m
+warm=300s  smoothed_drms=96.93 m  realtime_drms=987.92 m  ins_drms=116.19 m
+warm=600s  smoothed_drms=59.98 m  realtime_drms=327.77 m  ins_drms=120.66 m
+lag=300s K=10 mag=5 (meas_mag5) N=38561 -> 3856 states
+s=500/3857  elapsed=3s  (6 ms/state)
+s=1000/3857  elapsed=7s  (7 ms/state)
+s=1500/3857  elapsed=15s  (10 ms/state)
+s=2000/3857  elapsed=19s  (9 ms/state)
+s=2500/3857  elapsed=23s  (9 ms/state)
+s=3000/3857  elapsed=27s  (9 ms/state)
+s=3500/3857  elapsed=31s  (9 ms/state)
+total 34s  (9 ms/state, 0.9 ms/raw-epoch)
+warm=0s  smoothed_drms=18.94 m  realtime_drms=46.36 m  ins_drms=111.66 m
+warm=60s  smoothed_drms=19.07 m  realtime_drms=46.50 m  ins_drms=112.54 m
+warm=300s  smoothed_drms=18.02 m  realtime_drms=46.31 m  ins_drms=116.19 m
+warm=600s  smoothed_drms=14.00 m  realtime_drms=40.32 m  ins_drms=120.66 m
+lag=300s K=10 mag=4 (meas_mag4) N=52401 -> 5240 states
+s=500/5241  elapsed=3s  (6 ms/state)
+s=1000/5241  elapsed=8s  (8 ms/state)
+s=1500/5241  elapsed=15s  (10 ms/state)
+s=2000/5241  elapsed=20s  (10 ms/state)
+s=2500/5241  elapsed=24s  (10 ms/state)
+s=3000/5241  elapsed=28s  (9 ms/state)
+s=3500/5241  elapsed=32s  (9 ms/state)
+s=4000/5241  elapsed=36s  (9 ms/state)
+s=4500/5241  elapsed=40s  (9 ms/state)
+s=5000/5241  elapsed=45s  (9 ms/state)
+total 50s  (10 ms/state, 1.0 ms/raw-epoch)
+warm=0s  smoothed_drms=18357.57 m  realtime_drms=18412.38 m  ins_drms=299.06 m
+warm=60s  smoothed_drms=18463.49 m  realtime_drms=18518.68 m  ins_drms=300.79 m
+warm=300s  smoothed_drms=18897.50 m  realtime_drms=18953.78 m  ins_drms=307.97 m
+warm=600s  smoothed_drms=19456.72 m  realtime_drms=19503.07 m  ins_drms=317.49 m
+lag=300s K=10 mag=5 (meas_mag5) N=52401 -> 5240 states
+s=500/5241  elapsed=3s  (6 ms/state)
+s=1000/5241  elapsed=7s  (7 ms/state)
+s=1500/5241  elapsed=12s  (8 ms/state)
+s=2000/5241  elapsed=16s  (8 ms/state)
+s=2500/5241  elapsed=21s  (8 ms/state)
+s=3000/5241  elapsed=25s  (8 ms/state)
+s=3500/5241  elapsed=29s  (8 ms/state)
+s=4000/5241  elapsed=37s  (9 ms/state)
+s=4500/5241  elapsed=41s  (9 ms/state)
+s=5000/5241  elapsed=46s  (9 ms/state)
+total 48s  (9 ms/state, 0.9 ms/raw-epoch)
+warm=0s  smoothed_drms=12.28 m  realtime_drms=35.94 m  ins_drms=299.06 m
+warm=60s  smoothed_drms=12.33 m  realtime_drms=35.56 m  ins_drms=300.79 m
+warm=300s  smoothed_drms=11.65 m  realtime_drms=19.78 m  ins_drms=307.97 m
+warm=600s  smoothed_drms=11.68 m  realtime_drms=19.83 m  ins_drms=317.49 m
+ALL_DONE
+research/gtsam_poc/gtsam_poc_result_dec300_1003_02_m4.txt:warm=600s  smoothed_drms=26810.53 m  realtime_drms=31116.44 m  ins_drms=123.79 m
+research/gtsam_poc/gtsam_poc_result_dec300_1003_02_m5.txt:warm=600s  smoothed_drms=12.59 m  realtime_drms=24.40 m  ins_drms=123.79 m
+research/gtsam_poc/gtsam_poc_result_dec300_1003_08_m4.txt:warm=600s  smoothed_drms=11261.64 m  realtime_drms=11679.75 m  ins_drms=271.86 m
+research/gtsam_poc/gtsam_poc_result_dec300_1003_08_m5.txt:warm=600s  smoothed_drms=10.94 m  realtime_drms=22.44 m  ins_drms=271.86 m
+research/gtsam_poc/gtsam_poc_result_dec300_1006_08_m4.txt:warm=600s  smoothed_drms=6573.69 m  realtime_drms=7028.54 m  ins_drms=197.66 m
+research/gtsam_poc/gtsam_poc_result_dec300_1006_08_m5.txt:warm=600s  smoothed_drms=83.89 m  realtime_drms=52.37 m  ins_drms=197.66 m
+research/gtsam_poc/gtsam_poc_result_dec300_1007_02_m4.txt:warm=600s  smoothed_drms=59.98 m  realtime_drms=327.77 m  ins_drms=120.66 m
+research/gtsam_poc/gtsam_poc_result_dec300_1007_02_m5.txt:warm=600s  smoothed_drms=14.00 m  realtime_drms=40.32 m  ins_drms=120.66 m
+research/gtsam_poc/gtsam_poc_result_dec300_1007_06_m4.txt:warm=600s  smoothed_drms=19456.72 m  realtime_drms=19503.07 m  ins_drms=317.49 m
+research/gtsam_poc/gtsam_poc_result_dec300_1007_06_m5.txt:warm=600s  smoothed_drms=11.68 m  realtime_drms=19.83 m  ins_drms=317.49 m

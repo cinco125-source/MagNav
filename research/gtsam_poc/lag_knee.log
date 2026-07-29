@@ -1,0 +1,7 @@
+--- lag 600 mag4 ---
+warm=600s  smoothed_drms=14727.60 m  realtime_drms=14696.12 m  ins_drms=317.49 m
+--- lag 900 mag4 ---
+warm=600s  smoothed_drms=14454.05 m  realtime_drms=14406.33 m  ins_drms=317.49 m
+--- lag 450 mag4 ---
+warm=600s  smoothed_drms=14777.40 m  realtime_drms=14665.86 m  ins_drms=317.49 m
+LAG_KNEE_DONE

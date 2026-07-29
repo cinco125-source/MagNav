@@ -1,0 +1,17 @@
+lag=300s K=10 mag=4 (meas_mag4) N=52401 -> 5240 states
+attaching all raw measurements to nearest kept state
+s=500/5241  elapsed=11s  (23 ms/state)
+s=1000/5241  elapsed=31s  (31 ms/state)
+s=1500/5241  elapsed=47s  (31 ms/state)
+s=2000/5241  elapsed=66s  (33 ms/state)
+s=2500/5241  elapsed=83s  (33 ms/state)
+s=3000/5241  elapsed=103s  (34 ms/state)
+s=3500/5241  elapsed=119s  (34 ms/state)
+s=4000/5241  elapsed=140s  (35 ms/state)
+s=4500/5241  elapsed=156s  (35 ms/state)
+s=5000/5241  elapsed=175s  (35 ms/state)
+total 184s  (35 ms/state, 3.5 ms/raw-epoch)
+warm=0s  smoothed_drms=21615.82 m  realtime_drms=24119.69 m  ins_drms=299.06 m
+warm=60s  smoothed_drms=21740.57 m  realtime_drms=24258.91 m  ins_drms=300.79 m
+warm=300s  smoothed_drms=22254.19 m  realtime_drms=24835.79 m  ins_drms=307.97 m
+warm=600s  smoothed_drms=22940.89 m  realtime_drms=25597.16 m  ins_drms=317.49 m

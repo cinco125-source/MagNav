@@ -143,8 +143,28 @@ def main():
     stride = max(1, Lw - Lo)
     print(f"window Lw={Lw} overlap={Lo} stride={stride}", flush=True)
 
+    # --tl-init T: same cold-start bootstrap as run_gtsam_decimated.py. The first
+    # window is a batch solve from a zero compensation, which on a cabin
+    # magnetometer carrying a ~2000 nT platform field converges to a minimum
+    # kilometres from truth (diag_window1.py). Seeding the coefficients with a
+    # ridge fit of (meas - map at the INS position) over the same window, with
+    # the TL prior itself as the penalty, moves the first solve into the correct
+    # basin. It uses no data the window does not already hold.
+    x0_TL = np.zeros(nTL)
+    if "--tl-init" in sys.argv:
+        T_init = float(sys.argv[sys.argv.index("--tl-init") + 1])
+        n_init = min(N, int(round(T_init / dt)))
+        r0 = np.array([meas[t] - grid.value(ins_lat[t], ins_lon[t])
+                       for t in range(n_init)])
+        Aw = A[:n_init]
+        x0_TL = np.linalg.solve(Aw.T @ Aw + Rm * np.eye(nTL), Aw.T @ r0)
+        print(f"TL bootstrap over first {T_init:g}s: |beta|max="
+              f"{np.abs(x0_TL).max():.1f} nT, residual rms "
+              f"{np.sqrt(((r0 - Aw @ x0_TL)**2).mean()):.1f} nT "
+              f"(uncompensated {np.sqrt((r0**2).mean()):.1f} nT)", flush=True)
+
     est = np.zeros((N, nx))
-    x0_pr = np.zeros(nx); P0_c = P0.copy()
+    x0_pr = np.zeros(nx); x0_pr[iTL] = x0_TL; P0_c = P0.copy()
     i0 = 0
     t_start = time.time()
     while i0 < N:

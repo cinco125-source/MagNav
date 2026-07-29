@@ -16,3 +16,7 @@ settings.json
 # Python bytecode from local figure rendering
 __pycache__/
 *.pyc
+
+# large intermediate estimate arrays from the GTSAM PoC sweeps (regenerable)
+research/gtsam_poc/est_*.npz
+research/gtsam_poc/basin_*.npz

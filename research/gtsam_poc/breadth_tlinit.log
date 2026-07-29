@@ -1,0 +1,20 @@
+=== 1003_02 mag4 (lag=300, TL bootstrap 300 s) ===
+warm=600s  smoothed_drms=12475.95 m  realtime_drms=12458.72 m  ins_drms=123.79 m
+=== 1003_02 mag5 (lag=300, TL bootstrap 300 s) ===
+warm=600s  smoothed_drms=12.53 m  realtime_drms=24.39 m  ins_drms=123.79 m
+=== 1003_08 mag4 (lag=300, TL bootstrap 300 s) ===
+warm=600s  smoothed_drms=25.60 m  realtime_drms=53.28 m  ins_drms=271.86 m
+=== 1003_08 mag5 (lag=300, TL bootstrap 300 s) ===
+warm=600s  smoothed_drms=10.84 m  realtime_drms=21.26 m  ins_drms=271.86 m
+=== 1006_08 mag4 (lag=300, TL bootstrap 300 s) ===
+warm=600s  smoothed_drms=84.58 m  realtime_drms=212.48 m  ins_drms=197.66 m
+=== 1006_08 mag5 (lag=300, TL bootstrap 300 s) ===
+warm=600s  smoothed_drms=91.75 m  realtime_drms=54.57 m  ins_drms=197.66 m
+=== 1007_02 mag4 (lag=300, TL bootstrap 300 s) ===
+warm=600s  smoothed_drms=30.61 m  realtime_drms=84.61 m  ins_drms=120.66 m
+=== 1007_02 mag5 (lag=300, TL bootstrap 300 s) ===
+warm=600s  smoothed_drms=14.04 m  realtime_drms=39.52 m  ins_drms=120.66 m
+=== 1007_06 mag4 cached ===
+=== 1007_06 mag5 (lag=300, TL bootstrap 300 s) ===
+warm=600s  smoothed_drms=11.48 m  realtime_drms=16.67 m  ins_drms=317.49 m
+BREADTH_TLINIT_DONE

@@ -263,9 +263,16 @@ def main():
     from datetime import datetime, timedelta
     date_dt = datetime(2020, 1, 1) + timedelta(days=184.5)
     LON, LAT = np.meshgrid(np.rad2deg(glon), np.rad2deg(glat))
-    Be, Bn, Bu = ppigrf.igrf(LON, LAT, malt/1000.0, date_dt)
-    gigrf = np.sqrt(Be**2 + Bn**2 + Bu**2)[0 if np.ndim(Be) == 3 else ...]
-    gigrf = np.squeeze(gigrf)
+    # ppigrf allocates an (npoints, nterms) Legendre table, so a single call on a
+    # fine grid (Ng=2000 -> 4e6 points) exhausts memory. Evaluate row-by-row in
+    # chunks; the result is bit-identical to the one-shot call.
+    gigrf = np.empty((Ng, Ng))
+    rows_per_chunk = max(1, 250_000 // Ng)
+    for i0 in range(0, Ng, rows_per_chunk):
+        i1 = min(i0 + rows_per_chunk, Ng)
+        Be, Bn, Bu = ppigrf.igrf(LON[i0:i1], LAT[i0:i1], malt/1000.0, date_dt)
+        chunk = np.sqrt(Be**2 + Bn**2 + Bu**2)[0 if np.ndim(Be) == 3 else ...]
+        gigrf[i0:i1] = np.squeeze(chunk).reshape(i1 - i0, Ng)
     gh = gmap + gigrf
     print(f"grid {Ng}x{Ng}, malt={malt:.1f} m, map alt={malt_map:.1f} m, "
           f"spacing ~{(glat[1]-glat[0])*R_EARTH:.0f} m", flush=True)

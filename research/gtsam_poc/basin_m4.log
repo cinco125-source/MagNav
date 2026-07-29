@@ -1,0 +1,7 @@
+graph: 5241 states, 10482 factors
+zeros          error=      1.0263e+06  drms=     317.5 m
+LS TL fit: |beta|_max=21947.8  bias=-6031.5 nT
+warm           error=      7.9009e+08  drms=     317.5 m
+fixedlag       error=      2.6097e+13  drms=   19456.7 m
+LM(zeros)      error=      1.6450e+04  drms=      18.6 m  [280s]
+LM(warm)       error=      1.6449e+04  drms=      18.6 m  [351s]

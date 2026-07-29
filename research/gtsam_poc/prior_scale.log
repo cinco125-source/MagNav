@@ -1,0 +1,21 @@
+1003_02   sigma=10    warm=600s  smoothed_drms=32.66 m  realtime_drms=85.38 m  ins_drms=123.79 m
+1003_02   sigma=100   warm=600s  smoothed_drms=19.58 m  realtime_drms=58.18 m  ins_drms=123.79 m
+1003_02   sigma=1000  warm=600s  smoothed_drms=19.30 m  realtime_drms=53.21 m  ins_drms=123.79 m
+1003_02   seed-only warm=600s  smoothed_drms=19.21 m  realtime_drms=67.01 m  ins_drms=123.79 m
+1003_08   sigma=10    warm=600s  smoothed_drms=25.65 m  realtime_drms=53.24 m  ins_drms=271.86 m
+1003_08   sigma=100   warm=600s  smoothed_drms=24.98 m  realtime_drms=48.85 m  ins_drms=271.86 m
+1003_08   sigma=1000  warm=600s  smoothed_drms=24.46 m  realtime_drms=46.95 m  ins_drms=271.86 m
+1003_08   seed-only warm=600s  smoothed_drms=25.76 m  realtime_drms=53.86 m  ins_drms=271.86 m
+1006_08   sigma=10    warm=600s  smoothed_drms=117.65 m  realtime_drms=110.55 m  ins_drms=197.66 m
+1006_08   sigma=100   warm=600s  smoothed_drms=99.12 m  realtime_drms=134.78 m  ins_drms=197.66 m
+1006_08   sigma=1000  warm=600s  smoothed_drms=85.38 m  realtime_drms=103.37 m  ins_drms=197.66 m
+1006_08   seed-only warm=600s  smoothed_drms=121.44 m  realtime_drms=141.60 m  ins_drms=197.66 m
+1007_02   sigma=10    warm=600s  smoothed_drms=30.29 m  realtime_drms=81.87 m  ins_drms=120.66 m
+1007_02   sigma=100   warm=600s  smoothed_drms=28.35 m  realtime_drms=74.31 m  ins_drms=120.66 m
+1007_02   sigma=1000  warm=600s  smoothed_drms=30.33 m  realtime_drms=80.00 m  ins_drms=120.66 m
+1007_02   seed-only warm=600s  smoothed_drms=51.77 m  realtime_drms=147.68 m  ins_drms=120.66 m
+1007_06   sigma=10    warm=600s  smoothed_drms=24.07 m  realtime_drms=43.92 m  ins_drms=317.49 m
+1007_06   sigma=100   warm=600s  smoothed_drms=24.19 m  realtime_drms=42.72 m  ins_drms=317.49 m
+1007_06   sigma=1000  warm=600s  smoothed_drms=23.86 m  realtime_drms=42.06 m  ins_drms=317.49 m
+1007_06   seed-only warm=600s  smoothed_drms=24.05 m  realtime_drms=44.64 m  ins_drms=317.49 m
+PRIOR_SCALE_DONE

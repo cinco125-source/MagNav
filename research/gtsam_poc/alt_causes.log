@@ -1,0 +1,13 @@
+1003_02   rsigma=65   warm=600s  smoothed_drms=46410.37 m  realtime_drms=46196.07 m  ins_drms=123.79 m
+1003_02   rsigma=150  warm=600s  smoothed_drms=31423.56 m  realtime_drms=31557.84 m  ins_drms=123.79 m
+1003_08   rsigma=65   warm=600s  smoothed_drms=39887.79 m  realtime_drms=39741.96 m  ins_drms=271.86 m
+1003_08   rsigma=150  warm=600s  smoothed_drms=10926.57 m  realtime_drms=11038.95 m  ins_drms=271.86 m
+1006_08   rsigma=65   warm=600s  smoothed_drms=240.76 m  realtime_drms=579.33 m  ins_drms=197.66 m
+1006_08   rsigma=150  warm=600s  smoothed_drms=3403.36 m  realtime_drms=3444.76 m  ins_drms=197.66 m
+1007_02   rsigma=65   warm=600s  smoothed_drms=41.84 m  realtime_drms=134.24 m  ins_drms=120.66 m
+1007_02   rsigma=150  warm=600s  smoothed_drms=1257.49 m  realtime_drms=3077.70 m  ins_drms=120.66 m
+1007_06   rsigma=65   warm=600s  smoothed_drms=7324.75 m  realtime_drms=7456.64 m  ins_drms=317.49 m
+1007_06   rsigma=150  warm=600s  smoothed_drms=64.52 m  realtime_drms=151.84 m  ins_drms=317.49 m
+1007_06   qfloor=1e-16  warm=600s  smoothed_drms=49012.49 m  realtime_drms=49013.40 m  ins_drms=317.49 m
+1007_06   qfloor=1e-24  warm=600s  smoothed_drms=12868.58 m  realtime_drms=12779.25 m  ins_drms=317.49 m
+ALT_CAUSES_DONE

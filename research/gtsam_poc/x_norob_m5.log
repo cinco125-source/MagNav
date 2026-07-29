@@ -1,0 +1,17 @@
+lag=300s K=10 mag=5 (meas_mag5) N=52401 -> 5240 states
+no robust kernel (pure Gaussian measurement factors)
+s=500/5241  elapsed=2s  (5 ms/state)
+s=1000/5241  elapsed=6s  (6 ms/state)
+s=1500/5241  elapsed=10s  (7 ms/state)
+s=2000/5241  elapsed=14s  (7 ms/state)
+s=2500/5241  elapsed=21s  (8 ms/state)
+s=3000/5241  elapsed=24s  (8 ms/state)
+s=3500/5241  elapsed=28s  (8 ms/state)
+s=4000/5241  elapsed=32s  (8 ms/state)
+s=4500/5241  elapsed=36s  (8 ms/state)
+s=5000/5241  elapsed=39s  (8 ms/state)
+total 41s  (8 ms/state, 0.8 ms/raw-epoch)
+warm=0s  smoothed_drms=12.16 m  realtime_drms=32.22 m  ins_drms=299.06 m
+warm=60s  smoothed_drms=12.21 m  realtime_drms=31.84 m  ins_drms=300.79 m
+warm=300s  smoothed_drms=11.63 m  realtime_drms=17.35 m  ins_drms=307.97 m
+warm=600s  smoothed_drms=11.68 m  realtime_drms=17.22 m  ins_drms=317.49 m

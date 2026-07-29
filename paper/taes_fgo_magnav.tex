@@ -67,7 +67,7 @@ carrying the TL coefficients as time-varying graph variables so the compensation
 adapts along the flight with no neural network. That single problem is solved
 across a spectrum of lags under one cost function: a full-line batch that sets the
 offline accuracy bound, a fixed-lag sliding window, and a per-epoch incremental
-smoother that reaches the real-time limit at \SI{14}{\milli\second} per epoch. The
+smoother that reaches the real-time limit at \SI{7.8}{\milli\second} per state. The
 lag is the primary design variable, trading the future data that corrects a committed
 state against latency. A linear condition states when position can be separated
 from compensation and predicts a cold-start transient that the experiments
@@ -75,9 +75,19 @@ decompose into a warm-prior part and a map-observability part. Across cold-start
 lines from two flights and two maps, the smoother is the most accurate of four
 estimators on every full-length case (\num{8} of \num{8}): it stays bounded where an
 online-TL EKF diverges and a marginalized particle filter is erratic, and, carrying no
-learned component of its own, it beats a tuned EKF+TL+NN baseline. A Monte-Carlo
-simulation confirms the reported covariance is consistent, and an independent GTSAM
-reimplementation sharing no code reproduces the bounded result.
+learned component of its own, it beats a tuned EKF+TL+NN baseline. At the shortest
+lag the compensation prior decides the cold start. One scalar standard deviation
+shared by a regressor whose columns span four orders of magnitude leaves the
+first linearizations stiff in the compensation relative to position, so roughly
+\SI{2000}{\nano\tesla} of uncompensated cabin field is charged to position
+through the map gradient and the estimate leaves the map. No lag, robust kernel,
+map resolution, relinearization schedule, measurement rate, process-noise floor,
+or single choice of measurement-noise scale repairs it; raising that one
+standard deviation by two orders of magnitude removes it on every affected
+line. A Monte-Carlo simulation confirms
+the reported covariance is consistent, and an independent GTSAM reimplementation
+sharing no code reproduces the bounded result to within a metre on both
+magnetometers once the compensation cold start is handled.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -131,7 +141,7 @@ off only as the inverse square of range, so a modest transmitter jams or spoofs 
 receiver from far away; a magnetic anomaly, by contrast, is a near-field source
 whose dipole field decays as the inverse cube of distance, so counterfeiting a
 credible anomaly at a moving aircraft would demand an impractically large or close
-field source~\cite{qctrl2025}. % TODO: add \cite{trn2025} (IEEE Xplore 11079836) once its metadata is supplied
+field source~\cite{qctrl2025}. % (IEEE Xplore 11079836) once its metadata is supplied
 The same map-matching idea underlies
 terrain-referenced and gravity-referenced navigation, where an onboard measurement
 is matched against a stored geophysical map to bound inertial
@@ -349,18 +359,28 @@ The paper makes the following contributions:
         fixed-lag sliding window, and a per-epoch incremental smoother built on
         iSAM2. The lag is the primary design variable trading observability against
         latency and computation, so the batch fixes the offline accuracy bound and
-        the incremental smoother runs in real time (\SI{14}{\milli\second} per
-        epoch). This places recursive filtering and batch smoothing as two limits of
+        the incremental smoother runs in real time
+        (\SIrange{6.0}{9.0}{\milli\second} per state at a \SI{300}{\second} lag and
+        \SI{1}{\hertz} states, two orders of magnitude within the state cadence).
+        This places recursive filtering and batch smoothing as two limits of
         one estimator rather than competing methods, and every point on the spectrum
         can re-smooth the past, the property the cold start needs.
   \item \textbf{Position--compensation separability and the cold-start transient.}
         We give a linear-algebraic condition, evaluated over a window, for when a
-        position error can be told apart from a change in the compensation, separating
+        position error can be distinguished from a change in the compensation, separating
         three failure modes: an unexcited trajectory, a rank-deficient compensation
         basis, and the subtle one, a compensation subspace aligned with the anomaly
         gradient. The condition predicts the cold-start transient, which the
         experiments decompose: a warm compensation prior cuts it by \SI{40}{\percent}, and the remaining
         transient tracks map-gradient observability rather than compensation error.
+        Separately, and ahead of any observability question, we identify the
+        setting that decides whether a short-lag smoother survives a cold start at
+        all: the scale of the compensation prior relative to the regressor. We
+        measure the failure, rule out the lag, the robust kernel, the map
+        resolution, the relinearization schedule, the measurement rate, the
+        measurement-noise scale and the process-noise floor as causes, and show
+        that raising the compensation prior by two orders of magnitude, or setting it
+        per regressor column, removes it on every affected line.
   \item \textbf{Flight-data validation.} On uncompensated cabin magnetometers across
         eight cold-start cases spanning four lines, two flights, and two maps, the
         smoother is the most accurate of four cold-start estimators. Run rather than
@@ -573,9 +593,11 @@ Its four terms are, in order, the prior, the INS dynamics, the compensation
 random walk, and the measurement misfit under a possibly robust kernel $\rho$;
 the measurement residual $r_t(\boldsymbol{\chi}_t)$ of~\eqref{eq:resid} is what the
 model cannot yet explain. The prior anchors both blocks of
-$\boldsymbol{\chi}_1=(\mathbf{x}_1,\boldsymbol{\beta}_1)$, at cold start with a
-diffuse $\boldsymbol{\beta}$-block $\mathbf{P}_0^{\beta}$
-(Table~\ref{tab:params}).
+$\boldsymbol{\chi}_1=(\mathbf{x}_1,\boldsymbol{\beta}_1)$. Its
+$\boldsymbol{\beta}$-block $\mathbf{P}_0^{\beta}$ is the one setting a cold start
+is sensitive to, because it decides how far the compensation may travel from zero
+before the navigation states start absorbing the platform field; we return to it
+in Section~\ref{sec:coldprior} and report its value in Table~\ref{tab:params}.
 We make the standard modeling assumptions of aided inertial
 navigation~\cite{groves2013,barshalom2001}.
 \begin{assumption}\label{as:model}
@@ -668,7 +690,7 @@ node $\boldsymbol{\theta}$ holds optional extension variables.}
 \label{fig:graph}
 \end{figure*}
 
-\subsection{Fixed-lag sliding window}
+\subsection{Fixed-lag sliding window}\label{sec:window}
 A single batch over a long line with a static $\boldsymbol{\beta}$ underfits the
 time-varying interference; carrying $\boldsymbol{\beta}$ as a time-varying chain over
 the full line removes that limitation but at a computation and latency that grow
@@ -757,14 +779,14 @@ track drift. $L_o$ sets the look-ahead and hence the commit latency: a committed
 state has seen $L_o$ epochs of future data, and the estimator lags real time by
 $L_o$. In the experiments we use $L_w=\SI{5}{\minute}$ and $L_o=\SI{90}{\second}$; the
 window-length sweep in Fig.~\ref{fig:winlen} shows that shortening $L_w$ degrades
-the long-line result, consistent with under-determination. The first window is seeded
-with a diffuse prior on $\boldsymbol{\beta}$ (large $\mathbf{P}_0$ block) so the cold
-start is not biased toward zero interference, and the FOGM disturbance state absorbs
-the initial mismatch while the coefficients converge; subsequent windows inherit the
-tight carried covariance and converge in a few Gauss--Newton iterations
-(typically $3$--$5$; Sec.~\ref{sec:results}-G). This
-warm-start is why the per-window iteration count stays low despite the nonlinearity
-of the map term.
+the long-line result, consistent with under-determination. The first window starts the
+coefficients at zero under $\mathbf{P}_0^{\beta}$ and lets the FOGM disturbance state
+absorb what the compensation cannot yet explain; subsequent windows inherit the
+carried covariance and converge in a few Gauss--Newton iterations
+(typically $3$--$5$; Sec.~\ref{sec:results}-G), which is why the per-window
+iteration count stays low despite the nonlinearity of the map term. How far
+$\mathbf{P}_0^{\beta}$ lets that first window travel turns out to decide whether a
+short-lag smoother survives the cold start at all (Section~\ref{sec:coldprior}).
 
 \subsection{Per-epoch incremental smoothing}\label{sec:incremental}
 Taking the lag to its lower limit turns the window into a per-epoch recursion: instead
@@ -943,8 +965,8 @@ every estimator, which we observe on the shortest line in Section~\ref{sec:resul
 
 The cold-start transient observed in real time makes this confounding visible. A
 per-epoch smoother with a short lag (Section~\ref{sec:incremental}), run from a cold
-start on line 1007.06, holds a horizontal DRMS near \SI{82}{\meter} through the first
-several minutes before locking on (Section~\ref{sec:results}-G). Seeding the
+start on line 1007.06 Mag~5, holds a horizontal DRMS near \SI{82}{\meter} through the
+first several minutes before locking on (Fig.~\ref{fig:warmstart}). Seeding the
 compensation with a warm Tolles--Lawson prior, tightening its initial standard
 deviation from \num{1.0} to \num{0.1}, removes only about \SI{40}{\percent} of this transient, to
 roughly \SI{50}{\meter}; the remainder is not a compensation error but a
@@ -959,6 +981,15 @@ compensation prior, as what ultimately breaks the confounding: where
 $\mathrm{range}(\mathbf{G})$ is rich the two unknowns separate, and a warm prior only
 shortens the wait; Fig.~\ref{fig:warmstart} shows the decomposition on the first six
 minutes of the segment.
+
+That decomposition holds for a magnetometer whose uncompensated field the
+compensation prior can represent. It does not hold for the cabin magnetometer with
+the larger platform field, where the prior itself is the binding constraint and
+neither a longer lag nor a richer map gradient recovers the estimate;
+Section~\ref{sec:coldprior} separates that case and reports the settings under which
+it is bounded. The two statements are about different regimes and we keep them
+apart: in the first regime the compensation can reach the interference and is merely
+slow; in the second it cannot reach it at all.
 
 \begin{figure}[t]
 \centering
@@ -982,7 +1013,7 @@ within the mapped Renfrew ($\approx\!\SI{400}{\meter}$) and Eastern/Perth
 ($\approx\!\SI{800}{\meter}$) areas, so its lines are the closest to a navigation
 task and are what prior work~\cite{gnadt2020,canciani2017,hager2026} reports;
 1007.06 is our primary line for that reason. Flt1003 is a crustal-field
-measurement flight (survey traverses at \SI{400}{} and \SI{800}{\meter});
+measurement flight (survey traverses at \num{400} and \SI{800}{\meter});
 its lines 1003.02 and 1003.08 are straighter than the free-flight legs. Flt1006 is
 a calibration-maneuver flight, so we set its single short line aside, and the map-building flights (Flt1004--1005) are not
 used. Two honest points remain. First, none of these is a dedicated long,
@@ -1005,7 +1036,7 @@ For every comparison the EKF and FGO estimators use identical dynamics, map
 interpolation, and noise settings (Table~\ref{tab:params}); the window smoother
 additionally applies the Huber kernel~\eqref{eq:huber}, whose isolated
 contribution is reported separately in Table~\ref{tab:1007}
-(\SI{33.0}{}$\rightarrow$\SI{30.7}{\meter} on Mag~4), so the reader can attribute
+(\num{33.0}$\rightarrow$\SI{30.7}{\meter} on Mag~4), so the reader can attribute
 the remaining margin to the estimator structure. Unless noted, the window smoother
 uses $L_w=\SI{5}{\minute}$ and $L_o=\SI{90}{\second}$; $L_w$ was selected on line
 1007.06 (Fig.~\ref{fig:winlen}) and then held fixed for every other line, so the
@@ -1026,10 +1057,12 @@ Group & Parameter & Value \\
 \midrule
 Measurement & noise std.\ $\sqrt{R}$ & \SI{12}{\nano\tesla} \\
 FOGM $S$ & $(\sigma_S,\tau)$ & \SI{3}{\nano\tesla}, \SI{180}{\second} \\
-Initial $\mathbf{P}_0$ & pos.\ / alt.\ std. & \SI{0.1}{} / \SI{1.0}{\meter} \\
+Initial $\mathbf{P}_0$ & pos.\ / alt.\ std. & \num{0.1} / \SI{1.0}{\meter} \\
  & velocity std.\ (per axis) & \SI{1.0}{\meter\per\second} \\
 TL prior / walk & $\mathbf{P}_0^{\beta}$;\; $\mathbf{Q}^{\beta}$ &
-  $\mathbf{I}(1.0)^2$;\; $\mathbf{I}(1.0)^2\Delta t$ \\
+  $\mathbf{I}(\sigma_{\beta})^2$;\; $\mathbf{I}(1.0)^2\Delta t$ \\
+ & $\sigma_{\beta}$ (window, batch, Sec.~\ref{sec:observability}) & 1.0 \\
+ & $\sigma_{\beta}$ (per-epoch, Sec.~\ref{sec:coldprior}) & 100 \\
 TL basis & terms (App.~\ref{app:tl}) & P{+}I{+}E{+}bias (19) \\
 Window & $L_w$ / $L_o$ / $\Delta t$ [s] & 300 / 90 / 0.1 \\
 Robust & Huber $\delta$ & 1.345 \\
@@ -1347,7 +1380,7 @@ isolates the navigation covariance from the cold-start compensation transient.
 Averaged over the \num{30} seeds, after a \SI{30}{\second} warm-up, the horizontal
 DRMS is \SI{1.4}{\meter} for the factor graph, \SI{4.1}{\meter} for the EKF, and
 \SI{4.9}{\meter} for the particle filter, with \SI{95}{\percent} confidence
-half-widths of \SI{0.2}{}, \SI{0.4}{}, and \SI{0.8}{\meter}. Even on this clean
+half-widths of \num{0.2}, \num{0.4}, and \SI{0.8}{\meter}. Even on this clean
 sensor the factor graph separates cleanly from both recursive baselines (its
 interval does not overlap theirs), while the EKF and the particle filter are
 statistically indistinguishable in accuracy. The larger cold-start separations are
@@ -1366,7 +1399,7 @@ true error and the empirical covariance collapses. This over-confidence is a
 configuration artifact, not a property of the estimator class: adding regularization
 roughening restores consistency (ANEES \num{1.8} at \SI{1}{\meter} roughening) at a
 small accuracy cost. Even so, the factor graph dominates both recursive baselines, more
-accurate (\SI{1.4}{} versus \SIrange{4.1}{4.6}{\meter}) and consistent at once.
+accurate (\num{1.4} versus \SIrange{4.1}{4.6}{\meter}) and consistent at once.
 Fig.~\ref{fig:consistency} shows the EKF and factor-graph NEES staying inside the
 \SI{95}{\percent} $\chi^2_2$ band throughout a representative run while the toolbox
 particle filter runs far above it, and
@@ -1417,9 +1450,10 @@ to the bit across the two languages, and the interpolated anomaly-map grid agree
 
 On the full \SI{87}{\minute} cold-start line, the two land within a metre of each
 other: the GTSAM window returns \SI{12.4}{\meter} horizontal DRMS against the Julia
-smoother's \SI{13.1}{\meter} (Table~\ref{tab:breadth}), and on the first ten-minute
-segment \SI{17.5}{} against \SI{21.4}{\meter}, the GTSAM side being slightly the better of
-the two in both cases; the free-inertial drift matches at \SI{317.5}{} against
+smoother's \SI{13.1}{\meter} under the marginalized handoff both use
+(Table~\ref{tab:breadth}; the legacy smoothed handoff gives \SI{13.8}{\meter}), and on the first ten-minute
+segment \num{17.5} against \SI{21.4}{\meter}, the GTSAM side being slightly the better of
+the two in both cases; the free-inertial drift matches at \num{317.5} against
 \SI{318}{\meter}, a further check that the two share the same trajectory and map. The
 residual differences trace to modeling choices left deliberately independent:
 Levenberg--Marquardt versus plain Gauss--Newton, bicubic versus bilinear map
@@ -1428,6 +1462,25 @@ line and each side is a single run, so this is a statement about implementation
 independence rather than a statistical one; its value is that the bounded cold-start
 result survives a complete change of language, library, and solver.
 Fig.~\ref{fig:crossimpl} overlays the GTSAM error trace on the segment.
+
+On the cabin magnetometer with the larger platform field the agreement is
+conditional, and what it is conditional on is instructive. Run on Mag~4 of the
+same line from a zero compensation, the GTSAM window returns \SI{5430}{\meter}
+against the Julia smoother's \SI{30.7}{\meter}, with identical inputs and the
+identical prior; on 1003.02 Mag~4 it returns \SI{36.6}{\meter} against
+\SI{43.1}{\meter} and there is no discrepancy at all. The full-line GTSAM batch on
+1007.06 Mag~4 returns \SI{18.6}{\meter}, so neither the graph nor its cost
+function is at fault. Seeding the first window's compensation with the ridge fit
+of Section~\ref{sec:window1}, which changes nothing else, brings the GTSAM
+window on that case to \SI{30.8}{\meter} against the Julia smoother's
+\SI{30.7}{\meter}. The two implementations therefore agree on both magnetometers
+once the compensation cold start is handled, and the earlier disagreement was
+where the first window's compensation started, not the language, the library, or
+the solver. That the two behave differently from the same start is consistent
+with the sensitivity of Section~\ref{sec:coldprior}: the Julia smoother stops
+after at most five Gauss--Newton passes per window while the GTSAM window runs
+Levenberg--Marquardt to convergence, so they sample that sensitivity differently.
+We report that as the difference we observe, not as a mechanism we have isolated.
 
 \begin{figure}[t]
 \centering
@@ -1451,44 +1504,310 @@ not the flight. The one-time overhead relative to an EKF is the window
 factorization and the IRLS reweighting, which in our unoptimized research
 implementation runs comfortably faster than real time on the SGL sampling rate.
 
-The per-epoch incremental smoother of Section~\ref{sec:incremental} realizes this
-budget at the finest stride and lets us measure it directly. Running the iSAM2
-fixed-lag smoother on line 1007.06 with a \SI{30}{\second} lag, one update per
-\SI{0.1}{\second} sample, takes \SI{14}{\milli\second} per epoch, about seven times
-faster than the \SI{10}{\hertz} sample rate and comfortably real-time; the figure
-includes the Python measurement-factor callbacks and is therefore a conservative upper
-bound, since native factors would be faster. A causal, zero-latency estimate exists at
-every step. Through the weakly observable first minutes, that estimate is poor: counted
-from \SI{60}{\second} onward, the causal DRMS is \SI{82.4}{\meter} from a cold
-Tolles--Lawson start and \SI{49.5}{\meter} with a warm prior, the transient of
-Section~\ref{sec:observability}. Once the smoother locks on, counted from
-\SI{300}{\second} onward, the \SI{30}{\second}-lag causal DRMS is \SI{16.5}{\meter}
-cold and \SI{15.1}{\meter} warm, against \SI{11.0}{\meter} for the
-\SI{300}{\second}-lag smoothed estimate over the same interval and far below the
-free-inertial drift (Fig.~\ref{fig:realtime}).
+\subsection{The compensation prior at cold start}\label{sec:coldprior}
+Taken to its per-epoch limit, the smoother exposes a modeling choice that the
+full-line batch tolerates. Run from a zero compensation on the cabin
+magnetometer with the larger platform field (Mag~4), the incremental smoother at
+a \SI{300}{\second} lag leaves the map on four of the five lines, three of the
+four counted ones, and ends between \num{6.6} and \SI{27}{\kilo\meter} from
+truth, while the same smoother on Mag~5 of the same flights navigates normally
+(Table~\ref{tab:incprior}, first column). The asymmetry is the clue, and it is
+one of magnitude. Over the first \SI{300}{\second}, the residual against the map
+at the INS position is \SIrange{1729}{2081}{\nano\tesla} root-mean-square on
+Mag~4 and \SIrange{22}{314}{\nano\tesla} on Mag~5, and the compensation
+coefficients that explain the Mag~4 field have magnitudes of
+\numrange{552}{722} in the units of Appendix~\ref{app:tl}.
+
+Against that, the priors the model offers for anything other than position are
+small. The compensation prior is $\mathbf{P}_0^{\beta}=\mathbf{I}(\sigma_{\beta})^2$
+with $\sigma_{\beta}=1$, one scalar shared by all \num{19} coefficients, and the
+FOGM disturbance prior is \SI{3}{\nano\tesla}. A cold start on Mag~4 therefore
+presents the graph with roughly \SI{2000}{\nano\tesla} while both nuisance
+channels are stiff, and the degree of freedom that is not stiff is position,
+through the map gradient. The single shared
+$\sigma_{\beta}$ is the weaker part of that: by Appendix~\ref{app:tl} the
+regressor columns range over four orders of magnitude, from direction cosines of
+order one to induced and eddy terms carrying the field magnitude, so no single
+coefficient scale can be right for all of them.
+
+Table~\ref{tab:priorsweep} measures the sensitivity. Widening $\sigma_{\beta}$
+with the prior mean left at zero and nothing else changed removes the divergence
+on every Mag~4 line: $\sigma_{\beta}=10$ already suffices and
+\numrange{100}{1000} changes the result by up to \SI{14}{\meter}. We recommend
+$\sigma_{\beta}=100$ and use it for the rest of this subsection: the Mag~4 lines
+settle at \num{19.6}, \num{25.0}, \num{99.1}, \num{28.4} and
+\SI{24.2}{\meter} and the Mag~5 lines at \num{12.0}, \num{10.5}, \num{101.0},
+\num{15.8} and \SI{11.5}{\meter}. A per-column prior, one that assigns each basis
+column a standard deviation of \SI{100}{\nano\tesla} of measurement contribution
+instead of a common coefficient scale, is the dimensionally consistent version of
+the same change and performs the same to within the line-to-line spread
+(Table~\ref{tab:priorsweep}). It does not, however, keep the coefficients
+smaller: after warm-up the median of $\|\boldsymbol{\beta}\|_\infty$ is
+\numrange{787}{1167} across the Mag~4 lines at $\sigma_{\beta}=100$ and
+\numrange{2485}{5995} under the per-column prior, against the
+\numrange{552}{722} that a ridge fit of the same data needs. Any prior loose
+enough to fix the cold start also lets the compensation basis absorb model error
+beyond the platform field, and we report that as a cost of the setting rather
+than a property we have controlled. Widening the FOGM disturbance prior and
+walk instead, leaving the compensation prior nominal, recovers three of the five
+lines at a factor of \num{10} and four at a factor of \num{100}, leaving 1006.08
+diverged in both cases (Table~\ref{tab:priorsweep}), so the effect is not specific to the compensation
+block, although the compensation basis is where the interference belongs.
+
+We do not claim more than the sensitivity we measured. In particular the
+mechanism is not simply that the coefficients cannot reach the platform field:
+the window solves of Section~\ref{sec:window1} reach $\|\boldsymbol{\beta}\|_\infty$
+of \numrange{463}{795} across lines at $W\ge\SI{100}{\second}$ even at
+$\sigma_{\beta}=1$, and the prior term at that
+magnitude is outweighed by the measurement term by more than two orders of
+magnitude. What the tight, dimensionally inconsistent prior does is stiffen the
+first linearizations in $\boldsymbol{\beta}$ relative to position, and the
+per-epoch smoother commits and marginalizes states while that is true.
+
+Seven alternatives can be dismissed by measurement, all at the nominal prior on
+line 1007.06 Mag~4 against its \SI{19.5}{\kilo\meter} unless stated. The robust
+kernel is not sufficient to explain the failure: removing it entirely gives
+\SI{33.0}{\kilo\meter}, and widening the Huber constant from \num{1.345} to
+\num{10} and \num{100} gives \num{18.0} and \SI{33.0}{\kilo\meter}, while Mag~5
+of the same line returns \SI{11.7}{\meter} with the kernel and \SI{11.7}{\meter}
+without it. Map resolution is not sufficient: re-exporting the anomaly grid at
+\SI{34}{\meter} spacing instead of \SI{113}{\meter} gives \SI{13.7}{\kilo\meter}.
+The lag is not sufficient: at $\sigma_{\beta}=1$, lags of \num{300},
+\num{450}, \num{600} and \SI{900}{\second} give \num{19.5}, \num{14.8},
+\num{14.7} and \SI{14.5}{\kilo\meter}. Retained linearization is not
+sufficient: relinearizing every variable at every update gives
+\SI{9.8}{\kilo\meter}. Measurement thinning is not the cause: attaching all ten
+raw samples to their nearest kept state gives \SI{22.9}{\kilo\meter}. Nor is the
+measurement noise, which is the alternative worth taking most seriously because
+the compensated residual on Mag~4 is several times the assumed
+$\sqrt{R}=\SI{12}{\nano\tesla}$: no single value of $\sqrt{R}$ repairs
+it across lines. Setting it to \SI{150}{\nano\tesla} recovers 1007.06 to
+\SI{64.5}{\meter} and leaves 1003.02 at \SI{31}{\kilo\meter}; setting it to
+\SI{65}{\nano\tesla} recovers 1007.02 to \SI{41.8}{\meter} and leaves 1007.06
+at \SI{7.3}{\kilo\meter}. Across the ten runs the result ranges from
+\SI{42}{\meter} to \SI{46}{\kilo\meter} with no setting bounded everywhere,
+where raising $\sigma_{\beta}$ is bounded on every line at once. The
+$10^{-20}$ conditioning floor on the process noise is likewise not doing the
+work: raising it to $10^{-16}$ gives \SI{49}{\kilo\meter} and lowering it to
+$10^{-24}$ gives \SI{12.9}{\kilo\meter}. Each of these moves the number and none
+recovers the solution, which is what separates a contributing factor from the
+one setting that does.
+
+Two measurements bound how far the modeling error reaches. The same graph for
+line 1007.06 Mag~4, solved as one full-line batch from the same zero start and
+the same nominal prior, reaches \SI{18.6}{\meter}: over a whole line the
+compensation has time to move and the map has gradient enough to hold position,
+so the cost function itself is sound and the sensitivity is a property of short
+spans. The sliding window of Section~\ref{sec:window}, run in this same code
+base, sits between the two. At the nominal prior it diverges on 1007.06 Mag~4
+(\SI{5430}{\meter}) but not on 1003.02 Mag~4 (\SI{36.6}{\meter}), and seeding its
+first window with a ridge fit of the compensation brings 1007.06 to
+\SI{30.8}{\meter}, which is the cross-implementation comparison of
+Section~\ref{sec:results}-F. The sensitivity is therefore not peculiar to
+per-epoch marginalization; it grows as the span each solve sees gets shorter.
+
+A caveat on the divergent runs themselves. The exported anomaly grid covers the
+trajectory with a \SI{2.2}{\kilo\meter} margin, and the interpolator clamps
+outside it, so once an estimate leaves the grid the map gradient vanishes and no
+information can pull it back. The kilometre-scale numbers in the first column of
+Table~\ref{tab:incprior} are therefore a floor on how bad the divergence is, not
+a measurement of where an unclamped estimator would have gone; what they
+establish is that the estimate left the map, not how far.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{figs/fig_realtime.pdf}
-\caption{Causal per-epoch estimates on the ten-minute segment: the
-\SI{30}{\second}-lag realtime error locks onto the map feature near four and a half
-minutes and converges toward the \SI{300}{\second}-lag smoothed estimate, far below
-free-inertial drift.}
-\label{fig:realtime}
+\includegraphics[width=\columnwidth]{figs/fig_prior.pdf}
+\caption{Per-epoch smoother on line 1007.06 Mag~4 at a \SI{300}{\second} lag. At
+the nominal compensation prior the estimate leaves the map in the first minutes
+and never returns; with the compensation prior raised to $\sigma_{eta}=100$, and nothing else
+changed, it stays an order of magnitude below free-inertial drift for the whole
+line.}
+\label{fig:prior}
 \end{figure}
 
-The lag behaves as Section~\ref{sec:method} predicts. Lengthening it improves the
-committed estimate, from \SI{13.4}{\meter} smoothed at a \SI{30}{\second} lag to
-\SI{11.0}{\meter} at a \SI{300}{\second} lag (both counted from \SI{300}{\second}
-onward), but at a cost our unoptimized Python callbacks cannot yet meet in real time
-at the long lag, so that setting is presently offline in this implementation; native
-factors would move it online. Shortening the lag to \SI{30}{\second} restores real
-time at the price of the cold-start transient analyzed in
-Section~\ref{sec:observability}: a warm compensation prior cuts that transient by
-\SI{40}{\percent}, and
-lag scheduling, running a long lag through the early, weakly observable minutes and
-contracting once the compensation has converged, would address the rest; we have not
-yet evaluated such a schedule.
+\subsection{The same prior, seen in a single window}\label{sec:window1}
+The explanation can be tested one window at a time, which also answers how much
+flight the joint problem needs before it is determined. Table~\ref{tab:knee}
+reports the solution reached when the same graph is solved as a batch over only
+its first $W$ seconds, from a zero compensation, at both priors, with no
+commitment and no marginalization anywhere. At $\sigma_{\beta}=1$, the Mag~4
+solutions pass through a region, covering at least \SIrange{100}{200}{\second} on
+all five lines and extending to \SI{400}{\second} on 1007.06, in which they sit
+hundreds of metres to kilometres from truth, while Mag~5 stays within tens of
+metres except on the short line 1006.08. At $\sigma_{\beta}=1000$, that region is
+gone: every Mag~4 entry outside 1006.08 falls between \num{2} and
+\SI{125}{\meter}, and line 1007.02 Mag~4, which at the tight prior never left the
+region within the sweep, is at or below \SI{94}{\meter} at every window length.
+The single-window and the full-line experiments therefore agree, and they turn on
+the same parameter (Fig.~\ref{fig:knee}).
+
+This also fixes what the failure needs. It is not early commitment: these window
+solves commit nothing and still land kilometres out. It is a short data span
+together with a prior that is not scaled to the regressor. Marginalization only
+decides whether the estimator can recover afterwards, and in the fixed-lag case
+it cannot.
+
+Line 1006.08 is the exception at both priors. It stays at hundreds of metres
+across its middle window lengths and improves only slowly, which is consistent
+with the low map-information floor of Remark~\ref{rem:floor} rather than with the
+compensation: where $\mathbf{G}\!\approx\!\mathbf{0}$, no prior on
+$\boldsymbol{\beta}$ can help.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figs/fig_knee.pdf}
+\caption{Position error of the batch solution over the first $W$ seconds of each
+Mag~4 line, from a zero compensation. At the nominal prior the solutions climb to
+kilometres over the middle window lengths; at the widened prior the excursion is
+absent on every line but the short calibration line 1006.08.}
+\label{fig:knee}
+\end{figure}
+
+One negative result belongs here because we specifically tested for it. We also
+repeated the sweep from a compensation seeded with a ridge fit of
+$(z_t-h(\mathbf{p}^{\mathrm{ins}}_t))$ over the same $W$ seconds, to test whether
+the far-from-truth solutions are a matter of which minimum the solver selects.
+Across the \num{78} combinations of line, magnetometer, and $W$, the two starts
+reach objectives that differ at all in only \num{7}; of those, the seeded start
+is the cheaper and the more accurate one in \num{5}, and in \num{2} the cheaper
+solution is the less accurate one. The window solve is largely indifferent to
+where it starts. We therefore do not attribute the cold-start failure to minimum
+selection, and we do not claim that the accurate solution can be identified
+online by comparing objective values.
+
+\subsection{Real-time cost}\label{sec:realtime2}
+With the compensation prior raised to $\sigma_{eta}=100$, the per-epoch smoother runs
+the full breadth at a \SI{300}{\second} lag. Graph states are placed at
+\SI{1}{\hertz} rather than at the \SI{10}{\hertz} sample rate, with the
+transition compounded and the process noise accumulated exactly over the ten
+intervening samples, so the \SI{300}{\second} lag is a \num{300}-state window
+updated once a second. Across the ten cases, the update takes
+\SIrange{6.0}{9.0}{\milli\second} per state, mean \SI{7.8}{\milli\second}, so an
+\SI{87}{\minute} line finishes in \SI{42}{\second} and the margin against the
+\SI{1}{\hertz} state cadence is two orders of magnitude. These are mean times on
+one core of a laptop-class x86 processor under WSL2, with the measurement factor
+evaluated through a Python callback, so they are an upper bound on what native
+factors would cost; the corresponding costs in the
+relinearization and dense-measurement runs are \SI{75.5}{\milli\second} per
+state with every variable relinearized at every update and
+\SIrange{28.7}{35.1}{\milli\second} with all ten raw measurements attached.
+Placing states at the full \SI{10}{\hertz} instead makes the same lag a
+\num{3000}-state window, which is why a \SI{300}{\second} lag is reported here at
+\SI{1}{\hertz} states and not at the sample rate.
+
+The decimation costs the nine measurements dropped between kept states, and on
+these lines it does not cost accuracy. The aircraft covers \SI{68}{\meter} per
+kept state at the survey ground speed. Attaching all ten raw samples to their
+nearest kept state instead of one returns \SI{26.7}{\meter} against
+\SI{23.9}{\meter} on line 1007.06 Mag~4 and \SI{26.2}{\meter} against
+\SI{19.2}{\meter} on 1003.02 Mag~4, both pairs run with the ridge-seeded cold
+start rather than the widened prior because that is the pair we have, for \numrange{3.5}{3.8} times the
+computation. Two things are folded into that comparison and we can separate
+neither with the runs we have: the dense variant attaches all ten factors to one
+state, so it also assumes a single error state over the \SI{1}{\second} span, and
+the measurements themselves are unlikely to be independent at \SI{10}{\hertz}
+given that the compensated residual on these lines is several times $\sqrt{R}$. We
+report the comparison as a reason not to treat the decimation as a pure loss, not
+as evidence about the noise model, which would need an innovation whiteness test
+we have not run on these lines.
+
+\begin{table}[t]
+\caption{Per-epoch incremental smoother, \SI{300}{\second} lag, \SI{1}{\hertz}
+states, at the nominal compensation prior and at the recommended one. Smoothed DRMS [m]
+after a \SI{600}{\second} warm-up, causal value in parentheses; DRMS is evaluated
+at the \SI{1}{\hertz} state grid, and INS is the free-inertial drift computed on
+the same grid by the same code. ``div.''\ $>\SI{1}{\kilo\meter}$ and, given the
+grid clamping discussed in the text, is a lower bound. Line 1006.08 is the
+\SI{14}{\minute} calibration line set aside in Section~\ref{sec:results}; on its
+Mag~5 the smoothed estimate is worse than the causal one at both priors, which we
+read with Remark~\ref{rem:floor} as the map-information floor rather than as a
+smoothing gain.}
+\label{tab:incprior}
+\centering
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llr rr}
+\toprule
+Line & Mag & INS & $\sigma_{\beta}=1$ & $\sigma_{\beta}=100$ \\
+\midrule
+1003.02 & 4 & 123.8 & div. & \textbf{19.6} (58.2) \\
+1003.02 & 5 & 123.8 & 12.6 (24.4) & 12.0 (21.9) \\
+1003.08 & 4 & 271.9 & div. & \textbf{25.0} (48.9) \\
+1003.08 & 5 & 271.9 & 10.9 (22.4) & 10.5 (19.2) \\
+1006.08 & 4 & 197.7 & div. & \textbf{99.1} (134.8) \\
+1006.08 & 5 & 197.7 & 83.9 (52.4) & 101.0 (80.1) \\
+1007.02 & 4 & 120.7 & 60.0 (327.8) & \textbf{28.4} (74.3) \\
+1007.02 & 5 & 120.7 & 14.0 (40.3) & 15.8 (33.1) \\
+1007.06 & 4 & 317.5 & div. & \textbf{24.2} (42.7) \\
+1007.06 & 5 & 317.5 & 11.7 (19.8) & 11.5 (16.0) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\caption{Prior sweep on the Mag~4 lines, zero prior mean, no other change:
+smoothed DRMS [m] after a \SI{600}{\second} warm-up. The first four columns scale
+the single shared coefficient standard deviation $\sigma_{\beta}$; ``per col.''\
+instead gives every regressor column a prior of \SI{100}{\nano\tesla} of
+measurement contribution; ``$\sigma_S$''\ leaves the compensation prior at
+nominal and widens the FOGM disturbance prior and walk a hundredfold instead.}
+\label{tab:priorsweep}
+\centering
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{l rrrr rr}
+\toprule
+ & \multicolumn{4}{c}{$\sigma_{\beta}$} & per col. & $\sigma_S$ \\
+\cmidrule(lr){2-5}
+Line & 1 & 10 & 100 & 1000 & 100 nT & $\times100$ \\
+\midrule
+1003.02 & 26810 & 32.7 & 19.6 & 19.3 & \textbf{19.0} & 33.2 \\
+1003.08 & 11262 & 25.7 & 25.0 & 24.5 & \textbf{25.1} & 29.8 \\
+1006.08 & 6574 & 117.7 & 99.1 & 85.4 & \textbf{98.9} & 1144 \\
+1007.02 & 60.0 & 30.3 & 28.4 & 30.3 & \textbf{30.5} & 56.7 \\
+1007.06 & 19457 & 24.1 & 24.2 & 23.9 & \textbf{23.7} & 27.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\caption{Solution reached by Levenberg--Marquardt from a zero compensation on a
+batch over only the first $W$ seconds of each line: horizontal DRMS [m] over
+those $W$ seconds, at the nominal and at a uniformly widened compensation prior.
+These are the solutions the solver reaches, not certified global optima. The
+free-inertial drift over the same spans runs from \SIrange{0.4}{5.0}{\meter} at
+$W=\SI{30}{\second}$ to \SIrange{56.5}{100.7}{\meter} at $W=\SI{900}{\second}$,
+so an entry below about \SI{100}{\meter} is at or under the drift it has to beat.}
+\label{tab:knee}
+\centering
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{ll c rrrrrrrr}
+\toprule
+ & & & \multicolumn{8}{c}{$W$ [s]} \\
+\cmidrule(l){4-11}
+Line & Mag & $\sigma_{\beta}$ & 30 & 100 & 200 & 300 & 400 & 500 & 600 & 900 \\
+\midrule
+1003.02 & 4 & 1 & 113 & 2137 & 1569 & 42 & 126 & 41 & 87 & 17 \\
+        &   & 1000 & 8 & 27 & 24 & 20 & 15 & 18 & 54 & 11 \\
+1003.02 & 5 & 1 & 11 & 42 & 13 & 10 & 9 & 24 & 8 & 11 \\
+        &   & 1000 & 12 & 55 & 11 & 12 & 11 & 14 & 16 & 11 \\
+1003.08 & 4 & 1 & 20 & 558 & 1069 & 23 & 39 & 44 & 42 & 43 \\
+        &   & 1000 & 8 & 123 & 27 & 24 & 41 & 42 & 37 & 28 \\
+1003.08 & 5 & 1 & 26 & 70 & 14 & 12 & 24 & 20 & 24 & 22 \\
+        &   & 1000 & 3 & 18 & 11 & 3 & 12 & 15 & 11 & 10 \\
+1006.08 & 4 & 1 & 81 & 917 & 310 & 915 & 472 & 257 & 81 & -- \\
+        &   & 1000 & $<$1 & 46 & 308 & 847 & 164 & 255 & 88 & -- \\
+1006.08 & 5 & 1 & 48 & 136 & 341 & 70 & 115 & 50 & 36 & -- \\
+        &   & 1000 & 6 & 67 & 113 & 35 & 81 & 26 & 31 & -- \\
+1007.02 & 4 & 1 & 136 & 2344 & 1676 & 350 & 321 & 256 & 282 & 258 \\
+        &   & 1000 & 2 & 43 & 94 & 51 & 43 & 38 & 63 & 25 \\
+1007.02 & 5 & 1 & 13 & 15 & 32 & 34 & 44 & 34 & 60 & 34 \\
+        &   & 1000 & 3 & 18 & 22 & 23 & 41 & 37 & 66 & 35 \\
+1007.06 & 4 & 1 & 26 & 676 & 1662 & 1420 & 1109 & 57 & 48 & 27 \\
+        &   & 1000 & 2 & 33 & 125 & 72 & 93 & 68 & 47 & 25 \\
+1007.06 & 5 & 1 & 23 & 78 & 90 & 20 & 17 & 19 & 19 & 12 \\
+        &   & 1000 & 1 & 8 & 26 & 11 & 13 & 12 & 10 & 7 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 These same properties make the estimator compatible with online, fixed-lag
 operation rather than zero-latency filtering. Its committed output lags real time by
@@ -1514,7 +1833,8 @@ mechanism a one-pass causal filter lacks; and a linear condition states when
 position and compensation can be separated at all. That single MAP problem is
 realized across a lag spectrum, from a full-line batch that fixes the offline
 accuracy bound, through a fixed-lag window, to a per-epoch incremental smoother that
-runs in real time at \SI{14}{\milli\second} per epoch. On real SGL~2020 data the
+runs a \SI{300}{\second} lag in real time at
+\SIrange{6.0}{9.0}{\milli\second} per state. On real SGL~2020 data the
 estimator stays bounded from a cold start on all eight full-length
 cabin-magnetometer cases, where the plain online-TL EKF diverges and a marginalized
 particle filter is erratic, and it is more accurate on every such case than the
@@ -1541,9 +1861,25 @@ tens of percent depending on the line, so neither is claimed here. The warm-star
 prior used above is drawn from the same line rather than transferred from a separate
 calibration flight, so a true cross-line warm start remains untested, and the
 observability gate the separability condition suggests is analyzed but not yet
-folded into the online estimator. In its present Python form the per-epoch smoother
-meets real time only at a short lag; the long lag that removes the cold-start
-transient still runs offline, a limit we expect native factors to lift. And none of
+folded into the online estimator. The per-epoch smoother reaches a
+\SI{300}{\second} lag in real time only by placing states at \SI{1}{\hertz}; at the
+full \SI{10}{\hertz} state cadence, that lag is a window ten times as large and
+remains offline in this implementation, a limit we expect native factors to lift.
+The compensation prior the cold start needs is a measured setting, not a derived
+one: a shared $\sigma_{\beta}=1$ is far too tight, anything from \num{10} to
+\num{1000} works on these installations, and a dimensionally consistent
+per-column prior works equally well, but we give no rule for choosing the scale
+from installation data, and no setting we found both fixes the cold start and
+holds the coefficients at the magnitude a direct fit of the same data needs. A related limit bounds the comparison itself. The window and
+filter results of Section~\ref{sec:results} were produced at the nominal prior. The window smoother is bounded there on every
+counted case, so its numbers are not themselves an artifact of the prior, though
+the independent GTSAM window diverges on 1007.06 Mag~4 at that same prior
+(Section~\ref{sec:results}-F), so the boundedness is not robust across
+implementations. We have not re-run either the window or the causal EKF baselines
+at a corrected prior. Part of the EKF cold-start divergence on the cabin magnetometers may
+therefore be the same modeling effect rather than a property of causal filtering,
+and the margin the window shows over those baselines is an upper bound on the
+margin that survives a corrected prior. And none of
 the SGL~2020 lines is a long, straight-and-level operational transit: the attitude
 content that stresses compensation also excites the TL regressor and aids its
 observability, so performance under the weak excitation of a pure cruise is not

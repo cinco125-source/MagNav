@@ -1,0 +1,26 @@
+1003_02   sigmaS=10   warm=600s  smoothed_drms=17671.74 m  realtime_drms=17620.45 m  ins_drms=123.79 m
+1003_02   sigmaS=100  warm=600s  smoothed_drms=33.19 m  realtime_drms=66.21 m  ins_drms=123.79 m
+1003_02   tlcols=100  warm=600s  smoothed_drms=19.04 m  realtime_drms=55.61 m  ins_drms=123.79 m
+1003_02   tlcols=1000 warm=600s  smoothed_drms=19.14 m  realtime_drms=52.90 m  ins_drms=123.79 m
+1003_02   m5 sigma=100 warm=600s  smoothed_drms=12.04 m  realtime_drms=21.86 m  ins_drms=123.79 m
+1003_08   sigmaS=10   warm=600s  smoothed_drms=20.64 m  realtime_drms=47.69 m  ins_drms=271.86 m
+1003_08   sigmaS=100  warm=600s  smoothed_drms=29.78 m  realtime_drms=66.34 m  ins_drms=271.86 m
+1003_08   tlcols=100  warm=600s  smoothed_drms=25.08 m  realtime_drms=47.15 m  ins_drms=271.86 m
+1003_08   tlcols=1000 warm=600s  smoothed_drms=24.52 m  realtime_drms=47.30 m  ins_drms=271.86 m
+1003_08   m5 sigma=100 warm=600s  smoothed_drms=10.47 m  realtime_drms=19.20 m  ins_drms=271.86 m
+1006_08   sigmaS=10   warm=600s  smoothed_drms=2973.07 m  realtime_drms=3405.59 m  ins_drms=197.66 m
+1006_08   sigmaS=100  warm=600s  smoothed_drms=1144.27 m  realtime_drms=1286.60 m  ins_drms=197.66 m
+1006_08   tlcols=100  warm=600s  smoothed_drms=98.87 m  realtime_drms=128.37 m  ins_drms=197.66 m
+1006_08   tlcols=1000 warm=600s  smoothed_drms=79.13 m  realtime_drms=108.15 m  ins_drms=197.66 m
+1006_08   m5 sigma=100 warm=600s  smoothed_drms=101.02 m  realtime_drms=80.12 m  ins_drms=197.66 m
+1007_02   sigmaS=10   warm=600s  smoothed_drms=26.21 m  realtime_drms=102.68 m  ins_drms=120.66 m
+1007_02   sigmaS=100  warm=600s  smoothed_drms=56.69 m  realtime_drms=146.76 m  ins_drms=120.66 m
+1007_02   tlcols=100  warm=600s  smoothed_drms=30.49 m  realtime_drms=76.93 m  ins_drms=120.66 m
+1007_02   tlcols=1000 warm=600s  smoothed_drms=30.74 m  realtime_drms=79.96 m  ins_drms=120.66 m
+1007_02   m5 sigma=100 warm=600s  smoothed_drms=15.82 m  realtime_drms=33.14 m  ins_drms=120.66 m
+1007_06   sigmaS=10   warm=600s  smoothed_drms=23.73 m  realtime_drms=41.81 m  ins_drms=317.49 m
+1007_06   sigmaS=100  warm=600s  smoothed_drms=27.31 m  realtime_drms=62.17 m  ins_drms=317.49 m
+1007_06   tlcols=100  warm=600s  smoothed_drms=23.69 m  realtime_drms=42.71 m  ins_drms=317.49 m
+1007_06   tlcols=1000 warm=600s  smoothed_drms=23.93 m  realtime_drms=42.11 m  ins_drms=317.49 m
+1007_06   m5 sigma=100 warm=600s  smoothed_drms=11.53 m  realtime_drms=15.97 m  ins_drms=317.49 m
+PRIOR_STRUCTURE_DONE

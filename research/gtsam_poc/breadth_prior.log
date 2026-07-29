@@ -1,0 +1,11 @@
+1003_02   m4 warm=600s  smoothed_drms=19.30 m  realtime_drms=53.21 m  ins_drms=123.79 m
+1003_02   m5 warm=600s  smoothed_drms=13.75 m  realtime_drms=24.00 m  ins_drms=123.79 m
+1003_08   m4 warm=600s  smoothed_drms=24.46 m  realtime_drms=46.95 m  ins_drms=271.86 m
+1003_08   m5 warm=600s  smoothed_drms=9.83 m  realtime_drms=16.88 m  ins_drms=271.86 m
+1006_08   m4 warm=600s  smoothed_drms=85.38 m  realtime_drms=103.37 m  ins_drms=197.66 m
+1006_08   m5 warm=600s  smoothed_drms=88.47 m  realtime_drms=61.17 m  ins_drms=197.66 m
+1007_02   m4 warm=600s  smoothed_drms=30.33 m  realtime_drms=80.00 m  ins_drms=120.66 m
+1007_02   m5 warm=600s  smoothed_drms=15.19 m  realtime_drms=32.45 m  ins_drms=120.66 m
+1007_06   m4 warm=600s  smoothed_drms=23.86 m  realtime_drms=42.06 m  ins_drms=317.49 m
+1007_06   m5 warm=600s  smoothed_drms=11.15 m  realtime_drms=15.42 m  ins_drms=317.49 m
+BREADTH_PRIOR_DONE

@@ -1,0 +1,8 @@
+lag=300s K=10 mag=4 (meas_mag4) N=8391 -> 839 states
+FOGM prior and walk sigma scaled by 100
+s=500/840  elapsed=3s  (5 ms/state)
+total 5s  (6 ms/state, 0.6 ms/raw-epoch)
+warm=0s  smoothed_drms=789.54 m  realtime_drms=919.39 m  ins_drms=137.28 m
+warm=60s  smoothed_drms=819.16 m  realtime_drms=954.07 m  ins_drms=142.43 m
+warm=300s  smoothed_drms=949.89 m  realtime_drms=1122.45 m  ins_drms=166.29 m
+warm=600s  smoothed_drms=1144.27 m  realtime_drms=1286.60 m  ins_drms=197.66 m

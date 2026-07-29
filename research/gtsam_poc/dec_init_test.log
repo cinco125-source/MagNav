@@ -1,0 +1,17 @@
+lag=300s K=10 mag=4 (meas_mag4) N=52401 -> 5240 states
+full relinearization every update
+s=500/5241  elapsed=29s  (58 ms/state)
+s=1000/5241  elapsed=67s  (67 ms/state)
+s=1500/5241  elapsed=105s  (70 ms/state)
+s=2000/5241  elapsed=144s  (72 ms/state)
+s=2500/5241  elapsed=183s  (73 ms/state)
+s=3000/5241  elapsed=222s  (74 ms/state)
+s=3500/5241  elapsed=264s  (75 ms/state)
+s=4000/5241  elapsed=302s  (76 ms/state)
+s=4500/5241  elapsed=341s  (76 ms/state)
+s=5000/5241  elapsed=379s  (76 ms/state)
+total 396s  (76 ms/state, 7.6 ms/raw-epoch)
+warm=0s  smoothed_drms=9475.30 m  realtime_drms=9560.97 m  ins_drms=299.06 m
+warm=60s  smoothed_drms=9529.87 m  realtime_drms=9616.16 m  ins_drms=300.79 m
+warm=300s  smoothed_drms=9740.98 m  realtime_drms=9827.56 m  ins_drms=307.97 m
+warm=600s  smoothed_drms=9945.31 m  realtime_drms=10030.47 m  ins_drms=317.49 m

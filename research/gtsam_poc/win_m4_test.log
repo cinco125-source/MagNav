@@ -1,0 +1,35 @@
+mag=4 (meas_mag4)
+window Lw=3000 overlap=900 stride=2100
+window [0,2999] committed [0,2099]  (78s)
+/mnt/c/Users/cin64/Desktop/MagNav/research/gtsam_poc/run_gtsam_window.py:184: DeprecationWarning: Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. (Deprecated NumPy 1.25.)
+  S = float(H @ P @ H.T) + Rm / wt
+window [2100,5099] committed [2100,4199]  (189s)
+window [4200,7199] committed [4200,6299]  (325s)
+window [6300,9299] committed [6300,8399]  (462s)
+window [8400,11399] committed [8400,10499]  (603s)
+window [10500,13499] committed [10500,12599]  (700s)
+window [12600,15599] committed [12600,14699]  (835s)
+window [14700,17699] committed [14700,16799]  (922s)
+window [16800,19799] committed [16800,18899]  (1070s)
+window [18900,21899] committed [18900,20999]  (19407s)
+window [21000,23999] committed [21000,23099]  (19620s)
+window [23100,26099] committed [23100,25199]  (19886s)
+window [25200,28199] committed [25200,27299]  (20104s)
+window [27300,30299] committed [27300,29399]  (20330s)
+window [29400,32399] committed [29400,31499]  (20520s)
+window [31500,34499] committed [31500,33599]  (20734s)
+window [33600,36599] committed [33600,35699]  (20868s)
+window [35700,38699] committed [35700,37799]  (21047s)
+window [37800,40799] committed [37800,39899]  (21248s)
+window [39900,42899] committed [39900,41999]  (21465s)
+window [42000,44999] committed [42000,44099]  (21690s)
+window [44100,47099] committed [44100,46199]  (22537s)
+window [46200,49199] committed [46200,48299]  (22710s)
+window [48300,51299] committed [48300,50399]  (22872s)
+window [50400,52400] committed [50400,52400]  (22932s)
+warm=0s  gtsam_window_drms=5127.64 m  ins_drms=299.06 m
+warm=60s  gtsam_window_drms=5157.21 m  ins_drms=300.79 m
+warm=120s  gtsam_window_drms=5187.09 m  ins_drms=302.55 m
+warm=300s  gtsam_window_drms=5277.44 m  ins_drms=307.98 m
+warm=600s  gtsam_window_drms=5429.85 m  ins_drms=317.50 m
+(Julia FGO reference = nan m, exported warm=600s)

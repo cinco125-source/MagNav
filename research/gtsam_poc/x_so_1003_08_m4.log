@@ -1,0 +1,16 @@
+lag=300s K=10 mag=4 (meas_mag4) N=43431 -> 4343 states
+TL bootstrap over first 300s: |beta|max=578.4, residual rms 47.2 nT (uncompensated 1793.8 nT)
+batch bootstrap over first 300 states (300s): 1s
+s=500/4344  elapsed=3s  (6 ms/state)
+s=1000/4344  elapsed=7s  (7 ms/state)
+s=1500/4344  elapsed=11s  (7 ms/state)
+s=2000/4344  elapsed=14s  (7 ms/state)
+s=2500/4344  elapsed=22s  (9 ms/state)
+s=3000/4344  elapsed=26s  (9 ms/state)
+s=3500/4344  elapsed=29s  (8 ms/state)
+s=4000/4344  elapsed=33s  (8 ms/state)
+total 36s  (8 ms/state, 0.8 ms/raw-epoch)
+warm=0s  smoothed_drms=26.22 m  realtime_drms=57.18 m  ins_drms=253.55 m
+warm=60s  smoothed_drms=26.36 m  realtime_drms=57.55 m  ins_drms=255.32 m
+warm=300s  smoothed_drms=26.57 m  realtime_drms=58.93 m  ins_drms=262.66 m
+warm=600s  smoothed_drms=25.76 m  realtime_drms=53.86 m  ins_drms=271.86 m

@@ -1,0 +1,15 @@
+lag=300s K=10 mag=4 (meas_mag4) N=43431 -> 4343 states
+TL prior per column: contribution sigma 1000 nT, coefficient sigma 1e+03 to 3.21e+06
+s=500/4344  elapsed=3s  (5 ms/state)
+s=1000/4344  elapsed=6s  (6 ms/state)
+s=1500/4344  elapsed=10s  (7 ms/state)
+s=2000/4344  elapsed=14s  (7 ms/state)
+s=2500/4344  elapsed=21s  (9 ms/state)
+s=3000/4344  elapsed=25s  (8 ms/state)
+s=3500/4344  elapsed=29s  (8 ms/state)
+s=4000/4344  elapsed=33s  (8 ms/state)
+total 36s  (8 ms/state, 0.8 ms/raw-epoch)
+warm=0s  smoothed_drms=24.23 m  realtime_drms=56.28 m  ins_drms=253.55 m
+warm=60s  smoothed_drms=24.35 m  realtime_drms=56.59 m  ins_drms=255.32 m
+warm=300s  smoothed_drms=24.62 m  realtime_drms=51.68 m  ins_drms=262.66 m
+warm=600s  smoothed_drms=24.52 m  realtime_drms=47.30 m  ins_drms=271.86 m

@@ -1,0 +1,18 @@
+Initial error: 188471, values: 6000
+iter      cost      cost_change    lambda  success iter_time
+   0  4.285443e+03    1.84e+05    1.00e-05     1    1.26e+01
+   1  2.462814e+03    1.82e+03    1.00e-06     1    1.23e+01
+   2  2.352672e+03    1.10e+02    1.00e-07     1    1.31e+01
+   3  2.333504e+03    1.92e+01    1.00e-08     1    1.20e+01
+   4  2.329154e+03    4.35e+00    1.00e-09     1    1.20e+01
+   5  2.328371e+03    7.83e-01    1.00e-10     1    1.32e+01
+   6  2.328207e+03    1.65e-01    1.00e-11     1    1.29e+01
+   7  2.328171e+03    3.54e-02    1.00e-12     1    1.26e+01
+   8  2.328164e+03    7.55e-03    1.00e-13     1    1.29e+01
+LM iters=9  error=2328.164
+warm=0s  gtsam_batch_drms=12.22 m  ins_drms=39.05 m
+warm=60s  gtsam_batch_drms=12.78 m  ins_drms=41.14 m
+warm=120s  gtsam_batch_drms=13.02 m  ins_drms=43.52 m
+warm=300s  gtsam_batch_drms=10.94 m  ins_drms=52.00 m
+warm=600s  gtsam_batch_drms=nan m  ins_drms=nan m
+(Julia FGO reference = nan m, exported warm=600s)

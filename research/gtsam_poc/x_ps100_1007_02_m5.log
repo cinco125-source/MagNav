@@ -1,0 +1,14 @@
+lag=300s K=10 mag=5 (meas_mag5) N=38561 -> 3856 states
+TL prior sigma scaled by 100
+s=500/3857  elapsed=3s  (5 ms/state)
+s=1000/3857  elapsed=6s  (6 ms/state)
+s=1500/3857  elapsed=10s  (7 ms/state)
+s=2000/3857  elapsed=14s  (7 ms/state)
+s=2500/3857  elapsed=17s  (7 ms/state)
+s=3000/3857  elapsed=21s  (7 ms/state)
+s=3500/3857  elapsed=25s  (7 ms/state)
+total 31s  (8 ms/state, 0.8 ms/raw-epoch)
+warm=0s  smoothed_drms=20.46 m  realtime_drms=39.86 m  ins_drms=111.66 m
+warm=60s  smoothed_drms=20.61 m  realtime_drms=40.09 m  ins_drms=112.54 m
+warm=300s  smoothed_drms=20.11 m  realtime_drms=40.30 m  ins_drms=116.19 m
+warm=600s  smoothed_drms=15.82 m  realtime_drms=33.14 m  ins_drms=120.66 m

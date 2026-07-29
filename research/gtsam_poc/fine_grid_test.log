@@ -1,0 +1,11 @@
+line 1007.06: N=52401 (87.3 min)
+building Phi tensor...
+  Phi 0/52400
+  Phi 10000/52400
+  Phi 20000/52400
+  Phi 30000/52400
+  Phi 40000/52400
+  Phi 50000/52400
+building map grid...
+grid 2000x2000, malt=401.9 m, map alt=395.0 m, spacing ~34 m
+wrote /home/cin64/magnav_data/line_1007_06_fine.h5

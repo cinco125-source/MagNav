@@ -1,0 +1,9 @@
+1007_06 boot=100  warm=600s  smoothed_drms=23.88 m  realtime_drms=44.25 m  ins_drms=317.49 m
+1007_06 boot=150  warm=600s  smoothed_drms=23.87 m  realtime_drms=44.24 m  ins_drms=317.49 m
+1007_06 boot=300  warm=600s  smoothed_drms=23.92 m  realtime_drms=44.20 m  ins_drms=317.49 m
+1007_06 boot=600  warm=600s  smoothed_drms=24.02 m  realtime_drms=44.15 m  ins_drms=317.49 m
+1003_02 boot=100  warm=600s  smoothed_drms=4549.44 m  realtime_drms=4634.25 m  ins_drms=123.79 m
+1003_02 boot=150  warm=600s  smoothed_drms=4548.61 m  realtime_drms=4630.79 m  ins_drms=123.79 m
+1003_02 boot=300  warm=600s  smoothed_drms=19.25 m  realtime_drms=79.99 m  ins_drms=123.79 m
+1003_02 boot=600  warm=600s  smoothed_drms=19.48 m  realtime_drms=65.51 m  ins_drms=123.79 m
+BOOT_LEN_DONE

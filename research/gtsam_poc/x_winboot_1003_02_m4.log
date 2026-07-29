@@ -1,0 +1,29 @@
+mag=4 (meas_mag4)
+window Lw=3000 overlap=900 stride=2100
+TL bootstrap over first 300s: |beta|max=657.8 nT, residual rms 75.6 nT (uncompensated 1977.9 nT)
+window [0,2999] committed [0,2099]  (47s)
+/mnt/c/Users/cin64/Desktop/MagNav/research/gtsam_poc/run_gtsam_window.py:204: DeprecationWarning: Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. (Deprecated NumPy 1.25.)
+  S = float(H @ P @ H.T) + Rm / wt
+window [2100,5099] committed [2100,4199]  (82s)
+window [4200,7199] committed [4200,6299]  (154s)
+window [6300,9299] committed [6300,8399]  (197s)
+window [8400,11399] committed [8400,10499]  (240s)
+window [10500,13499] committed [10500,12599]  (285s)
+window [12600,15599] committed [12600,14699]  (330s)
+window [14700,17699] committed [14700,16799]  (440s)
+window [16800,19799] committed [16800,18899]  (554s)
+window [18900,21899] committed [18900,20999]  (608s)
+window [21000,23999] committed [21000,23099]  (664s)
+window [23100,26099] committed [23100,25199]  (707s)
+window [25200,28199] committed [25200,27299]  (756s)
+window [27300,30299] committed [27300,29399]  (804s)
+window [29400,32399] committed [29400,31499]  (856s)
+window [31500,34499] committed [31500,33599]  (904s)
+window [33600,36599] committed [33600,35699]  (952s)
+window [35700,37840] committed [35700,37840]  (985s)
+warm=0s  gtsam_window_drms=43.64 m  ins_drms=114.40 m
+warm=60s  gtsam_window_drms=43.87 m  ins_drms=115.31 m
+warm=120s  gtsam_window_drms=43.73 m  ins_drms=116.25 m
+warm=300s  gtsam_window_drms=43.32 m  ins_drms=119.12 m
+warm=600s  gtsam_window_drms=36.82 m  ins_drms=123.81 m
+(Julia FGO reference = nan m, exported warm=600s)

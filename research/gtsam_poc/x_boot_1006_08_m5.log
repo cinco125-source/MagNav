@@ -1,0 +1,7 @@
+lag=300s K=10 mag=5 (meas_mag5) N=8391 -> 839 states
+batch bootstrap over first 840 states (840s): 6s
+total 6s  (7 ms/state, 0.7 ms/raw-epoch)
+warm=0s  smoothed_drms=63.75 m  realtime_drms=63.75 m  ins_drms=137.28 m
+warm=60s  smoothed_drms=66.09 m  realtime_drms=66.09 m  ins_drms=142.43 m
+warm=300s  smoothed_drms=74.18 m  realtime_drms=74.18 m  ins_drms=166.29 m
+warm=600s  smoothed_drms=101.53 m  realtime_drms=101.53 m  ins_drms=197.66 m

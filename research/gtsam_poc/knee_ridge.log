@@ -1,0 +1,100 @@
+########## 1003_02 ##########
+ridge TL init: |beta|max=680.3 bias=-680.3 nT  (residual rms 161.4 nT)
+mag4 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  6.5071e+05 ->  6.8998e+03   drms     113.8 m (ins    1.5)   |TL|max     52.1  S    -28.0  [0s]
+W=  100 (   100 s)  err  6.5118e+05 ->  1.4138e+04   drms    2135.0 m (ins    5.7)   |TL|max    546.1  S    -75.9  [0s]
+W=  200 (   200 s)  err  6.5203e+05 ->  1.5589e+04   drms      42.2 m (ins   11.0)   |TL|max    652.9  S    -48.5  [1s]
+W=  300 (   300 s)  err  6.5281e+05 ->  1.5729e+04   drms      42.7 m (ins   16.4)   |TL|max    651.1  S    -27.7  [1s]
+W=  400 (   400 s)  err  6.5397e+05 ->  1.5913e+04   drms     125.8 m (ins   22.0)   |TL|max    707.7  S    -17.8  [2s]
+W=  500 (   500 s)  err  6.5657e+05 ->  1.6158e+04   drms      40.7 m (ins   27.9)   |TL|max    780.2  S    -12.3  [6s]
+W=  600 (   600 s)  err  6.6002e+05 ->  1.6209e+04   drms      86.8 m (ins   34.5)   |TL|max    795.5  S     -7.3  [4s]
+W=  900 (   900 s)  err  6.6171e+05 ->  1.6393e+04   drms      16.6 m (ins   56.7)   |TL|max    792.5  S     -2.4  [8s]
+ridge TL init: |beta|max=83.2 bias=39.7 nT  (residual rms 58.9 nT)
+mag5 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  9.9469e+03 ->  1.1974e+01   drms      10.9 m (ins    1.5)   |TL|max      8.9  S      6.5  [0s]
+W=  100 (   100 s)  err  1.0101e+04 ->  2.2945e+01   drms      41.8 m (ins    5.7)   |TL|max      7.6  S      4.1  [0s]
+W=  200 (   200 s)  err  1.0437e+04 ->  3.0145e+01   drms      13.4 m (ins   11.0)   |TL|max      8.6  S      2.4  [0s]
+W=  300 (   300 s)  err  1.0810e+04 ->  3.6898e+01   drms       9.6 m (ins   16.4)   |TL|max      9.8  S      1.2  [0s]
+W=  400 (   400 s)  err  1.1085e+04 ->  4.6950e+01   drms       9.4 m (ins   22.0)   |TL|max     26.4  S      0.8  [1s]
+W=  500 (   500 s)  err  1.1371e+04 ->  7.1044e+01   drms      24.0 m (ins   27.9)   |TL|max     64.5  S      0.9  [1s]
+W=  600 (   600 s)  err  1.1926e+04 ->  1.1449e+02   drms       7.9 m (ins   34.5)   |TL|max    122.8  S      1.6  [1s]
+W=  900 (   900 s)  err  1.4060e+04 ->  1.5852e+02   drms      11.4 m (ins   56.7)   |TL|max    154.5  S     -0.3  [2s]
+########## 1003_08 ##########
+ridge TL init: |beta|max=637.7 bias=-637.7 nT  (residual rms 179.2 nT)
+mag4 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  5.9920e+05 ->  5.7746e+03   drms      19.0 m (ins    2.5)   |TL|max     52.1  S    -28.0  [0s]
+W=  100 (   100 s)  err  5.9957e+05 ->  1.3097e+04   drms     553.4 m (ins    9.1)   |TL|max    550.3  S    -76.2  [0s]
+W=  200 (   200 s)  err  5.9995e+05 ->  1.3359e+04   drms      71.4 m (ins   19.3)   |TL|max    576.3  S    -44.2  [1s]
+W=  300 (   300 s)  err  6.0023e+05 ->  1.3545e+04   drms      23.1 m (ins   30.3)   |TL|max    595.2  S    -25.4  [1s]
+W=  400 (   400 s)  err  6.0045e+05 ->  1.3692e+04   drms      39.4 m (ins   41.8)   |TL|max    612.6  S    -14.2  [2s]
+W=  500 (   500 s)  err  6.0068e+05 ->  1.3910e+04   drms      43.7 m (ins   53.5)   |TL|max    662.7  S     -8.1  [3s]
+W=  600 (   600 s)  err  6.0112e+05 ->  1.4041e+04   drms      41.5 m (ins   65.3)   |TL|max    728.5  S     -4.4  [8s]
+W=  900 (   900 s)  err  6.1024e+05 ->  1.4397e+04   drms      43.2 m (ins  100.7)   |TL|max    706.5  S     -2.8  [9s]
+ridge TL init: |beta|max=65.0 bias=61.4 nT  (residual rms 48.2 nT)
+mag5 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  8.0309e+03 ->  5.1135e+02   drms      27.4 m (ins    2.5)   |TL|max     52.4  S     28.1  [0s]
+W=  100 (   100 s)  err  8.1315e+03 ->  5.4016e+02   drms      70.3 m (ins    9.1)   |TL|max     64.5  S     20.9  [0s]
+W=  200 (   200 s)  err  8.1777e+03 ->  5.7134e+02   drms      14.1 m (ins   19.3)   |TL|max     68.8  S     12.1  [1s]
+W=  300 (   300 s)  err  8.2656e+03 ->  5.8702e+02   drms      12.4 m (ins   30.3)   |TL|max     73.0  S      6.9  [1s]
+W=  400 (   400 s)  err  8.3857e+03 ->  6.1474e+02   drms      24.0 m (ins   41.8)   |TL|max     78.7  S      3.9  [1s]
+W=  500 (   500 s)  err  8.5376e+03 ->  6.4916e+02   drms      19.7 m (ins   53.5)   |TL|max     89.7  S      2.3  [2s]
+W=  600 (   600 s)  err  8.9383e+03 ->  6.6243e+02   drms      24.1 m (ins   65.3)   |TL|max    103.8  S      1.4  [3s]
+W=  900 (   900 s)  err  1.1003e+04 ->  7.1787e+02   drms      22.0 m (ins  100.7)   |TL|max    182.5  S     -0.2  [5s]
+########## 1006_08 ##########
+Traceback (most recent call last):
+  File "/mnt/c/Users/cin64/Desktop/MagNav/research/gtsam_poc/diag_window1.py", line 197, in <module>
+    main()
+  File "/mnt/c/Users/cin64/Desktop/MagNav/research/gtsam_poc/diag_window1.py", line 150, in main
+    nW = idx[max(Ws) - 1] + 1
+         ~~~^^^^^^^^^^^^^
+IndexError: index 899 is out of bounds for axis 0 with size 840
+Traceback (most recent call last):
+  File "/mnt/c/Users/cin64/Desktop/MagNav/research/gtsam_poc/diag_window1.py", line 197, in <module>
+    main()
+  File "/mnt/c/Users/cin64/Desktop/MagNav/research/gtsam_poc/diag_window1.py", line 150, in main
+    nW = idx[max(Ws) - 1] + 1
+         ~~~^^^^^^^^^^^^^
+IndexError: index 899 is out of bounds for axis 0 with size 840
+########## 1007_02 ##########
+ridge TL init: |beta|max=636.2 bias=-636.2 nT  (residual rms 162.0 nT)
+mag4 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  5.7172e+05 ->  6.0367e+03   drms     135.7 m (ins    0.4)   |TL|max     52.1  S    -28.0  [0s]
+W=  100 (   100 s)  err  5.7296e+05 ->  1.3601e+04   drms    2353.9 m (ins    3.8)   |TL|max    466.6  S    -68.2  [0s]
+W=  200 (   200 s)  err  5.7419e+05 ->  1.4934e+04   drms    1691.4 m (ins    9.4)   |TL|max    646.3  S    -47.7  [1s]
+W=  300 (   300 s)  err  5.7514e+05 ->  1.5333e+04   drms     351.4 m (ins   15.1)   |TL|max    606.1  S    -26.5  [1s]
+W=  400 (   400 s)  err  5.7548e+05 ->  1.5378e+04   drms     322.6 m (ins   20.8)   |TL|max    590.6  S    -14.7  [2s]
+W=  500 (   500 s)  err  5.7671e+05 ->  1.5566e+04   drms     256.2 m (ins   26.7)   |TL|max    640.3  S     -9.7  [6s]
+W=  600 (   600 s)  err  5.8054e+05 ->  1.5701e+04   drms     284.6 m (ins   33.4)   |TL|max    716.6  S     -6.9  [4s]
+W=  900 (   900 s)  err  5.8280e+05 ->  1.5827e+04   drms     258.6 m (ins   56.5)   |TL|max    733.0  S     -2.3  [7s]
+ridge TL init: |beta|max=77.5 bias=40.3 nT  (residual rms 56.7 nT)
+mag5 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  8.8928e+03 ->  3.0051e+01   drms      13.4 m (ins    0.4)   |TL|max      4.6  S      8.8  [0s]
+W=  100 (   100 s)  err  9.0205e+03 ->  3.9788e+01   drms      15.1 m (ins    3.8)   |TL|max     12.9  S      6.3  [0s]
+W=  200 (   200 s)  err  9.2664e+03 ->  6.2495e+01   drms      32.4 m (ins    9.4)   |TL|max     19.1  S      3.3  [0s]
+W=  300 (   300 s)  err  9.6163e+03 ->  7.4119e+01   drms      33.5 m (ins   15.1)   |TL|max     17.3  S      1.9  [0s]
+W=  400 (   400 s)  err  9.8752e+03 ->  8.1451e+01   drms      43.6 m (ins   20.8)   |TL|max     17.2  S      1.1  [1s]
+W=  500 (   500 s)  err  1.0143e+04 ->  1.0119e+02   drms      34.4 m (ins   26.7)   |TL|max     30.7  S      0.6  [1s]
+W=  600 (   600 s)  err  1.0637e+04 ->  1.6089e+02   drms      59.8 m (ins   33.4)   |TL|max    118.0  S      1.6  [2s]
+W=  900 (   900 s)  err  1.2603e+04 ->  2.2414e+02   drms      34.0 m (ins   56.5)   |TL|max    154.6  S     -0.1  [3s]
+########## 1007_06 ##########
+ridge TL init: |beta|max=516.5 bias=-515.8 nT  (residual rms 112.4 nT)
+mag4 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  4.1176e+05 ->  5.4944e+03   drms      25.9 m (ins    1.4)   |TL|max     52.2  S    -28.0  [0s]
+W=  100 (   100 s)  err  4.1260e+05 ->  1.2017e+04   drms     687.4 m (ins    5.6)   |TL|max    512.0  S    -72.7  [0s]
+W=  200 (   200 s)  err  4.1425e+05 ->  1.2225e+04   drms    1630.1 m (ins   11.8)   |TL|max    554.7  S    -43.3  [1s]
+W=  300 (   300 s)  err  4.1564e+05 ->  1.2600e+04   drms      57.3 m (ins   18.6)   |TL|max    542.9  S    -24.2  [1s]
+W=  400 (   400 s)  err  4.1683e+05 ->  1.2775e+04   drms      79.6 m (ins   25.3)   |TL|max    582.6  S    -14.2  [2s]
+W=  500 (   500 s)  err  4.1775e+05 ->  1.2966e+04   drms      55.7 m (ins   32.2)   |TL|max    613.4  S     -8.3  [3s]
+W=  600 (   600 s)  err  4.1804e+05 ->  1.3010e+04   drms      48.5 m (ins   39.0)   |TL|max    616.7  S     -4.3  [4s]
+W=  900 (   900 s)  err  4.1965e+05 ->  1.3195e+04   drms      27.3 m (ins   57.9)   |TL|max    661.0  S     -0.7  [11s]
+ridge TL init: |beta|max=88.9 bias=88.9 nT  (residual rms 32.6 nT)
+mag5 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  1.2565e+04 ->  8.1637e+02   drms      22.7 m (ins    1.4)   |TL|max     52.2  S     28.0  [0s]
+W=  100 (   100 s)  err  1.2871e+04 ->  8.9702e+02   drms      77.9 m (ins    5.6)   |TL|max     94.5  S     25.7  [0s]
+W=  200 (   200 s)  err  1.3228e+04 ->  9.0787e+02   drms      89.6 m (ins   11.8)   |TL|max     93.3  S     14.7  [1s]
+W=  300 (   300 s)  err  1.3439e+04 ->  9.2637e+02   drms      20.4 m (ins   18.6)   |TL|max    100.7  S      8.8  [1s]
+W=  400 (   400 s)  err  1.3743e+04 ->  9.4789e+02   drms      16.9 m (ins   25.3)   |TL|max    100.6  S      5.1  [2s]
+W=  500 (   500 s)  err  1.3905e+04 ->  9.6049e+02   drms      18.9 m (ins   32.2)   |TL|max     89.3  S      2.4  [2s]
+W=  600 (   600 s)  err  1.4074e+04 ->  9.7011e+02   drms      18.6 m (ins   39.0)   |TL|max    105.0  S      1.5  [3s]
+W=  900 (   900 s)  err  1.4553e+04 ->  1.0190e+03   drms      11.5 m (ins   57.9)   |TL|max    149.4  S      0.3  [5s]
+KNEE_RIDGE_DONE

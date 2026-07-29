@@ -1,0 +1,19 @@
+=== 1003_02 mag4 cached ===
+=== 1003_02 mag5 (lag=300, boot=900) ===
+warm=600s  smoothed_drms=12.54 m  realtime_drms=23.17 m  ins_drms=123.79 m
+=== 1003_08 mag4 (lag=300, boot=900) ===
+warm=600s  smoothed_drms=25.71 m  realtime_drms=46.94 m  ins_drms=271.86 m
+=== 1003_08 mag5 (lag=300, boot=900) ===
+warm=600s  smoothed_drms=10.85 m  realtime_drms=20.55 m  ins_drms=271.86 m
+=== 1006_08 mag4 (lag=300, boot=900) ===
+warm=600s  smoothed_drms=152.29 m  realtime_drms=152.29 m  ins_drms=197.66 m
+=== 1006_08 mag5 (lag=300, boot=900) ===
+warm=600s  smoothed_drms=101.53 m  realtime_drms=101.53 m  ins_drms=197.66 m
+=== 1007_02 mag4 (lag=300, boot=900) ===
+warm=600s  smoothed_drms=52.26 m  realtime_drms=123.65 m  ins_drms=120.66 m
+=== 1007_02 mag5 (lag=300, boot=900) ===
+warm=600s  smoothed_drms=14.12 m  realtime_drms=29.14 m  ins_drms=120.66 m
+=== 1007_06 mag4 cached ===
+=== 1007_06 mag5 (lag=300, boot=900) ===
+warm=600s  smoothed_drms=11.49 m  realtime_drms=16.24 m  ins_drms=317.49 m
+BREADTH_BOOT_DONE

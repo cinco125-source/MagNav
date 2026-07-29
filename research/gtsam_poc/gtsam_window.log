@@ -1,0 +1,12 @@
+window Lw=3000 overlap=900 stride=2100
+window [0,2999] committed [0,2099]  (66s)
+/mnt/c/Users/cin64/Desktop/MagNav/research/gtsam_poc/run_gtsam_window.py:177: DeprecationWarning: Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. (Deprecated NumPy 1.25.)
+  S = float(H @ P @ H.T) + Rm / wt
+window [2100,5099] committed [2100,4199]  (119s)
+window [4200,5999] committed [4200,5999]  (153s)
+warm=0s  gtsam_window_drms=16.85 m  ins_drms=39.05 m
+warm=60s  gtsam_window_drms=17.47 m  ins_drms=41.14 m
+warm=120s  gtsam_window_drms=17.01 m  ins_drms=43.52 m
+warm=300s  gtsam_window_drms=12.56 m  ins_drms=52.00 m
+warm=600s  gtsam_window_drms=nan m  ins_drms=nan m
+(Julia FGO reference = nan m, exported warm=600s)

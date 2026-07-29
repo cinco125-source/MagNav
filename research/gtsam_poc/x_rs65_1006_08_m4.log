@@ -1,0 +1,8 @@
+measurement sigma set to 65 nT
+lag=300s K=10 mag=4 (meas_mag4) N=8391 -> 839 states
+s=500/840  elapsed=6s  (12 ms/state)
+total 9s  (10 ms/state, 1.0 ms/raw-epoch)
+warm=0s  smoothed_drms=286.89 m  realtime_drms=913.70 m  ins_drms=137.28 m
+warm=60s  smoothed_drms=296.41 m  realtime_drms=948.10 m  ins_drms=142.43 m
+warm=300s  smoothed_drms=250.56 m  realtime_drms=987.49 m  ins_drms=166.29 m
+warm=600s  smoothed_drms=240.76 m  realtime_drms=579.33 m  ins_drms=197.66 m

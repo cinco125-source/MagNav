@@ -83,7 +83,18 @@ def main():
     ins_lat = np.asarray(d["ins_lat"]).ravel(); ins_lon = np.asarray(d["ins_lon"]).ravel()
     true_lat = np.asarray(d["true_lat"]).ravel(); true_lon = np.asarray(d["true_lon"]).ravel()
     P0 = np.asarray(d["P0"], dtype=float); Qd = np.asarray(d["Qd"], dtype=float)
-    Qd = Qd + 1e-20 * np.eye(nx)                     # scale-aware floor (run_gtsam.py)
+    # --rsigma X: set the measurement standard deviation to X nT instead of the
+    # nominal 12. The post-fit residual on the cabin magnetometers is 47 to
+    # 153 nT, so this is the control that asks whether the cold-start divergence
+    # is a mis-specified measurement noise rather than a mis-specified
+    # compensation prior. --qfloor F replaces the 1e-20 conditioning floor added
+    # to the process noise, the other candidate for an accidental fix.
+    if "--rsigma" in sys.argv:
+        Rm = float(sys.argv[sys.argv.index("--rsigma") + 1]) ** 2
+        print(f"measurement sigma set to {math.sqrt(Rm):g} nT", flush=True)
+    qf = (float(sys.argv[sys.argv.index("--qfloor") + 1])
+          if "--qfloor" in sys.argv else 1e-20)
+    Qd = Qd + qf * np.eye(nx)                        # scale-aware floor (run_gtsam.py)
     grid = Grid(d["glat"], d["glon"], d["gh_rowmajor"])
     print(f"lag={lag:g}s K={K} mag={mag} ({meas_key}) N={N} -> {N//K} states",
           flush=True)
@@ -104,11 +115,86 @@ def main():
     iS = nx - 1
     iTL = slice(17, 17 + nTL)
 
+    # --tl-init T: bootstrap the Tolles-Lawson coefficients from the first T
+    # seconds instead of starting them at zero. diag_window1.py shows the cold
+    # start converges to a spurious minimum ~1.4 km from truth on Mag 4 while
+    # the same window solved from a ridge-fitted calibration reaches a LOWER
+    # objective 57 m from truth; the uncompensated cabin field is 1771 nT rms on
+    # Mag 4 against 197 nT on Mag 5, which is why only the cabin magnetometer
+    # with the large platform field is affected. The ridge penalty is the TL
+    # prior itself (sigma = 1 per coefficient, R on the residual), so this is
+    # the maximum a posteriori calibration given the bootstrap data and nothing
+    # the smoother does not already have.
+    # --tl-sigma S: scale the standard deviation of the Tolles-Lawson block of
+    # the initial covariance by S, leaving its mean at zero. The nominal prior is
+    # sigma = 1 per coefficient while the cabin field needs coefficients of a few
+    # hundred, so this is the control that asks whether the divergence is simply
+    # a prior scaled for a compensated installation. --tl-walk W does the same to
+    # the TL block of the process noise.
+    sig_TL = 1.0                                 # nominal P0 TL block is I
+    if "--tl-sigma" in sys.argv:
+        sig_TL = float(sys.argv[sys.argv.index("--tl-sigma") + 1])
+        P0 = P0.copy(); P0[iTL, iTL] = P0[iTL, iTL] * sig_TL ** 2
+        print(f"TL prior sigma scaled by {sig_TL:g}", flush=True)
+    # --tl-cols S: give each coefficient a prior standard deviation of
+    # S / ||A_:,j||, i.e. a common prior on that column's CONTRIBUTION in nT
+    # rather than on the coefficient itself. The 19 columns of the regressor
+    # differ by four orders of magnitude in scale (direction cosines against
+    # induced and eddy terms carrying the field magnitude), so one isotropic
+    # sigma is simultaneously too tight on some blocks and too loose on others.
+    if "--tl-cols" in sys.argv:
+        Sc = float(sys.argv[sys.argv.index("--tl-cols") + 1])
+        colnorm = np.sqrt((A ** 2).mean(axis=0))
+        sd = Sc / np.maximum(colnorm, 1e-12)
+        P0 = P0.copy(); P0[iTL, iTL] = np.diag(sd ** 2)
+        print(f"TL prior per column: contribution sigma {Sc:g} nT, "
+              f"coefficient sigma {sd.min():.3g} to {sd.max():.3g}", flush=True)
+    # --sigma-s X: scale the FOGM disturbance prior and walk. The fitted S runs
+    # to 70 nT against a nominal 3 nT prior in the cold-start window solves, so
+    # this is the other under-scaled prior in the same measurement equation.
+    if "--sigma-s" in sys.argv:
+        Ss = float(sys.argv[sys.argv.index("--sigma-s") + 1])
+        P0 = P0.copy(); P0[iS, iS] = P0[iS, iS] * Ss ** 2
+        for s in range(M - 1):
+            QdK[s][iS, iS] = QdK[s][iS, iS] * Ss ** 2
+        print(f"FOGM prior and walk sigma scaled by {Ss:g}", flush=True)
+    if "--tl-walk" in sys.argv:
+        Wk = float(sys.argv[sys.argv.index("--tl-walk") + 1])
+        for s in range(M - 1):
+            QdK[s][iTL, iTL] = QdK[s][iTL, iTL] * Wk ** 2
+        print(f"TL random walk sigma scaled by {Wk:g}", flush=True)
+
+    x0_TL = np.zeros(nTL)
+    if "--tl-init" in sys.argv:
+        T_init = float(sys.argv[sys.argv.index("--tl-init") + 1])
+        n_init = min(N, int(round(T_init / dt)))
+        r0 = np.array([meas[t] - grid.value(ins_lat[t], ins_lon[t])
+                       for t in range(n_init)])
+        Aw = A[:n_init]
+        lam = Rm / sig_TL ** 2                   # penalty = the TL prior in use
+        x0_TL = np.linalg.solve(Aw.T @ Aw + lam * np.eye(nTL), Aw.T @ r0)
+        print(f"TL bootstrap over first {T_init:g}s: |beta|max="
+              f"{np.abs(x0_TL).max():.1f}, residual rms "
+              f"{np.sqrt(((r0 - Aw @ x0_TL)**2).mean()):.1f} nT "
+              f"(uncompensated {np.sqrt((r0**2).mean()):.1f} nT)", flush=True)
+
     dyn_nms = [gtsam.noiseModel.Gaussian.Covariance(QdK[s]) for s in range(M-1)]
     prior_nm = gtsam.noiseModel.Gaussian.Covariance(P0)
     meas_base = gtsam.noiseModel.Isotropic.Sigma(1, math.sqrt(Rm))
-    meas_nm = gtsam.noiseModel.Robust.Create(
-        gtsam.noiseModel.mEstimator.Huber.Create(1.345), meas_base)
+    # --norobust / --huber C: the Julia reference (fgo_online) applies the Huber
+    # weights only from the SECOND Gauss-Newton iteration and survives Mag 4 both
+    # with and without the kernel; GTSAM applies it from the first linearization,
+    # where the uncompensated cabin field makes every residual an "outlier".
+    if "--norobust" in sys.argv:
+        meas_nm = meas_base
+        print("no robust kernel (pure Gaussian measurement factors)", flush=True)
+    else:
+        hub_c = (float(sys.argv[sys.argv.index("--huber") + 1])
+                 if "--huber" in sys.argv else 1.345)
+        meas_nm = gtsam.noiseModel.Robust.Create(
+            gtsam.noiseModel.mEstimator.Huber.Create(hub_c), meas_base)
+        if hub_c != 1.345:
+            print(f"Huber c={hub_c}", flush=True)
 
     def dyn_err(Phi_t):
         def f(this, values, J):
@@ -155,24 +241,85 @@ def main():
         else:
             graph.add(gtsam.CustomFactor(meas_nm, [X(s)], meas_err(idx[s])))
 
+    # --seed-only: use the bootstrap coefficients as the initial iterate but
+    # leave the prior mean at zero, so the first window's measurements are not
+    # counted once in the prior and once as measurement factors.
+    x_prior = np.zeros(nx); x_prior[iTL] = x0_TL
+    x_prior_mean = np.zeros(nx) if "--seed-only" in sys.argv else x_prior
+    prior_nm = gtsam.noiseModel.Gaussian.Covariance(P0)
     graph = gtsam.NonlinearFactorGraph(); vals = gtsam.Values(); ts = KTM()
     est = np.zeros((M, nx)); est_rt = np.zeros((M, nx))
-    graph.push_back(gtsam.PriorFactorVector(X(0), np.zeros(nx), prior_nm))
-    vals.insert(X(0), np.zeros(nx)); ts.insert((X(0), 0.0))
+    graph.push_back(gtsam.PriorFactorVector(X(0), x_prior_mean, prior_nm))
+    vals.insert(X(0), x_prior); ts.insert((X(0), 0.0))
+    est_rt[0] = x_prior
     add_meas(graph, 0)
 
     t0 = time.time()
     lag_states = int(round(lag / dtK))
-    for s in range(1, M):
+
+    # --boot W: batch bootstrap. Growing the graph one state at a time walks the
+    # smoother through the data-starved startup, where the window optimum is
+    # kilometres from truth (diag_window1.py: 2137 m at 100 s on line 1003.02
+    # Mag 4) and ISAM2 keeps that linearization for good. Solving the first W
+    # states as one batch first, then handing the result to the smoother, skips
+    # the ill-posed region entirely. Cost is a few seconds of startup latency,
+    # after which the update stays per-epoch and real time.
+    s_boot = 1
+    if "--boot" in sys.argv:
+        W = min(M, int(round(float(sys.argv[sys.argv.index("--boot") + 1]) / dtK)))
+        bg = gtsam.NonlinearFactorGraph(); bv = gtsam.Values()
+        bg.push_back(gtsam.PriorFactorVector(X(0), x_prior_mean, prior_nm))
+        add_meas(bg, 0); bv.insert(X(0), x_prior)
+        for s in range(1, W):
+            bg.add(gtsam.CustomFactor(dyn_nms[s-1], [X(s-1), X(s)],
+                                      dyn_err(PhiK[s-1])))
+            add_meas(bg, s)
+            bv.insert(X(s), x_prior)
+        lp = gtsam.LevenbergMarquardtParams()
+        lp.setLinearSolverType("MULTIFRONTAL_QR")
+        lp.setMaxIterations(100)
+        bres = gtsam.LevenbergMarquardtOptimizer(bg, bv, lp).optimize()
+        x_boot = np.array([bres.atVector(X(s)) for s in range(W)])
+        # Hand the bootstrap to the smoother one lag-length at a time: the
+        # smoother cannot marginalize keys introduced in the same update, and a
+        # first block of a full lag skips the data-starved region where the
+        # window optimum is kilometres off. Later blocks only ever marginalize
+        # keys from earlier updates.
+        blk = min(W, lag_states)
+        graph = gtsam.NonlinearFactorGraph(); vals = gtsam.Values(); ts = KTM()
+        graph.push_back(gtsam.PriorFactorVector(X(0), x_prior_mean, prior_nm))
+        add_meas(graph, 0)
+        vals.insert(X(0), x_boot[0]); ts.insert((X(0), 0.0))
+        for s in range(1, W):
+            graph.add(gtsam.CustomFactor(dyn_nms[s-1], [X(s-1), X(s)],
+                                         dyn_err(PhiK[s-1])))
+            add_meas(graph, s)
+            vals.insert(X(s), x_boot[s]); ts.insert((X(s), s * dtK))
+            if (s + 1) % blk == 0 or s == W - 1:
+                sm.update(graph, vals, ts)
+                graph = gtsam.NonlinearFactorGraph()
+                vals = gtsam.Values(); ts = KTM()
+        cur = sm.calculateEstimate()
+        for s in range(W):
+            if cur.exists(X(s)):
+                est[s] = cur.atVector(X(s))
+            else:
+                est[s] = x_boot[s]
+        # inside the bootstrap window the "realtime" column is the batch value,
+        # i.e. smoothed rather than causal. Every reported DRMS uses a warm-up of
+        # at least twice the bootstrap length, so no reported number is computed
+        # from a state inside the bootstrap window.
+        est_rt[:W] = est[:W]
+        s_boot = W
+        print(f"batch bootstrap over first {W} states ({W*dtK:g}s): "
+              f"{time.time()-t0:.0f}s", flush=True)
+
+    for s in range(s_boot, M):
         graph.add(gtsam.CustomFactor(dyn_nms[s-1], [X(s-1), X(s)], dyn_err(PhiK[s-1])))
         add_meas(graph, s)
         # propagate the previous causal estimate as the new state's initial
-        # (= linearization) point, as any filter does. Initializing at zero
-        # puts the measurement's linearization at the raw INS position; once
-        # the true error is large (cold-start Mag 4) the Huber kernel then
-        # downweights the genuine map signal as an outlier and the estimate
-        # never recovers.
-        x_init = PhiK[s-1] @ est_rt[s-1] if s > 1 else np.zeros(nx)
+        # (= linearization) point, as any filter does
+        x_init = PhiK[s-1] @ est_rt[s-1] if s > 1 else x_prior
         vals.insert(X(s), x_init); ts.insert((X(s), s * dtK))
         try:
             sm.update(graph, vals, ts)

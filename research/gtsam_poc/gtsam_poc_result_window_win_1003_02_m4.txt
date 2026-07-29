@@ -1,0 +1,7 @@
+warm=0s  gtsam_window_drms=43.97 m  ins_drms=114.40 m
+warm=60s  gtsam_window_drms=44.17 m  ins_drms=115.31 m
+warm=120s  gtsam_window_drms=43.89 m  ins_drms=116.25 m
+warm=300s  gtsam_window_drms=43.12 m  ins_drms=119.12 m
+warm=600s  gtsam_window_drms=36.61 m  ins_drms=123.81 m
+julia_ref nan
+N 37841 nx 37 nTL 19

@@ -1,0 +1,19 @@
+line 1007.06: N=52401 (87.3 min)
+building Phi tensor...
+  Phi 0/52400
+  Phi 10000/52400
+  Phi 20000/52400
+  Phi 30000/52400
+  Phi 40000/52400
+  Phi 50000/52400
+building map grid...
+grid 600x600, malt=401.9 m, map alt=395.0 m, spacing ~113 m
+=== validation vs Julia segment export ===
+meas   max|diff| : 0.000e+00 nT
+insLat max|diff| : 0.000e+00 m
+insLon max|diff| : 0.000e+00 m
+truLat max|diff| : 0.000e+00 m
+A      max|diff| : 0.000e+00
+Phi    max|diff| : 0.000e+00  (float32 eps ~1e-7 rel)
+grid   diff mean/std/max: -6.12 / 0.88 / 34.88 nT
+wrote /home/cin64/magnav_data/line_1007_06_full.h5

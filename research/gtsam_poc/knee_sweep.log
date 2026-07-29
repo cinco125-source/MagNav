@@ -1,0 +1,143 @@
+########## 1003_02 ##########
+assumed sqrt(R) = 12.0 nT   Huber knee = 16.1 nT   nTL = 19
+mag4 INS pos : raw resid mean    -1943.7 rms     1953.9 | after LS-TL rms    73.8  p50   41.8  p95   144.0
+mag4 TRUE pos: raw resid mean    -1944.6 rms     1954.3 | after LS-TL rms    58.0  p50   37.7  p95    96.3
+   mag4 first 300 s: raw rms     1977.9  after LS-TL rms    18.0
+mag5 INS pos : raw resid mean      135.3 rms      177.5 | after LS-TL rms    43.6  p50   16.9  p95    96.5
+mag5 TRUE pos: raw resid mean      134.3 rms      170.7 | after LS-TL rms    12.0  p50    6.9  p95    21.3
+   mag5 first 300 s: raw rms       21.8  after LS-TL rms     6.7
+mag4 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  7.1453e+03 ->  6.8998e+03   drms     113.1 m (ins    1.5)   |TL|max     52.1  S    -28.0  [0s]
+W=  100 (   100 s)  err  2.2132e+04 ->  1.4138e+04   drms    2137.0 m (ins    5.7)   |TL|max    544.1  S    -75.5  [1s]
+W=  200 (   200 s)  err  4.4175e+04 ->  1.5694e+04   drms    1569.2 m (ins   11.0)   |TL|max    677.8  S    -48.9  [1s]
+W=  300 (   300 s)  err  6.6200e+04 ->  1.5729e+04   drms      42.1 m (ins   16.4)   |TL|max    651.1  S    -27.7  [1s]
+W=  400 (   400 s)  err  8.8805e+04 ->  1.5913e+04   drms     125.6 m (ins   22.0)   |TL|max    707.6  S    -17.8  [2s]
+W=  500 (   500 s)  err  1.1307e+05 ->  1.6158e+04   drms      40.9 m (ins   27.9)   |TL|max    780.1  S    -12.3  [2s]
+W=  600 (   600 s)  err  1.3781e+05 ->  1.6209e+04   drms      87.4 m (ins   34.5)   |TL|max    795.5  S     -7.3  [3s]
+W=  900 (   900 s)  err  1.9751e+05 ->  1.6393e+04   drms      16.6 m (ins   56.7)   |TL|max    792.5  S     -2.4  [6s]
+mag5 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  7.2353e+01 ->  1.1974e+01   drms      10.8 m (ins    1.5)   |TL|max      8.9  S      6.5  [0s]
+W=  100 (   100 s)  err  2.2030e+02 ->  2.2945e+01   drms      41.8 m (ins    5.7)   |TL|max      7.6  S      4.1  [0s]
+W=  200 (   200 s)  err  3.3045e+02 ->  3.0145e+01   drms      13.4 m (ins   11.0)   |TL|max      8.6  S      2.4  [0s]
+W=  300 (   300 s)  err  3.9817e+02 ->  3.6898e+01   drms       9.6 m (ins   16.4)   |TL|max      9.8  S      1.2  [1s]
+W=  400 (   400 s)  err  5.4139e+02 ->  4.6950e+01   drms       9.4 m (ins   22.0)   |TL|max     26.4  S      0.8  [1s]
+W=  500 (   500 s)  err  7.9506e+02 ->  7.1044e+01   drms      23.9 m (ins   27.9)   |TL|max     64.5  S      0.9  [1s]
+W=  600 (   600 s)  err  2.7849e+03 ->  1.1449e+02   drms       8.0 m (ins   34.5)   |TL|max    122.8  S      1.6  [2s]
+W=  900 (   900 s)  err  9.9823e+03 ->  1.5852e+02   drms      11.4 m (ins   56.7)   |TL|max    154.5  S     -0.3  [6s]
+########## 1003_08 ##########
+assumed sqrt(R) = 12.0 nT   Huber knee = 16.1 nT   nTL = 19
+mag4 INS pos : raw resid mean    -1945.7 rms     1971.2 | after LS-TL rms   100.0  p50   45.8  p95   217.2
+mag4 TRUE pos: raw resid mean    -1945.1 rms     1970.2 | after LS-TL rms    97.0  p50   43.6  p95   211.4
+   mag4 first 300 s: raw rms     1793.8  after LS-TL rms    14.4
+mag5 INS pos : raw resid mean      156.2 rms      183.0 | after LS-TL rms    30.0  p50   13.5  p95    62.3
+mag5 TRUE pos: raw resid mean      156.8 rms      181.8 | after LS-TL rms    13.3  p50    6.2  p95    24.3
+   mag5 first 300 s: raw rms      218.7  after LS-TL rms     5.2
+mag4 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  6.0057e+03 ->  5.7746e+03   drms      19.6 m (ins    2.5)   |TL|max     52.1  S    -27.9  [0s]
+W=  100 (   100 s)  err  2.0187e+04 ->  1.3097e+04   drms     558.0 m (ins    9.1)   |TL|max    547.9  S    -75.9  [1s]
+W=  200 (   200 s)  err  4.0147e+04 ->  1.3446e+04   drms    1069.4 m (ins   19.3)   |TL|max    607.6  S    -45.8  [1s]
+W=  300 (   300 s)  err  6.0049e+04 ->  1.3545e+04   drms      22.5 m (ins   30.3)   |TL|max    594.9  S    -25.3  [1s]
+W=  400 (   400 s)  err  7.9654e+04 ->  1.3692e+04   drms      39.4 m (ins   41.8)   |TL|max    612.5  S    -14.2  [2s]
+W=  500 (   500 s)  err  9.8856e+04 ->  1.3910e+04   drms      43.7 m (ins   53.5)   |TL|max    662.6  S     -8.1  [3s]
+W=  600 (   600 s)  err  1.1777e+05 ->  1.4041e+04   drms      41.5 m (ins   65.3)   |TL|max    728.4  S     -4.4  [3s]
+W=  900 (   900 s)  err  1.9019e+05 ->  1.4397e+04   drms      43.4 m (ins  100.7)   |TL|max    706.4  S     -2.8  [11s]
+mag5 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  7.4282e+02 ->  5.1134e+02   drms      26.2 m (ins    2.5)   |TL|max     51.9  S     27.9  [0s]
+W=  100 (   100 s)  err  2.4612e+03 ->  5.4016e+02   drms      70.2 m (ins    9.1)   |TL|max     64.5  S     20.9  [0s]
+W=  200 (   200 s)  err  4.7019e+03 ->  5.7134e+02   drms      13.6 m (ins   19.3)   |TL|max     68.8  S     12.1  [0s]
+W=  300 (   300 s)  err  7.0637e+03 ->  5.8702e+02   drms      12.4 m (ins   30.3)   |TL|max     73.0  S      6.9  [1s]
+W=  400 (   400 s)  err  9.2189e+03 ->  6.1474e+02   drms      24.0 m (ins   41.8)   |TL|max     78.7  S      3.9  [1s]
+W=  500 (   500 s)  err  1.1587e+04 ->  6.4916e+02   drms      19.7 m (ins   53.5)   |TL|max     89.7  S      2.3  [2s]
+W=  600 (   600 s)  err  1.4257e+04 ->  6.6243e+02   drms      24.1 m (ins   65.3)   |TL|max    103.8  S      1.4  [5s]
+W=  900 (   900 s)  err  1.9998e+04 ->  7.1787e+02   drms      22.0 m (ins  100.7)   |TL|max    182.5  S     -0.2  [5s]
+########## 1006_08 ##########
+assumed sqrt(R) = 12.0 nT   Huber knee = 16.1 nT   nTL = 19
+mag4 INS pos : raw resid mean    -1999.9 rms     2041.2 | after LS-TL rms   116.6  p50   69.4  p95   280.6
+mag4 TRUE pos: raw resid mean    -2000.7 rms     2040.8 | after LS-TL rms   114.4  p50   64.9  p95   283.5
+   mag4 first 300 s: raw rms     2080.6  after LS-TL rms   109.7
+mag5 INS pos : raw resid mean      109.2 rms      165.0 | after LS-TL rms    25.2  p50   13.6  p95    57.2
+mag5 TRUE pos: raw resid mean      108.4 rms      168.4 | after LS-TL rms    23.5  p50   10.4  p95    55.1
+   mag5 first 300 s: raw rms       99.2  after LS-TL rms    21.1
+mag4 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  8.1354e+03 ->  7.9019e+03   drms      81.2 m (ins    5.0)   |TL|max     52.1  S    -27.9  [0s]
+W=  100 (   100 s)  err  2.7413e+04 ->  2.0785e+04   drms     916.9 m (ins   17.9)   |TL|max    462.5  S    -71.9  [0s]
+W=  200 (   200 s)  err  5.0412e+04 ->  2.2035e+04   drms     309.5 m (ins   37.1)   |TL|max    713.0  S    -50.7  [2s]
+W=  300 (   300 s)  err  6.8052e+04 ->  2.3299e+04   drms     915.3 m (ins   54.7)   |TL|max    743.2  S    -26.3  [3s]
+W=  400 (   400 s)  err  8.9323e+04 ->  2.4408e+04   drms     471.8 m (ins   71.2)   |TL|max    721.0  S    -14.3  [3s]
+W=  500 (   500 s)  err  1.1604e+05 ->  2.4628e+04   drms     256.8 m (ins   87.7)   |TL|max    756.4  S     -9.8  [3s]
+W=  600 (   600 s)  err  1.3944e+05 ->  2.5423e+04   drms      80.9 m (ins  103.7)   |TL|max    794.3  S     -5.6  [5s]
+Traceback (most recent call last):
+  File "/mnt/c/Users/cin64/Desktop/MagNav/research/gtsam_poc/diag_window1.py", line 197, in <module>
+    main()
+  File "/mnt/c/Users/cin64/Desktop/MagNav/research/gtsam_poc/diag_window1.py", line 170, in main
+    gtsam.noiseModel.Gaussian.Covariance(QdK[s - 1]),
+                                         ~~~^^^^^^^
+IndexError: index 839 is out of bounds for axis 0 with size 839
+mag5 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  9.0881e+01 ->  7.1129e+01   drms      48.0 m (ins    5.0)   |TL|max      9.9  S      0.9  [0s]
+W=  100 (   100 s)  err  9.7217e+02 ->  2.4262e+02   drms     135.8 m (ins   17.9)   |TL|max     53.2  S      3.0  [0s]
+W=  200 (   200 s)  err  1.3831e+03 ->  3.6609e+02   drms     341.2 m (ins   37.1)   |TL|max     55.7  S      0.2  [1s]
+W=  300 (   300 s)  err  2.4879e+03 ->  5.4356e+02   drms      69.6 m (ins   54.7)   |TL|max    128.4  S      0.0  [1s]
+W=  400 (   400 s)  err  5.1240e+03 ->  6.4954e+02   drms     114.6 m (ins   71.2)   |TL|max    166.4  S      1.2  [1s]
+W=  500 (   500 s)  err  6.8044e+03 ->  7.4375e+02   drms      49.5 m (ins   87.7)   |TL|max    202.3  S     -0.7  [2s]
+W=  600 (   600 s)  err  7.4821e+03 ->  9.0661e+02   drms      36.4 m (ins  103.7)   |TL|max    180.7  S     -0.2  [6s]
+Traceback (most recent call last):
+  File "/mnt/c/Users/cin64/Desktop/MagNav/research/gtsam_poc/diag_window1.py", line 197, in <module>
+    main()
+  File "/mnt/c/Users/cin64/Desktop/MagNav/research/gtsam_poc/diag_window1.py", line 170, in main
+    gtsam.noiseModel.Gaussian.Covariance(QdK[s - 1]),
+                                         ~~~^^^^^^^
+IndexError: index 839 is out of bounds for axis 0 with size 839
+########## 1007_02 ##########
+assumed sqrt(R) = 12.0 nT   Huber knee = 16.1 nT   nTL = 19
+mag4 INS pos : raw resid mean    -1809.6 rms     1821.0 | after LS-TL rms    43.2  p50   30.3  p95    81.3
+mag4 TRUE pos: raw resid mean    -1810.1 rms     1821.5 | after LS-TL rms    38.9  p50   27.8  p95    75.4
+   mag4 first 300 s: raw rms     1902.2  after LS-TL rms    17.8
+mag5 INS pos : raw resid mean      133.0 rms      169.1 | after LS-TL rms    19.2  p50   10.6  p95    39.3
+mag5 TRUE pos: raw resid mean      132.5 rms      167.8 | after LS-TL rms     8.3  p50    5.8  p95    15.8
+   mag5 first 300 s: raw rms       31.2  after LS-TL rms     6.9
+mag4 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  6.2961e+03 ->  6.0367e+03   drms     135.6 m (ins    0.4)   |TL|max     52.1  S    -27.9  [0s]
+W=  100 (   100 s)  err  2.1810e+04 ->  1.3601e+04   drms    2344.2 m (ins    3.8)   |TL|max    466.7  S    -68.2  [0s]
+W=  200 (   200 s)  err  4.2811e+04 ->  1.4934e+04   drms    1675.6 m (ins    9.4)   |TL|max    647.0  S    -47.7  [1s]
+W=  300 (   300 s)  err  6.3646e+04 ->  1.5333e+04   drms     350.4 m (ins   15.1)   |TL|max    606.0  S    -26.4  [2s]
+W=  400 (   400 s)  err  8.3736e+04 ->  1.5378e+04   drms     320.9 m (ins   20.8)   |TL|max    590.5  S    -14.7  [2s]
+W=  500 (   500 s)  err  1.0488e+05 ->  1.5566e+04   drms     255.7 m (ins   26.7)   |TL|max    640.3  S     -9.7  [3s]
+W=  600 (   600 s)  err  1.2879e+05 ->  1.5701e+04   drms     282.1 m (ins   33.4)   |TL|max    716.6  S     -6.9  [4s]
+W=  900 (   900 s)  err  1.8429e+05 ->  1.5827e+04   drms     257.8 m (ins   56.5)   |TL|max    733.0  S     -2.3  [9s]
+mag5 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  7.9591e+01 ->  3.0051e+01   drms      13.4 m (ins    0.4)   |TL|max      4.6  S      8.8  [0s]
+W=  100 (   100 s)  err  3.0489e+02 ->  3.9788e+01   drms      15.1 m (ins    3.8)   |TL|max     12.9  S      6.3  [0s]
+W=  200 (   200 s)  err  5.4897e+02 ->  6.2495e+01   drms      32.4 m (ins    9.4)   |TL|max     19.1  S      3.3  [0s]
+W=  300 (   300 s)  err  6.9313e+02 ->  7.4119e+01   drms      33.5 m (ins   15.1)   |TL|max     17.3  S      1.9  [1s]
+W=  400 (   400 s)  err  9.1121e+02 ->  8.1451e+01   drms      43.6 m (ins   20.8)   |TL|max     17.2  S      1.1  [1s]
+W=  500 (   500 s)  err  1.1443e+03 ->  1.0119e+02   drms      34.4 m (ins   26.7)   |TL|max     30.6  S      0.6  [1s]
+W=  600 (   600 s)  err  2.6000e+03 ->  1.6089e+02   drms      59.8 m (ins   33.4)   |TL|max    118.0  S      1.6  [2s]
+W=  900 (   900 s)  err  9.6441e+03 ->  2.2414e+02   drms      34.0 m (ins   56.5)   |TL|max    154.6  S     -0.1  [6s]
+########## 1007_06 ##########
+assumed sqrt(R) = 12.0 nT   Huber knee = 16.1 nT   nTL = 19
+mag4 INS pos : raw resid mean    -1754.8 rms     1770.8 | after LS-TL rms    96.7  p50   39.5  p95   192.8
+mag4 TRUE pos: raw resid mean    -1757.2 rms     1773.1 | after LS-TL rms    80.3  p50   33.7  p95   167.5
+   mag4 first 300 s: raw rms     1728.8  after LS-TL rms    29.1
+mag5 INS pos : raw resid mean      156.5 rms      196.9 | after LS-TL rms    52.8  p50   17.2  p95   109.5
+mag5 TRUE pos: raw resid mean      154.1 rms      187.7 | after LS-TL rms    17.1  p50    5.7  p95    20.8
+   mag5 first 300 s: raw rms      314.4  after LS-TL rms     4.5
+mag4 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  5.7275e+03 ->  5.4944e+03   drms      25.8 m (ins    1.4)   |TL|max     52.1  S    -27.9  [0s]
+W=  100 (   100 s)  err  1.9081e+04 ->  1.2017e+04   drms     676.2 m (ins    5.6)   |TL|max    511.1  S    -72.6  [0s]
+W=  200 (   200 s)  err  3.8618e+04 ->  1.2225e+04   drms    1661.9 m (ins   11.8)   |TL|max    554.2  S    -43.2  [1s]
+W=  300 (   300 s)  err  5.7842e+04 ->  1.2656e+04   drms    1420.4 m (ins   18.6)   |TL|max    548.5  S    -24.4  [1s]
+W=  400 (   400 s)  err  7.6868e+04 ->  1.2796e+04   drms    1109.0 m (ins   25.3)   |TL|max    581.9  S    -14.3  [2s]
+W=  500 (   500 s)  err  9.5441e+04 ->  1.2966e+04   drms      57.4 m (ins   32.2)   |TL|max    613.2  S     -8.3  [3s]
+W=  600 (   600 s)  err  1.1337e+05 ->  1.3010e+04   drms      48.3 m (ins   39.0)   |TL|max    616.7  S     -4.3  [4s]
+W=  900 (   900 s)  err  1.6780e+05 ->  1.3195e+04   drms      27.2 m (ins   57.9)   |TL|max    661.1  S     -0.7  [7s]
+mag5 K=10: batch optimum of the first W decimated states (1 state = 1 s)
+W=   30 (    30 s)  err  1.0494e+03 ->  8.1637e+02   drms      22.6 m (ins    1.4)   |TL|max     52.0  S     27.9  [0s]
+W=  100 (   100 s)  err  3.5300e+03 ->  8.9703e+02   drms      78.0 m (ins    5.6)   |TL|max     94.5  S     25.7  [0s]
+W=  200 (   200 s)  err  6.9931e+03 ->  9.0787e+02   drms      89.9 m (ins   11.8)   |TL|max     93.3  S     14.7  [1s]
+W=  300 (   300 s)  err  1.0291e+04 ->  9.2637e+02   drms      20.4 m (ins   18.6)   |TL|max    100.7  S      8.7  [1s]
+W=  400 (   400 s)  err  1.3685e+04 ->  9.4789e+02   drms      16.9 m (ins   25.3)   |TL|max    100.7  S      5.0  [1s]
+W=  500 (   500 s)  err  1.6578e+04 ->  9.6050e+02   drms      18.9 m (ins   32.2)   |TL|max     89.3  S      2.4  [2s]
+W=  600 (   600 s)  err  1.9270e+04 ->  9.7011e+02   drms      18.6 m (ins   39.0)   |TL|max    105.0  S      1.5  [3s]
+W=  900 (   900 s)  err  2.8300e+04 ->  1.0190e+03   drms      11.5 m (ins   57.9)   |TL|max    149.4  S      0.3  [8s]
+KNEE_SWEEP_DONE

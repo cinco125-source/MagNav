@@ -1,0 +1,25 @@
+--- window 1007_06 mag4 cold ---
+warm=120s  gtsam_window_drms=5187.09 m  ins_drms=302.55 m
+warm=300s  gtsam_window_drms=5277.44 m  ins_drms=307.98 m
+warm=600s  gtsam_window_drms=5429.85 m  ins_drms=317.50 m
+julia_ref nan
+N 52401 nx 37 nTL 19
+--- window 1007_06 mag4 bootstrapped ---
+warm=120s  gtsam_window_drms=33.74 m  ins_drms=302.55 m
+warm=300s  gtsam_window_drms=30.84 m  ins_drms=307.98 m
+warm=600s  gtsam_window_drms=30.84 m  ins_drms=317.50 m
+julia_ref nan
+N 52401 nx 37 nTL 19
+--- window 1003_02 mag4 cold ---
+warm=120s  gtsam_window_drms=43.89 m  ins_drms=116.25 m
+warm=300s  gtsam_window_drms=43.12 m  ins_drms=119.12 m
+warm=600s  gtsam_window_drms=36.61 m  ins_drms=123.81 m
+julia_ref nan
+N 37841 nx 37 nTL 19
+--- window 1003_02 mag4 bootstrapped ---
+warm=120s  gtsam_window_drms=43.73 m  ins_drms=116.25 m
+warm=300s  gtsam_window_drms=43.32 m  ins_drms=119.12 m
+warm=600s  gtsam_window_drms=36.82 m  ins_drms=123.81 m
+julia_ref nan
+N 37841 nx 37 nTL 19
+WINDOW_BOOT_DONE
