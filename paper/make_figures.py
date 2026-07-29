@@ -21,18 +21,21 @@ os.makedirs(OUT, exist_ok=True)
 
 def fig_breadth():
     """Table IV as a grouped log-scale bar chart: two causal baselines
-    (weak online-TL EKF, strong EKF+TL+NN) vs the NN-free FGO window. The
+    (weak online-TL EKF, strong EKF+TL+NN) vs the NN-free per-epoch FGO. The
     marginalized-particle-filter baseline (MPF+TL) diverges past 10 km on every
-    counted case, so it is reported in the table but not plotted here."""
+    counted case, so it is reported in the table but not plotted here; the
+    sliding window is the intermediate lag and stays in the table too."""
     C_WEAK = "#9aa4b2"   # weak baseline (online-TL EKF), muted gray
     rows = [  # the four counted lines: FF (Flt1007) then SV (Flt1003).
         # The calibration line 1006.08 is set aside (see text) and not shown.
-        # Numbers match Table IV / research/fgo_breadth_results.csv (committed CI run).
-        # (label, EKF-online, EKF+TL+NN, FGO-win); None->div, "err"->off-map
-        ("1007.06  M4  (FF)", 46.7, 48.8, 30.7), ("1007.06  M5  (FF)", 17.8, 18.3, 13.1),
-        ("1007.02  M4  (FF)", None, 130.0, 39.9), ("1007.02  M5  (FF)", 31.6, 30.4, 15.4),
-        ("1003.02  M4  (SV)", None, 101.0, 43.1), ("1003.02  M5  (SV)", 28.1, 29.5, 21.1),
-        ("1003.08  M4  (SV)", "err", 46.6, 28.0), ("1003.08  M5  (SV)", 21.1, 20.7, 13.1),
+        # EKF columns match research/fgo_breadth_results.csv (committed CI run);
+        # the FGO column is the per-epoch smoother at sigma_beta = 100, 300 s
+        # lag, from research/gtsam_poc/gtsam_poc_result_ps100_*.txt.
+        # (label, EKF-online, EKF+TL+NN, FGO per-epoch); None->div, "err"->off-map
+        ("1007.06  M4  (FF)", 46.7, 48.8, 24.2), ("1007.06  M5  (FF)", 17.8, 18.3, 11.5),
+        ("1007.02  M4  (FF)", None, 130.0, 28.4), ("1007.02  M5  (FF)", 31.6, 30.4, 15.8),
+        ("1003.02  M4  (SV)", None, 101.0, 19.6), ("1003.02  M5  (SV)", 28.1, 29.5, 12.0),
+        ("1003.08  M4  (SV)", "err", 46.6, 25.0), ("1003.08  M5  (SV)", 21.1, 20.7, 10.5),
     ]
     labels = [r[0] for r in rows]
     y = np.arange(len(rows))[::-1]
@@ -65,7 +68,7 @@ def fig_breadth():
     # legend below the axis so it never sits on the (long) 1006.08 bars
     ax.legend(handles=[Patch(facecolor=C_WEAK, label="EKF, online TL (weak)"),
                        Patch(facecolor=C_BASE1, label="EKF+TL+NN (strong)"),
-                       Patch(facecolor=C_PROPOSED, label="FGO window (proposed)")],
+                       Patch(facecolor=C_PROPOSED, label="FGO per-epoch (proposed)")],
               loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=3,
               frameon=False, fontsize=7, handlelength=1.3, columnspacing=1.2,
               handletextpad=0.5)
@@ -76,10 +79,10 @@ def fig_breadth():
 
 def fig_coldstart():
     """Line 1007.06 head-to-head vs the reimplemented EKF+TL+NN (our runs only)."""
-    methods = ["FGO\nbatch", "FGO\nwin 5", "FGO win 5\n+Huber",
+    methods = ["FGO\nbatch", "FGO win 5\n+Huber", "FGO per-epoch\n300 s lag",
                "EKF+TL+NN\n(reimpl.)"]
-    m4 = [123.7, 33.0, 30.7, 48.8]
-    m5 = [68.1, 13.5, 13.1, 18.3]
+    m4 = [123.7, 30.7, 24.2, 48.8]
+    m5 = [68.1, 13.1, 11.5, 18.3]
     ours = [True, True, True, False]
     x = np.arange(len(methods)); w = 0.38
     fig, ax = plt.subplots(figsize=(COL_W, 2.4))

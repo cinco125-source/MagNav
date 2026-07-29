@@ -73,7 +73,8 @@ state against latency. A linear condition states when position can be separated
 from compensation and predicts a cold-start transient that the experiments
 decompose into a warm-prior part and a map-observability part. Across cold-start
 lines from two flights and two maps, the smoother is the most accurate of four
-estimators on every full-length case (\num{8} of \num{8}): it stays bounded where an
+estimators on every full-length case (\num{8} of \num{8}), and on six of the eight
+with its look-ahead removed entirely: it stays bounded where an
 online-TL EKF diverges and a marginalized particle filter is erratic, and, carrying no
 learned component of its own, it beats a tuned EKF+TL+NN baseline. At the shortest
 lag the compensation prior decides the cold start. One scalar standard deviation
@@ -1127,11 +1128,15 @@ single coefficient vector over the whole line; it underfits the time-varying
 interference and degrades to \num{123.7}/\SI{68.1}{\meter}. Allowing the
 compensation to adapt with a \SI{5}{\minute} window recovers it to
 \num{33.0}/\SI{13.5}{\meter}, and the Huber kernel further trims transient outliers
-to \num{30.7}/\SI{13.1}{\meter}. Our online EKF+TL+NN baseline reaches
-\num{48.8}/\SI{18.3}{\meter}. The window smoother beats
-the NN-augmented filter on both sensors, \SI{18.1}{\meter} on Mag~4 and
-\SI{5.2}{\meter} on Mag~5, without any neural network, using only the linear TL
-basis carried as graph variables. All compared numbers are our own runs under one
+to \num{30.7}/\SI{13.1}{\meter}. Taking the lag to its per-epoch limit, with the
+compensation prior of Section~\ref{sec:coldprior}, gives
+\num{24.2}/\SI{11.5}{\meter} committed at a \SI{300}{\second} lag and
+\num{42.7}/\SI{16.0}{\meter} causally, with no look-ahead at all. Our online
+EKF+TL+NN baseline reaches \num{48.8}/\SI{18.3}{\meter}. The per-epoch smoother
+beats the NN-augmented filter on both sensors, \SI{24.6}{\meter} on Mag~4 and
+\SI{6.8}{\meter} on Mag~5, without any neural network, using only the linear TL
+basis carried as graph variables; the comparison holds even when the smoother is
+read causally, where it is ahead by \SI{6.1}{} and \SI{2.3}{\meter}. All compared numbers are our own runs under one
 protocol; 1007.06 is the line on which the baseline tuning is anchored, and the
 same baseline carries to the other lines in the breadth study
 (Table~\ref{tab:breadth}). We attribute the
@@ -1166,7 +1171,9 @@ Method (no NN unless noted) & Mag 4 & Mag 5 \\
 \midrule
 FGO-online, static batch TL & 123.7 & 68.1 \\
 FGO-online, window \SI{5}{\minute} & 33.0 & 13.5 \\
-\textbf{FGO-online, window \SI{5}{\minute} + Huber} & \textbf{30.7} & \textbf{13.1} \\
+FGO-online, window \SI{5}{\minute} + Huber & 30.7 & 13.1 \\
+\textbf{FGO-online, per-epoch, \SI{300}{\second} lag} & \textbf{24.2} & \textbf{11.5} \\
+\quad same, causal (zero look-ahead) & 42.7 & 16.0 \\
 \midrule
 EKF+TL+NN, online~\cite{gnadt2022,hager2026} & 48.8 & 18.3 \\
 \bottomrule
@@ -1176,8 +1183,9 @@ EKF+TL+NN, online~\cite{gnadt2022,hager2026} & 48.8 & 18.3 \\
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.98\columnwidth]{figs/fig_coldstart.pdf}
-\caption{Cold start on line 1007.06: NN-free fixed-lag window (left) versus the
-online EKF+TL+NN baseline (right).}
+\caption{Cold start on line 1007.06: the NN-free factor graph across the lag
+spectrum (left, per-epoch smoother highlighted) versus the online EKF+TL+NN
+baseline (right).}
 \label{fig:coldstart}
 \end{figure}
 
@@ -1212,11 +1220,14 @@ plain online-TL EKF is fragile: on the noisy Mag~4 it diverges from the cold sta
 to tens of kilometres on two lines and runs off the map on a third. The neural
 network is what fixes this: the EKF+TL+NN stays finite on all eight cases,
 confirming that its residual network is what buys cold-start robustness for the
-causal filter. The window smoother matches that robustness without any neural
+causal filter. The per-epoch smoother matches that robustness without any neural
 network (it is bounded on all eight) and improves on accuracy: across the four
 full-length lines (\SIrange{63}{87}{\minute}, eight mag-cases) it is the best of
 the four estimators on all eight, beating the NN-augmented filter by
-\SIrange{5}{90}{\meter} (Fig.~\ref{fig:breadth}); the particle filter, reported
+\SIrange{6.8}{101.6}{\meter} (Fig.~\ref{fig:breadth}); read causally, with no
+look-ahead at all, it is still ahead on six of the eight, the exceptions being
+1007.02 Mag~5 (\num{33.1} against \SI{30.4}{\meter}) and 1003.08 Mag~4
+(\num{48.9} against \SI{46.6}{\meter}); the particle filter, reported
 separately, diverges on these cases.
 
 The marginalized particle filter is reported separately because it resists a
@@ -1264,27 +1275,35 @@ and do not affect the best-of-three ordering.
 \begin{table}[t]
 \caption{Breadth: cold-start cabin magnetometers, DRMS [m]. Purpose FF = free-flight
 (Flt1007), SV = survey (Flt1003); ``div.''\ $>\SI{10}{\kilo\meter}$, ``err.''\ = off
-map; bold = best of three. The marginalized particle filter (MPF+TL) is treated
-separately in the text: even at its most favorable per-case tuning it is erratic and
-never competitive with the window. Calibration line 1006.08 set aside (see text).}
+map. The proposed estimator is the per-epoch smoother of
+Section~\ref{sec:incremental} at $\sigma_{\beta}=100$, reported twice: its causal
+output, which is the like-for-like comparison against the two causal filters, and
+its committed output at a \SI{300}{\second} lag. The sliding window is kept as the
+intermediate point of the lag spectrum, at its own \SI{90}{\second} commit
+latency. Bold marks the best causal estimator and the best overall. The
+marginalized particle filter (MPF+TL) is treated separately in the text: even at
+its most favorable per-case tuning it is erratic and never competitive.
+Calibration line 1006.08 set aside (see text).}
 \label{tab:breadth}
 \centering
 \setlength{\tabcolsep}{3pt}
-\begin{tabular}{llccc rrr}
+\begin{tabular}{llccc rr rr r}
 \toprule
- & & & alt & & EKF & EKF+ & FGO \\
-Line & Purp. & Map & [km] & Mag & online & TL+NN & win \\
+ & & & alt & & EKF & EKF+ & \multicolumn{2}{c}{FGO per-epoch} & FGO \\
+\cmidrule(lr){8-9}
+Line & Purp. & Map & [km] & Mag & online & TL+NN & causal & \SI{300}{\second} & win \\
 \midrule
-1007.06 & FF & R & 0.4 & 4 & 46.7 & 48.8 & \textbf{30.7} \\
-1007.06 & FF & R & 0.4 & 5 & 17.8 & 18.3 & \textbf{13.1} \\
-1007.02 & FF & E & 0.8 & 4 & div. & 130.0 & \textbf{39.9} \\
-1007.02 & FF & E & 0.8 & 5 & 31.6 & 30.4 & \textbf{15.4} \\
-1003.02 & SV & E & 0.4 & 4 & div. & 101.0 & \textbf{43.1} \\
-1003.02 & SV & E & 0.4 & 5 & 28.1 & 29.5 & \textbf{21.1} \\
-1003.08 & SV & R & 0.4 & 4 & err. & 46.6 & \textbf{28.0} \\
-1003.08 & SV & R & 0.4 & 5 & 21.1 & 20.7 & \textbf{13.1} \\
+1007.06 & FF & R & 0.4 & 4 & 46.7 & 48.8 & \textbf{42.7} & \textbf{24.2} & 30.7 \\
+1007.06 & FF & R & 0.4 & 5 & 17.8 & 18.3 & \textbf{16.0} & \textbf{11.5} & 13.1 \\
+1007.02 & FF & E & 0.8 & 4 & div. & 130.0 & \textbf{74.3} & \textbf{28.4} & 39.9 \\
+1007.02 & FF & E & 0.8 & 5 & 31.6 & 30.4 & 33.1 & \textbf{15.8} & 15.4 \\
+1003.02 & SV & E & 0.4 & 4 & div. & 101.0 & \textbf{58.2} & \textbf{19.6} & 43.1 \\
+1003.02 & SV & E & 0.4 & 5 & 28.1 & 29.5 & \textbf{21.9} & \textbf{12.0} & 21.1 \\
+1003.08 & SV & R & 0.4 & 4 & err. & \textbf{46.6} & 48.9 & \textbf{25.0} & 28.0 \\
+1003.08 & SV & R & 0.4 & 5 & 21.1 & 20.7 & \textbf{19.2} & \textbf{10.5} & 13.1 \\
 \midrule
-\multicolumn{5}{l}{FGO best (all counted lines)} & & & \textbf{8 / 8}\\
+\multicolumn{5}{l}{best of the causal estimators} & & & \textbf{6 / 8} & & \\
+\multicolumn{5}{l}{best overall} & & & & \textbf{8 / 8} & \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1293,8 +1312,10 @@ Line & Purp. & Map & [km] & Mag & online & TL+NN & win \\
 \centering
 \includegraphics[width=0.92\columnwidth]{figs/fig_breadth.pdf}
 \caption{Breadth study (Table~\ref{tab:breadth}), log DRMS axis: online-TL EKF
-(gray), EKF+TL+NN (red), and the NN-free FGO window (blue). The MPF+TL particle
-filter is erratic at cold start (see text) and is omitted.}
+(gray), EKF+TL+NN (red), and the NN-free per-epoch FGO at a \SI{300}{\second} lag
+(blue). The sliding window is the intermediate lag and is tabulated rather than
+plotted; the MPF+TL particle filter is erratic at cold start (see text) and is
+omitted.}
 \label{fig:breadth}
 \end{figure}
 
@@ -1323,10 +1344,10 @@ $2.6$--$3.6\times$ on current-switching activity, with strobe switching alone
 correlating at $0.55$ with the residual magnitude on Mag~5, confirming that the
 kernel attenuates precisely the transients the linear states cannot track. These
 are instantaneous linear regressions, hence lower bounds on the current
-contribution. What the window adds is that it reaches the same bounded
+contribution. What the factor graph adds is that it reaches the same bounded
 regime without the network, its online-training machinery, or the verification
-burden that comes with it. The second is about accuracy, where the window is the
-best of the four on all eight full-length cases; under a paired sign test on the
+burden that comes with it. The second is about accuracy, where the per-epoch
+smoother is the best of the four on all eight full-length cases; under a paired sign test on the
 per-case DRMS the one-sided probability of this count arising by chance is
 $2^{-8}\approx0.004$. This margin is real, but it should
 be read with care, because our EKF+TL+NN is a tuned reference implementation and part of its
@@ -1835,7 +1856,7 @@ realized across a lag spectrum, from a full-line batch that fixes the offline
 accuracy bound, through a fixed-lag window, to a per-epoch incremental smoother that
 runs a \SI{300}{\second} lag in real time at
 \SIrange{6.0}{9.0}{\milli\second} per state. On real SGL~2020 data the
-estimator stays bounded from a cold start on all eight full-length
+per-epoch estimator stays bounded from a cold start on all eight full-length
 cabin-magnetometer cases, where the plain online-TL EKF diverges and a marginalized
 particle filter is erratic, and it is more accurate on every such case than the
 tuned online EKF+TL+NN baseline, with no neural network and no calibration flight. A Monte-Carlo
