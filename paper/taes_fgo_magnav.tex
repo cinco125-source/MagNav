@@ -1619,7 +1619,7 @@ establish is that the estimate left the map, not how far.
 \includegraphics[width=\columnwidth]{figs/fig_prior.pdf}
 \caption{Per-epoch smoother on line 1007.06 Mag~4 at a \SI{300}{\second} lag. At
 the nominal compensation prior the estimate leaves the map in the first minutes
-and never returns; with the compensation prior raised to $\sigma_{eta}=100$, and nothing else
+and never returns; with the compensation prior raised to $\sigma_{\beta}=100$, and nothing else
 changed, it stays an order of magnitude below free-inertial drift for the whole
 line.}
 \label{fig:prior}
@@ -1676,7 +1676,7 @@ selection, and we do not claim that the accurate solution can be identified
 online by comparing objective values.
 
 \subsection{Real-time cost}\label{sec:realtime2}
-With the compensation prior raised to $\sigma_{eta}=100$, the per-epoch smoother runs
+With the compensation prior raised to $\sigma_{\beta}=100$, the per-epoch smoother runs
 the full breadth at a \SI{300}{\second} lag. Graph states are placed at
 \SI{1}{\hertz} rather than at the \SI{10}{\hertz} sample rate, with the
 transition compounded and the process noise accumulated exactly over the ten
