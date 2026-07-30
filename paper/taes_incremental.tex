@@ -147,7 +147,12 @@ magnetic signature can be removed in flight.
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.98\textwidth]{figs/fig_concept.pdf}
-\caption{The cold-start problem on line 1007.06. (a)~Anomaly map and the flown track. (b)~Measured scalar minus the map value along the track (the uncompensated aircraft field, Mag~4) against the map signal itself: the interference exceeds the signal's full range.}
+\caption{Concept of the study. An aircraft with an uncalibrated magnetic
+signature flies over the anomaly map with no satellite aiding; the one scalar
+reading mixes the map value with the aircraft field, coupling position and
+compensation. A joint factor graph, solved incrementally at a fixed lag,
+estimates both and emits a causal answer now and a committed answer revised by
+the lag.}
 \label{fig:concept}
 \end{figure*}
 
@@ -439,7 +444,17 @@ along the flown track varies with a standard deviation of
 Against it, the uncompensated field at a cabin-mounted magnetometer is
 \SIrange{1729}{2081}{\nano\tesla} root-mean-square over the first
 \SI{300}{\second} of flight. The interference is not a perturbation of the
-signal, it is larger than the signal's full range.
+signal, it is larger than the signal's full range, and Fig.~\ref{fig:signal}
+shows the two side by side over the representative line.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figs/fig_signal.pdf}
+\caption{Line 1007.06 Mag~4: the uncompensated aircraft field against the map
+signal along the same track. The quantity to be removed exceeds the full range
+of the quantity to be matched.}
+\label{fig:signal}
+\end{figure}
 
 Compensation is therefore not a refinement but a precondition. The classical
 remedy is a calibration flight: a dedicated sequence of maneuvers at high
@@ -535,11 +550,13 @@ factor constrains one or two states, never the whole trajectory at once.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figs/fig_fgbasic.pdf}
-\caption{Factor graph of a short trajectory. Circles are variable nodes, one per
-epoch; squares are factor nodes, each carrying one piece of information. The
-unary prior anchors the first state, binary process factors link consecutive
-states, and a unary measurement factor hangs from every state. A factor depends
-only on the variables it is joined to, which is what makes the problem sparse.}
+\caption{The graph the smoother maintains, exactly as implemented. Circles are
+the joint states at the \SI{1}{\hertz} cadence; binary factors carry the
+transition and process noise compounded over the $K$ intervening samples; a
+robust map factor hangs from every state; everything older than the lag is
+summarized by the marginal prior on the oldest retained state. The causal
+output is read at the newest state, the committed output where states leave
+the lag.}
 \label{fig:fgbasic}
 \end{figure}
 
@@ -1043,7 +1060,10 @@ for the NN-augmented EKF where the linear basis already suffices.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figs/fig_track.pdf}
-\caption{Line 1007.06: committed estimate against truth on the anomaly map.}
+\caption{Line 1007.06 Mag~4. (a)~Flown line on the map; at this scale every
+bounded method overlays the truth. (b)~The same paths in the north/east error
+plane about the true position, after the warm-up: the committed estimate stays
+tightest around the origin while the INS spirals out.}
 \label{fig:track}
 \end{figure}
 
