@@ -147,10 +147,7 @@ magnetic signature can be removed in flight.
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.98\textwidth]{figs/fig_concept.pdf}
-\caption{Concept of the study: (a)~one scalar reading couples aircraft position and
-aircraft-field compensation; (b)~a fixed-lag factor graph estimates both jointly,
-letting later measurements correct earlier states; (c)~bounded cold-start
-navigation, with no neural network.}
+\caption{The cold-start problem on line 1007.06. (a)~Anomaly map and the flown track. (b)~Measured scalar minus the map value along the track (the uncompensated aircraft field, Mag~4) against the map signal itself: the interference exceeds the signal's full range.}
 \label{fig:concept}
 \end{figure*}
 
@@ -898,6 +895,52 @@ and every other element of the configuration, and finds metre-level effects.
 \section{Experiments and Results}\label{sec:results}
 
 \subsection{Dataset, maps, and protocol}\label{sec:protocol}
+
+\begin{table}[t]
+\caption{Flight lines. FF = free flight, SV = survey; maps R = Renfrew, E = Eastern; INS = free-inertial drift [m].}
+\label{tab:lines}
+\centering
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llcccr}
+\toprule
+Line & Purp. & Map & alt.\ [m] & dur.\ [min] & INS [m] \\
+\midrule
+1003.02 & SV & E & 401 & 63.1 & 123.8 \\
+1003.08 & SV & R & 400 & 72.4 & 271.9 \\
+1007.02 & FF & E & 799 & 64.3 & 120.7 \\
+1007.06 & FF & R & 402 & 87.3 & 317.5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\begin{table}[t]
+\caption{Estimator settings, common to every line and both magnetometers.}
+\label{tab:params}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llr@{}}
+\toprule
+Group & Parameter & Value \\
+\midrule
+Measurement & noise std.\ $\sqrt{R}$ & \SI{12}{\nano\tesla} \\
+ & robust kernel, Huber $\delta$ & 1.345 \\
+FOGM $S$ & $(\sigma_S,\tau)$ & \SI{3}{\nano\tesla}, \SI{180}{\second} \\
+Initial $\mathbf{P}_0^{x}$ & pos.\ / alt.\ std. & \SI{0.1}{} / \SI{1.0}{\meter} \\
+ & velocity std.\ (per axis) & \SI{1.0}{\meter\per\second} \\
+Compensation & basis (App.~\ref{app:tl}) & P{+}I{+}E{+}bias ($m=19$) \\
+ & prior $\mathbf{P}_0^{\beta}=\mathbf{I}\sigma_{\beta}^2$ & $\sigma_{\beta}=100$ \\
+ & walk $\mathbf{Q}^{\beta}$ & $\mathbf{I}(1.0)^2\Delta t$ \\
+Smoother & lag $L$ & \SI{300}{\second} \\
+ & state interval $\Delta$ & \SI{1}{\second} ($K=10$) \\
+ & solver & iSAM2, QR \\
+ & process-noise floor & $10^{-20}\mathbf{I}$ \\
+Evaluation & DRMS warm-up & \SI{600}{\second} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 All experiments use the public SGL~2020 challenge dataset~\cite{gnadt2020}: a
 Cessna~208B instrumented with a flight-grade INS, several onboard scalar
 magnetometers (a compensated tail-stinger sensor and uncompensated cabin sensors
@@ -909,9 +952,9 @@ lines are the closest to a navigation task and are what prior
 work~\cite{gnadt2020,canciani2017,hager2026} reports; 1007.06 is our
 representative line for that reason. Flt1003 is a crustal-field survey flight,
 and its lines 1003.02 and 1003.08 are straighter than the free-flight legs.
-Flt1006 is a calibration-manoeuvre flight; its single short line is listed for
-completeness but not counted, since at \SI{14}{\minute} the warm-up leaves too
-little line to score. The map-building flights (Flt1004--1005) are not used.
+Flt1006 is a calibration-manoeuvre flight and, with the map-building flights
+(Flt1004--1005), is not used: its single \SI{14}{\minute} line leaves too little
+to score after the warm-up.
 Two honest points remain. None of these lines is a dedicated long,
 straight-and-level operational transit; the free-flight and survey legs carry
 attitude variation, which stresses the compensation but also aids its
@@ -996,6 +1039,41 @@ Mag~5 by one to two orders of magnitude across lines, the same direction seen
 for the NN-augmented EKF where the linear basis already suffices.
 
 \subsection{Representative line}\label{sec:repline}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figs/fig_track.pdf}
+\caption{Line 1007.06: committed estimate against truth on the anomaly map.}
+\label{fig:track}
+\end{figure}
+
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figs/fig_comp.pdf}
+\caption{What the compensation chain learned (Mag~4): the estimated $\mathbf{A}^{\top}\boldsymbol{\beta}+S$ overlays the interference reference; the residual is tens of nanotesla.}
+\label{fig:comp}
+\end{figure}
+
+
+\begin{table}[t]
+\caption{Line 1007.06 cold start: horizontal DRMS [m] after a \SI{600}{\second} warm-up. The causal output uses no look-ahead; the committed output lags by \SI{300}{\second}.}
+\label{tab:1007}
+\centering
+\begin{tabular}{lrrc}
+\toprule
+Estimator & Mag 4 & Mag 5 & look-ahead \\
+\midrule
+EKF, online TL & 46.7 & 17.8 & none \\
+EKF{+}TL{+}NN~\cite{gnadt2022} & 48.8 & 18.3 & none \\
+MPF{+}TL (best tuning) & 1227.0 & 75.1 & none \\
+\midrule
+\textbf{Proposed, causal} & \textbf{42.7} & \textbf{16.0} & none \\
+\textbf{Proposed, committed} & \textbf{24.2} & \textbf{11.5} & \SI{300}{\second} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 Table~\ref{tab:1007} reports the longest line, 1007.06 (\SI{87}{\minute}), on
 both cabin magnetometers, with the free-inertial drift at \SI{317.5}{\meter}.
 Read causally, with no look-ahead at all, the proposed estimator reaches
@@ -1011,7 +1089,8 @@ cannot, yet carrying the linear basis in a smoother beats carrying the linear
 basis plus a network in a filter, on both sensors, without any learned
 component. Allowed its \SI{300}{\second} lag, the committed estimate roughly
 halves the causal error, to \num{24.2}/\SI{11.5}{\meter}. Fig.~\ref{fig:errhist}
-shows the error history.
+shows the error history, Fig.~\ref{fig:track} the recovered track on the map,
+and Fig.~\ref{fig:comp} the compensation the graph learned while recovering it.
 
 \begin{figure}[t]
 \centering
@@ -1024,9 +1103,44 @@ frozen.}
 \end{figure}
 
 \subsection{Breadth}\label{sec:breadth}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figs/fig_breadthbar.pdf}
+\caption{Breadth comparison of Table~\ref{tab:breadth} on a log axis.}
+\label{fig:breadthbar}
+\end{figure}
+
+
+\begin{table}[t]
+\caption{Breadth: DRMS [m] after a \SI{600}{\second} warm-up. ``div.''\ $>\SI{10}{\kilo\meter}$, ``err.''\ leaves the map; bold = best causal entry.}
+\label{tab:breadth}
+\centering
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{llrrr rr}
+\toprule
+ & & EKF & EKF{+} & MPF{+} & \multicolumn{2}{c}{Proposed} \\
+\cmidrule(l){6-7}
+Line & Mag & online & TL{+}NN & TL & causal & \SI{300}{\second} \\
+\midrule
+1007.06 & 4 & 46.7 & 48.8 & 1227.0 & \textbf{42.7} & 24.2 \\
+1007.06 & 5 & 17.8 & 18.3 & 75.1 & \textbf{16.0} & 11.5 \\
+1007.02 & 4 & div. & 130.0 & 1311.5 & \textbf{74.3} & 28.4 \\
+1007.02 & 5 & 31.6 & \textbf{30.4} & 2247.3 & 33.1 & 15.8 \\
+1003.02 & 4 & div. & 101.0 & 482.6 & \textbf{58.2} & 19.6 \\
+1003.02 & 5 & 28.1 & 29.5 & 40.9 & \textbf{21.9} & 12.0 \\
+1003.08 & 4 & err. & \textbf{46.6} & 2898.7 & 48.9 & 25.0 \\
+1003.08 & 5 & 21.1 & 20.7 & 77.1 & \textbf{19.2} & 10.5 \\
+\midrule
+\multicolumn{5}{l}{best causal} & \textbf{6 / 8} & \\
+\multicolumn{5}{l}{best overall} & & \textbf{8 / 8} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 Table~\ref{tab:breadth} repeats the comparison on every counted line, spanning
 two flights, two maps, two altitude regimes, and both cabin magnetometers, with
-nothing re-tuned. The committed estimate is the most accurate entry on all
+nothing re-tuned (Fig.~\ref{fig:breadthbar}). The committed estimate is the most accurate entry on all
 eight counted cases, between \SI{10.5}{} and \SI{28.4}{\meter}, and between
 \num{1.5} and \num{5.2} times better than the strongest causal baseline on the
 same case. Read causally, the proposed estimator is the best causal method on
@@ -1038,12 +1152,42 @@ estimator stay bounded; the mechanism is the one
 Section~\ref{sec:sysmodel} anticipated, since the filter must explain the
 uncompensated field with whatever state is cheapest at each instant, while the
 smoother may revise its attribution for \SI{300}{\second} before committing.
-The set-aside calibration line 1006.08 behaves as expected from its length and
-content, and no conclusion is drawn from it.
 
 \subsection{Lag design}\label{sec:lagdesign}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figs/fig_lagsweep.pdf}
+\caption{Committed DRMS against lag (Table~\ref{tab:lag}); open markers show the lag-independent causal error.}
+\label{fig:lagsweep}
+\end{figure}
+
+
+\begin{table}[t]
+\caption{Lag sweep: committed DRMS [m], causal at $L=\SI{300}{\second}$. The causal output varies by under a metre across the sweep.}
+\label{tab:lag}
+\centering
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{ll rrrrr r}
+\toprule
+ & & \multicolumn{5}{c}{lag $L$ [s], committed} & causal \\
+\cmidrule(lr){3-7}
+Line & Mag & 30 & 60 & 150 & 300 & 600 & \\
+\midrule
+1007.06 & 4 & 40.2 & 37.1 & 29.7 & 24.2 & 21.9 & 42.7 \\
+1007.06 & 5 & 15.1 & 14.3 & 12.6 & 11.5 & 11.4 & 16.0 \\
+1007.02 & 4 & 70.2 & 60.4 & 43.2 & 28.4 & 25.8 & 74.3 \\
+1007.02 & 5 & 27.9 & 24.6 & 18.3 & 15.8 & 14.2 & 33.1 \\
+1003.02 & 4 & 48.9 & 43.3 & 28.8 & 19.6 & 18.2 & 58.2 \\
+1003.02 & 5 & 20.1 & 18.3 & 14.9 & 12.0 & 10.6 & 21.9 \\
+1003.08 & 4 & 50.3 & 41.5 & 31.5 & 25.0 & 24.6 & 48.9 \\
+1003.08 & 5 & 17.4 & 15.8 & 12.5 & 10.5 & 10.7 & 19.2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 The lag is the estimator's single design variable, and Table~\ref{tab:lag}
-sweeps it from \SI{30}{} to \SI{600}{\second} on the four counted lines. Two
+sweeps it from \SI{30}{} to \SI{600}{\second} on the four counted lines (Fig.~\ref{fig:lagsweep}). Two
 regularities carry the design guidance. First, the committed error improves
 with lag on every case, steeply up to about \SI{300}{\second} and weakly after
 it: lengthening the lag from \SI{300}{} to \SI{600}{\second}, a
@@ -1061,6 +1205,34 @@ smoothing gain, and a designer who cannot afford latency loses exactly the gap
 between the two columns and nothing else.
 
 \subsection{Ablation}\label{sec:ablation}
+
+\begin{table}[t]
+\caption{Ablation on line 1007.06, one change per row: committed (causal) DRMS [m].}
+\label{tab:ablation}
+\centering
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{l l rr}
+\toprule
+Element & Change & Mag 4 & Mag 5 \\
+\midrule
+\multicolumn{2}{l}{reference ($\sigma_{\beta}=100$)} & 24.2 (42.7) & 11.5 (16.0) \\
+\midrule
+Comp.\ prior & $\sigma_{\beta}=10$ & 24.1 (43.9) & 11.5 (16.6) \\
+ & $\sigma_{\beta}=1000$ & 23.9 (42.1) & 11.2 (15.4) \\
+ & per column, \SI{100}{\nano\tesla} & 23.7 (42.7) & 11.6 (16.1) \\
+Comp.\ walk & $\mathbf{Q}^{\beta}\times0.01$ & 26.3 (56.4) & 12.7 (20.0) \\
+ & $\mathbf{Q}^{\beta}\times100$ & 24.1 (42.7) & 12.4 (25.8) \\
+FOGM & $\sigma_S\times10$ & 23.9 (38.8) & 11.0 (16.6) \\
+Robust kernel & removed & 25.4 (42.9) & 11.7 (16.5) \\
+ & Huber $\delta=10$ & 25.6 (42.8) & 11.7 (16.5) \\
+Meas.\ noise & $\sqrt{R}=\SI{65}{\nano\tesla}$ & 24.6 (42.9) & 12.7 (23.7) \\
+Process floor & $10^{-16}\mathbf{I}$ & 33.1 (74.7) & 13.1 (19.3) \\
+Relin. & every variable, every epoch & 24.1 (42.6) & 11.5 (16.0) \\
+Meas.\ density & all \num{10} samples per state & 26.5 (44.2) & 11.7 (16.0) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 Table~\ref{tab:ablation} varies each element of the configuration on line
 1007.06, one at a time. The estimator is insensitive at the metre level to all
 of them. The compensation prior may move an order of magnitude in either
@@ -1097,178 +1269,6 @@ all ten raw measurements \SI{31}{\milli\second}, both still real time at
 \SI{1}{\hertz} but paying roughly ninefold and fourfold for accuracy changes
 the ablation shows to be, respectively, below half a metre and a two-metre
 degradation.
-
-%% ---------------------------------------------------------------- Table I
-\begin{table}[t]
-\caption{Estimator settings. One configuration is used for every line and both
-magnetometers; nothing below is tuned per case. The compensation prior
-$\sigma_{\beta}$ is examined in Table~\ref{tab:ablation}.}
-\label{tab:params}
-\centering
-\footnotesize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}llr@{}}
-\toprule
-Group & Parameter & Value \\
-\midrule
-Measurement & noise std.\ $\sqrt{R}$ & \SI{12}{\nano\tesla} \\
- & robust kernel, Huber $\delta$ & 1.345 \\
-FOGM $S$ & $(\sigma_S,\tau)$ & \SI{3}{\nano\tesla}, \SI{180}{\second} \\
-Initial $\mathbf{P}_0^{x}$ & pos.\ / alt.\ std. & \SI{0.1}{} / \SI{1.0}{\meter} \\
- & velocity std.\ (per axis) & \SI{1.0}{\meter\per\second} \\
-Compensation & basis (App.~\ref{app:tl}) & P{+}I{+}E{+}bias ($m=19$) \\
- & prior $\mathbf{P}_0^{\beta}=\mathbf{I}\sigma_{\beta}^2$ & $\sigma_{\beta}=100$ \\
- & walk $\mathbf{Q}^{\beta}$ & $\mathbf{I}(1.0)^2\Delta t$ \\
-Smoother & lag $L$ & \SI{300}{\second} \\
- & state interval $\Delta$ & \SI{1}{\second} ($K=10$) \\
- & solver & iSAM2, QR \\
- & process-noise floor & $10^{-20}\mathbf{I}$ \\
-Evaluation & DRMS warm-up & \SI{600}{\second} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-%% --------------------------------------------------------------- Table II
-\begin{table}[t]
-\caption{Flight lines. Purpose FF = free flight (Flt1007), SV = survey
-(Flt1003), CAL = calibration (Flt1006). Maps R = Renfrew\_395, E =
-Eastern\_395. INS is the free-inertial horizontal drift over the line, computed
-on the same grid as every other entry in this paper.}
-\label{tab:lines}
-\centering
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{llcccr}
-\toprule
-Line & Purp. & Map & alt.\ [m] & dur.\ [min] & INS [m] \\
-\midrule
-1003.02 & SV & E & 401 & 63.1 & 123.8 \\
-1003.08 & SV & R & 400 & 72.4 & 271.9 \\
-1006.08 & CAL & E & 398 & 14.0 & 197.7 \\
-1007.02 & FF & E & 799 & 64.3 & 120.7 \\
-1007.06 & FF & R & 402 & 87.3 & 317.5 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-%% -------------------------------------------------------------- Table III
-\begin{table}[t]
-\caption{Representative line 1007.06 (Flt1007, \SI{87}{\minute}), cold start on
-the two uncompensated cabin magnetometers. Horizontal DRMS [m] after a
-\SI{600}{\second} warm-up. The proposed estimator is reported twice: its causal
-output, which uses no measurement taken after the epoch it reports and is the
-like-for-like comparison against the three causal baselines, and its committed
-output at a \SI{300}{\second} lag. Free-inertial drift is \SI{317.5}{\meter}.}
-\label{tab:1007}
-\centering
-\begin{tabular}{lrrc}
-\toprule
-Estimator & Mag 4 & Mag 5 & look-ahead \\
-\midrule
-EKF, online TL & 46.7 & 17.8 & none \\
-EKF{+}TL{+}NN~\cite{gnadt2022} & 48.8 & 18.3 & none \\
-MPF{+}TL (best tuning) & 1227.0 & 75.1 & none \\
-\midrule
-\textbf{Proposed, causal} & \textbf{42.7} & \textbf{16.0} & none \\
-\textbf{Proposed, committed} & \textbf{24.2} & \textbf{11.5} & \SI{300}{\second} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-%% --------------------------------------------------------------- Table IV
-\begin{table}[t]
-\caption{Breadth: cold-start cabin magnetometers across lines, flights and maps.
-Horizontal DRMS [m] after a \SI{600}{\second} warm-up. ``div.''\ exceeds
-\SI{10}{\kilo\meter}, ``err.''\ leaves the map. Bold marks the best causal
-estimator in each row. The calibration line 1006.08 is listed for completeness
-but not counted: at \SI{14}{\minute} the warm-up leaves too little line to score,
-and its low map-information content makes every method weak.}
-\label{tab:breadth}
-\centering
-\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{llrrr rr}
-\toprule
- & & EKF & EKF{+} & MPF{+} & \multicolumn{2}{c}{Proposed} \\
-\cmidrule(l){6-7}
-Line & Mag & online & TL{+}NN & TL & causal & \SI{300}{\second} \\
-\midrule
-1007.06 & 4 & 46.7 & 48.8 & 1227.0 & \textbf{42.7} & 24.2 \\
-1007.06 & 5 & 17.8 & 18.3 & 75.1 & \textbf{16.0} & 11.5 \\
-1007.02 & 4 & div. & 130.0 & 1311.5 & \textbf{74.3} & 28.4 \\
-1007.02 & 5 & 31.6 & \textbf{30.4} & 2247.3 & 33.1 & 15.8 \\
-1003.02 & 4 & div. & 101.0 & 482.6 & \textbf{58.2} & 19.6 \\
-1003.02 & 5 & 28.1 & 29.5 & 40.9 & \textbf{21.9} & 12.0 \\
-1003.08 & 4 & err. & \textbf{46.6} & 2898.7 & 48.9 & 25.0 \\
-1003.08 & 5 & 21.1 & 20.7 & 77.1 & \textbf{19.2} & 10.5 \\
-\midrule
-1006.08 & 4 & div. & 1173.7 & --- & 134.8 & 99.1 \\
-1006.08 & 5 & 117.5 & 105.2 & 793.7 & 80.1 & 101.0 \\
-\midrule
-\multicolumn{5}{l}{best causal, counted cases} & \textbf{6 / 8} & \\
-\multicolumn{5}{l}{best overall, counted cases} & & \textbf{8 / 8} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-%% ---------------------------------------------------------------- Table V
-\begin{table}[t]
-\caption{Lag design. Horizontal DRMS [m] after a \SI{600}{\second} warm-up, for
-the committed output at each lag; the causal output of the same runs is
-unchanged to within \SI{1}{\meter} across the whole sweep and is given in the
-last column at $L=\SI{300}{\second}$. Lengthening the lag buys accuracy in the
-committed estimate and nothing in the causal one, which is what separates
-smoothing gain from filtering gain.}
-\label{tab:lag}
-\centering
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{ll rrrrr r}
-\toprule
- & & \multicolumn{5}{c}{lag $L$ [s], committed} & causal \\
-\cmidrule(lr){3-7}
-Line & Mag & 30 & 60 & 150 & 300 & 600 & \\
-\midrule
-1007.06 & 4 & 40.2 & 37.1 & 29.7 & 24.2 & 21.9 & 42.7 \\
-1007.06 & 5 & 15.1 & 14.3 & 12.6 & 11.5 & 11.4 & 16.0 \\
-1007.02 & 4 & 70.2 & 60.4 & 43.2 & 28.4 & 25.8 & 74.3 \\
-1007.02 & 5 & 27.9 & 24.6 & 18.3 & 15.8 & 14.2 & 33.1 \\
-1003.02 & 4 & 48.9 & 43.3 & 28.8 & 19.6 & 18.2 & 58.2 \\
-1003.02 & 5 & 20.1 & 18.3 & 14.9 & 12.0 & 10.6 & 21.9 \\
-1003.08 & 4 & 50.3 & 41.5 & 31.5 & 25.0 & 24.6 & 48.9 \\
-1003.08 & 5 & 17.4 & 15.8 & 12.5 & 10.5 & 10.7 & 19.2 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-%% --------------------------------------------------------------- Table VI
-\begin{table}[t]
-\caption{Ablation on line 1007.06: each row changes exactly one element of the
-reference configuration of Table~\ref{tab:params}. Committed DRMS [m] after a
-\SI{600}{\second} warm-up, causal in parentheses. The estimator is insensitive
-to every element at the metre level; the largest single effect is the
-process-noise floor.}
-\label{tab:ablation}
-\centering
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{l l rr}
-\toprule
-Element & Change & Mag 4 & Mag 5 \\
-\midrule
-\multicolumn{2}{l}{reference ($\sigma_{\beta}=100$)} & 24.2 (42.7) & 11.5 (16.0) \\
-\midrule
-Comp.\ prior & $\sigma_{\beta}=10$ & 24.1 (43.9) & 11.5 (16.6) \\
- & $\sigma_{\beta}=1000$ & 23.9 (42.1) & 11.2 (15.4) \\
- & per column, \SI{100}{\nano\tesla} & 23.7 (42.7) & 11.6 (16.1) \\
-Comp.\ walk & $\mathbf{Q}^{\beta}\times0.01$ & 26.3 (56.4) & 12.7 (20.0) \\
- & $\mathbf{Q}^{\beta}\times100$ & 24.1 (42.7) & 12.4 (25.8) \\
-FOGM & $\sigma_S\times10$ & 23.9 (38.8) & 11.0 (16.6) \\
-Robust kernel & removed & 25.4 (42.9) & 11.7 (16.5) \\
- & Huber $\delta=10$ & 25.6 (42.8) & 11.7 (16.5) \\
-Meas.\ noise & $\sqrt{R}=\SI{65}{\nano\tesla}$ & 24.6 (42.9) & 12.7 (23.7) \\
-Process floor & $10^{-16}\mathbf{I}$ & 33.1 (74.7) & 13.1 (19.3) \\
-Relin. & every variable, every epoch & 24.1 (42.6) & 11.5 (16.0) \\
-Meas.\ density & all \num{10} samples per state & 26.5 (44.2) & 11.7 (16.0) \\
-\bottomrule
-\end{tabular}
-\end{table}
 
 \section{Conclusion}\label{sec:conclusion}
 This paper posed cold-start magnetic-anomaly navigation as a single estimation
