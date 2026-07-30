@@ -498,14 +498,14 @@ plt.close(fig)
 print("fig_comp")
 
 # ============================================================= fig_breadthbar
-ROWS = [("1007.06  M4", 46.7, 48.8, 42.7, 24.2),
-        ("1007.06  M5", 17.8, 18.3, 16.0, 11.5),
-        ("1007.02  M4", None, 130.0, 74.3, 28.4),
-        ("1007.02  M5", 31.6, 30.4, 33.1, 15.8),
-        ("1003.02  M4", None, 101.0, 58.2, 19.6),
-        ("1003.02  M5", 28.1, 29.5, 21.9, 12.0),
-        ("1003.08  M4", "err", 46.6, 48.9, 25.0),
-        ("1003.08  M5", 21.1, 20.7, 19.2, 10.5)]
+ROWS = [("1007.06  M4", 46.3, 48.8, 42.7, 24.2),
+        ("1007.06  M5", 17.6, 18.3, 16.0, 11.5),
+        ("1007.02  M4", 87.5, 130.0, 74.3, 28.4),
+        ("1007.02  M5", 31.9, 30.4, 33.1, 15.8),
+        ("1003.02  M4", 155.9, 101.0, 58.2, 19.6),
+        ("1003.02  M5", 28.7, 29.5, 21.9, 12.0),
+        ("1003.08  M4", 48.8, 46.6, 48.9, 25.0),
+        ("1003.08  M5", 19.6, 20.7, 19.2, 10.5)]
 C_WEAK = "#9aa4b2"
 SERIES = ((C_WEAK, "EKF, online TL"), (C_BASE1, "EKF+TL+NN"),
           (C_BASE3, "proposed, causal"), (C_PROPOSED, "proposed, smoothed"))
@@ -527,7 +527,7 @@ for k, (color, lab) in enumerate(SERIES):
                     linewidth=0.4)
     ax.barh(np.nan, np.nan, color=color, label=lab)
 ax.set_xscale("log")
-ax.set_xlim(8, 700)
+ax.set_xlim(8, 220)
 ax.set_yticks(y)
 ax.set_yticklabels([r[0] for r in ROWS], fontsize=7)
 ax.set_xlabel("DRMS [m]  (log scale)")

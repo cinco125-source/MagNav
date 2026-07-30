@@ -300,7 +300,7 @@ is fundamentally a joint estimation of position and a time-varying
 compensation model from a single scalar stream, in which the two unknowns are
 confounded through the very measurement that must resolve them. Causal filters
 (cluster~A) must commit each state before the maneuvers that would disambiguate the
-compensation have occurred, and so diverge when the initial residual is large;
+compensation have occurred, and can diverge when the initial residual is large;
 learned online compensation (cluster~B) repairs that residual but keeps the causal,
 commit-online architecture and adds parameters that are difficult to certify; and
 factor-graph smoothing (cluster~C), which can defer commitment and estimate
@@ -363,10 +363,9 @@ The paper makes the following contributions:
         smoothed estimate is the most accurate of the compared estimators on
         all eight cases and the causal estimate on six. Run rather than merely
         cited, the online EKF+TL+NN lineage of~\cite{gnadt2022,hager2026} is
-        kept bounded by its network where a plain online-TL EKF diverges, yet
-        the smoother beats it with no learned component; an ablation over
-        every element of the configuration finds metre-level sensitivity and
-        no delicate setting.
+        reproduced and tuned for the cold start, yet the smoother beats it
+        with no learned component; an ablation over every element of the
+        configuration finds metre-level sensitivity and no delicate setting.
 \end{enumerate}
 
 % P8: Organization
@@ -1135,10 +1134,10 @@ fixed software environment and are available from the authors on request.
 \subsection{Baselines}\label{sec:baselines}
 Four references frame the comparison, all run by us on the same lines, the same
 maps, and the same inertial model. Table~\ref{tab:params} describes the
-proposed estimator; each baseline runs the configuration of its reference
-implementation, including the compensation prior $\sigma_{\beta}=1$ of the
-published EKF~\cite{gnadt2022}, and any departure from a published
-configuration is stated below.
+proposed estimator; the identically modelled online-TL EKF shares its
+compensation prior $\sigma_{\beta}=100$, so that the margin between the two
+cannot be attributed to the prior, while the NN-augmented filter and the
+particle filter run the configurations stated below.
 
 \emph{Free-inertial INS.} The unaided INS drift (Table~\ref{tab:lines}) is the
 floor every aided estimator must beat, and the common reference that makes DRMS
@@ -1147,9 +1146,16 @@ values comparable across lines of different length and roughness.
 \emph{Online-TL EKF.} The direct recursive counterpart of the proposed
 estimator: the same Pinson error state augmented with the same \num{19}
 time-varying TL coefficients, updated by the same scalar measurement, in an
-extended Kalman filter~\cite{gnadt2022}. It shares every model term with the
-factor graph, so the margin between the two isolates the estimator structure,
-recursive commitment against windowed re-linearization, from the modelling.
+extended Kalman filter~\cite{gnadt2022}. It shares every model term and the
+compensation prior with the factor graph, so the margin between the two
+isolates the estimator structure, recursive commitment against windowed
+re-linearization, from the modelling. The shared prior matters to the filter
+far more than to the smoother: at the reference implementation's
+calibrated-installation prior ($\sigma_{\beta}=1$) the filter diverges on two
+Mag~4 lines and leaves the map on a third, the same prior sensitivity
+diagnosed for the particle filter below, and at $\sigma_{\beta}=100$ it is
+bounded on all eight cases, the values reported in
+Table~\ref{tab:breadth}.
 
 \emph{Online EKF+TL+NN.} The strongest causal baseline we compare
 against augments the TL state with the weights of a small feed-forward network
@@ -1164,10 +1170,14 @@ We keep the uncompensated scalar out of the network inputs: a
 position-dependent input carries the map gradient, so the network absorbs map
 signal and position drifts while the residual stays small (the scalar-augmented
 variant of~\cite{hager2026} escapes this only by freezing the network after its
-transient). The tuned filter uses the permanent TL group with an eight-unit
-hidden layer and reaches \num{48.8}/\SI{18.3}{\meter} on 1007.06 Mag~4/5,
+transient). The tuned filter uses the permanent TL group with an eight-unit hidden
+layer. It is the one randomly initialized estimator in the comparison, so we
+quantify its seed spread on 1007.06: over ten seeds it reaches a median of
+\SI{43.8}{\meter} (interquartile range \SIrange{42.7}{45.5}{\meter}) on
+Mag~4 and \SI{18.2}{\meter} (\SIrange{17.7}{18.5}{\meter}) on Mag~5,
 consistent with published cold-start operating
-points~\cite{gnadt2022,hager2026}.
+points~\cite{gnadt2022,hager2026}; the tables quote one fixed-seed run per
+case (\num{48.8}/\SI{18.3}{\meter} on this line).
 
 \emph{Marginalized particle filter (MPF+TL).} The nonparametric reference,
 included because particle methods are the standard resort when the map term is
@@ -1226,7 +1236,7 @@ for the NN-augmented EKF where the linear basis already suffices.
 \toprule
 Estimator & Mag 4 & Mag 5 & look-ahead \\
 \midrule
-EKF, online TL & 46.7 & 17.8 & none \\
+EKF, online TL & 46.3 & 17.6 & none \\
 EKF{+}TL{+}NN~\cite{gnadt2022} & 48.8 & 18.3 & none \\
 \midrule
 Proposed, causal & 42.7 & 16.0 & none \\
@@ -1257,7 +1267,7 @@ and Fig.~\ref{fig:comp} the compensation the graph learned while recovering it.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figs/fig_latlon.pdf}
-\caption{North and east error histories, line 1007.06 Mag~4. The seed-sensitive EKF+TL+NN is a fresh run (\SI{40.0}{\meter} here).}
+\caption{North and east error histories, line 1007.06 Mag~4. The EKF+TL+NN is a fresh run (\SI{40.0}{\meter} here; ten-seed median \SI{43.8}{\meter}).}
 \label{fig:latlon}
 \end{figure}
 
@@ -1279,7 +1289,7 @@ and Fig.~\ref{fig:comp} the compensation the graph learned while recovering it.
 
 
 \begin{table}[t]
-\caption{Breadth: DRMS [m]. ``div.''\ $>\SI{10}{\kilo\meter}$, ``err.''\ leaves the map; bold = best overall.}
+\caption{Breadth: DRMS [m]; bold = best overall.}
 \label{tab:breadth}
 \centering
 \setlength{\tabcolsep}{3.5pt}
@@ -1289,14 +1299,14 @@ and Fig.~\ref{fig:comp} the compensation the graph learned while recovering it.
 \cmidrule(l){5-6}
 Line & Mag & online & TL{+}NN & causal & \SI{300}{\second} lag \\
 \midrule
-1007.06 & 4 & 46.7 & 48.8 & 42.7 & \textbf{24.2} \\
-1007.06 & 5 & 17.8 & 18.3 & 16.0 & \textbf{11.5} \\
-1007.02 & 4 & div. & 130.0 & 74.3 & \textbf{28.4} \\
-1007.02 & 5 & 31.6 & 30.4 & 33.1 & \textbf{15.8} \\
-1003.02 & 4 & div. & 101.0 & 58.2 & \textbf{19.6} \\
-1003.02 & 5 & 28.1 & 29.5 & 21.9 & \textbf{12.0} \\
-1003.08 & 4 & err. & 46.6 & 48.9 & \textbf{25.0} \\
-1003.08 & 5 & 21.1 & 20.7 & 19.2 & \textbf{10.5} \\
+1007.06 & 4 & 46.3 & 48.8 & 42.7 & \textbf{24.2} \\
+1007.06 & 5 & 17.6 & 18.3 & 16.0 & \textbf{11.5} \\
+1007.02 & 4 & 87.5 & 130.0 & 74.3 & \textbf{28.4} \\
+1007.02 & 5 & 31.9 & 30.4 & 33.1 & \textbf{15.8} \\
+1003.02 & 4 & 155.9 & 101.0 & 58.2 & \textbf{19.6} \\
+1003.02 & 5 & 28.7 & 29.5 & 21.9 & \textbf{12.0} \\
+1003.08 & 4 & 48.8 & 46.6 & 48.9 & \textbf{25.0} \\
+1003.08 & 5 & 19.6 & 20.7 & 19.2 & \textbf{10.5} \\
 \midrule
 \multicolumn{4}{l}{best causal} & \textbf{6 / 8} & \\
 \multicolumn{4}{l}{best overall} & & \textbf{8 / 8} \\
@@ -1312,12 +1322,17 @@ eight counted cases, between \SI{10.5}{} and \SI{28.4}{\meter}, and between
 same case. Read causally, the proposed estimator is the best causal method on
 six of the eight; it trails the EKF+TL+NN on 1007.02 Mag~5 by \SI{2.7}{\meter}
 and on 1003.08 Mag~4 by \SI{2.3}{\meter}, and we report both rather than
-claiming a sweep. Where the online-TL EKF fails outright, diverging on two
-Mag~4 lines and leaving the map on a third, both readings of the proposed
-estimator stay bounded; the mechanism is the one
-Section~\ref{sec:sysmodel} anticipated, since the filter must explain the
-uncompensated field with whatever state is cheapest at each instant, while the
-smoother may revise its attribution for \SI{300}{\second} before committing.
+claiming a sweep. The margin is widest where the lines are hardest: on the
+two Mag~4 cases where the shared-prior EKF reaches \SI{87.5}{} and
+\SI{155.9}{\meter}, the smoothed estimate reads \SI{28.4}{} and
+\SI{19.6}{\meter}. The mechanism is the one Section~\ref{sec:sysmodel}
+anticipated: the filter must explain the uncompensated field with whatever
+state is cheapest at each instant and commits immediately, while the
+smoother may revise its attribution for \SI{300}{\second} before committing;
+and the filter's dependence on the prior scale
+(Section~\ref{sec:baselines}) is the recursive face of the same coin,
+since a one-step update has no window across which to amortize a mis-scaled
+prior.
 
 \subsection{Lag design}\label{sec:lagdesign}
 
