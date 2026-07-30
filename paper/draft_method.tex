@@ -1,0 +1,262 @@
+%% Section III draft: Methodology.
+%% Structure follows Park and Bang (IJCAS 22(11), 2024) Sec. 3: system model
+%% first, then the factor graph formulation with every factor written out, then
+%% the solution. Section III-C is where this work departs from that line: the
+%% graph is solved incrementally at a fixed lag rather than as a moving batch.
+
+\section{Methodology}\label{sec:method}
+Section~\ref{sec:batchmm} left the cold start with two unknowns coupled through
+one scalar stream, and Section~\ref{sec:fgo} supplied a formulation in which
+several unknowns of different kinds can be estimated together. This section puts
+them together: the system model first, then the factor graph it induces, then
+the incremental fixed-lag solution that produces an estimate on board.
+
+\subsection{System model}\label{sec:sysmodel}
+The estimated quantity at epoch $k$ is the joint state
+\begin{equation}
+\boldsymbol{\chi}_k=\begin{bmatrix}\mathbf{x}_k\\ \boldsymbol{\beta}_k\end{bmatrix}
+\in\mathbb{R}^{18+m},
+\label{eq:jointstate}
+\end{equation}
+stacking the inertial error state $\mathbf{x}_k$ and the compensation
+coefficients $\boldsymbol{\beta}_k$.
+
+\subsubsection{Inertial error state}
+We adopt the standard Pinson error model of a strapdown
+INS~\cite{groves2013,titterton2004,farrell2008}. The error state
+\begin{equation}
+\mathbf{x}=\big[\,\delta\mathbf{p}^{\top}\;\delta\mathbf{v}^{\top}\;
+\boldsymbol{\psi}^{\top}\;h_a\;\hat{a}\;\mathbf{b}_a^{\top}\;\mathbf{b}_g^{\top}\;S\,\big]^{\top}
+\in\mathbb{R}^{18}
+\label{eq:state}
+\end{equation}
+stacks position error $\delta\mathbf{p}$, velocity error $\delta\mathbf{v}$ and
+attitude error $\boldsymbol{\psi}$ (three components each), the baro-inertial
+altitude-aiding pair $(h_a,\hat{a})$ that damps the vertically unstable channel,
+accelerometer and gyroscope biases $\mathbf{b}_a,\mathbf{b}_g$, and a scalar
+first-order Gauss--Markov (FOGM) state $S$ that absorbs residual magnetic
+disturbance and map error. Its discretized dynamics are
+\begin{equation}
+\mathbf{x}_{k}=\boldsymbol{\Phi}_{k-1}\mathbf{x}_{k-1}+\mathbf{w}_{k-1},
+\qquad \mathbf{w}_{k-1}\sim\mathcal{N}(\mathbf{0},\mathbf{Q}_{k-1}),
+\label{eq:dyn}
+\end{equation}
+with $\boldsymbol{\Phi}_{k}$ the Pinson state-transition matrix
+(Appendix~\ref{app:pinson}) evaluated on the INS-indicated trajectory, and
+$\mathbf{Q}_{k}$ the process covariance. Unlike the hard
+constraint~\eqref{eq:inshard} of the batch form, the inertial increment enters
+as a factor with a covariance, so the estimator may disagree with the INS in
+proportion to how much that increment is trusted.
+
+\subsubsection{Compensation state}
+Classical aeromagnetic compensation writes the aircraft field as a linear
+combination of attitude-dependent basis
+terms~\cite{tolles1950,leliak1961,bickel1979},
+\begin{equation}
+c_k=\mathbf{A}_k^{\top}\boldsymbol{\beta}_k .
+\label{eq:tl}
+\end{equation}
+With direction cosines $\hat{\mathbf{b}}_k=[\,u\;v\;w\,]^{\top}$ of the Earth
+field in body axes, measured by a three-axis fluxgate, and total field magnitude
+$B_k$, the permanent (3), induced (6) and eddy-current (9) groups are
+\begin{equation}
+\mathbf{A}_k=\big[\underbrace{u,v,w}_{\text{perm.}},\;
+\underbrace{B_ku^2,\dots,B_kw^2}_{\text{induced}},\;
+\underbrace{B_ku\dot u,\dots,B_kw\dot w}_{\text{eddy}}\big]^{\top},
+\label{eq:tlbasis}
+\end{equation}
+optionally augmented by a constant term, giving $m\le19$ coefficients.
+In the calibrated setting $\boldsymbol{\beta}$ is fit once on a calibration
+flight and frozen. At a cold start it is unknown at takeoff, and the
+installation state drifts slowly in flight, so we carry it as a variable with a
+random-walk model
+\begin{equation}
+\boldsymbol{\beta}_{k}=\boldsymbol{\beta}_{k-1}+\mathbf{w}^{\beta}_{k-1},
+\qquad \mathbf{w}^{\beta}_{k-1}\sim\mathcal{N}(\mathbf{0},\mathbf{Q}^{\beta}).
+\label{eq:betawalk}
+\end{equation}
+This is the same device by which~\cite{park2023,park2024} carry slowly varying
+sensor biases in a terrain-referenced graph. The difference is dimensional: a
+radar-altimeter bias is one scalar, whereas~\eqref{eq:tlbasis} is an
+$m$-dimensional regression whose columns are driven by aircraft attitude and
+therefore excited only by manoeuvre.
+
+\subsubsection{Measurement}
+The scalar magnetometer reads
+\begin{equation}
+z_k=h(\mathbf{p}_k)+\mathbf{A}_k^{\top}\boldsymbol{\beta}_k+S_k+\eta_k,
+\qquad \eta_k\sim\mathcal{N}(0,R),
+\label{eq:meas}
+\end{equation}
+where $h(\cdot)$ interpolates the crustal anomaly map with the core field
+restored, evaluated at the true position
+$\mathbf{p}_k=\bar{\mathbf{p}}_k+\delta\mathbf{p}_k$ formed from the
+INS-indicated position and the estimated position error. Linearizing the map
+term about the INS-indicated position,
+\begin{equation}
+z_k\approx h(\bar{\mathbf{p}}_k)+\mathbf{g}_k^{\top}\delta\mathbf{p}_k
++\mathbf{A}_k^{\top}\boldsymbol{\beta}_k+S_k+\eta_k,
+\qquad
+\mathbf{g}_k=\left.\frac{\partial h}{\partial\mathbf{p}}\right|_{\bar{\mathbf{p}}_k},
+\label{eq:measlin}
+\end{equation}
+which exposes the structure of the problem. The map gradient $\mathbf{g}_k$ is
+the only channel through which the scalar reading carries horizontal position:
+where the map is locally flat, $\mathbf{g}_k\!\approx\!\mathbf{0}$ and position
+is momentarily unobservable. Everywhere else, the two terms
+$\mathbf{g}_k^{\top}\delta\mathbf{p}_k$ and
+$\mathbf{A}_k^{\top}\boldsymbol{\beta}_k$ compete for the same scalar: any
+position error can be mimicked by a compensation error whose regressor
+contribution matches it at that epoch. Separating them is possible only over a
+span of epochs, because $\mathbf{g}_k$ follows the map under the flight path
+while $\mathbf{A}_k$ follows the aircraft attitude, and the two vary
+differently. This is the reason a smoother is used rather than a filter, and it
+is quantified in Appendix~\ref{app:obs}.
+
+\subsection{Factor graph formulation}\label{sec:graphform}
+The models of Section~\ref{sec:sysmodel} induce four factor types on the
+variables $\boldsymbol{\chi}_{0:N}$, drawn in Fig.~\ref{fig:graph}. Following the
+convention of~\eqref{eq:kernel}, each is written as a squared Mahalanobis
+residual.
+
+The \emph{prior} factor anchors the initial joint state,
+\begin{equation}
+\bar{\phi}^{\,0}(\boldsymbol{\chi}_0)=
+\big\lVert\boldsymbol{\chi}_0-\hat{\boldsymbol{\chi}}_0\big\rVert^{2}_{\mathbf{P}_0},
+\label{eq:fprior}
+\end{equation}
+where $\mathbf{P}_0$ is block diagonal in the inertial and compensation parts,
+with blocks $\mathbf{P}_0^{x}$ and $\mathbf{P}_0^{\beta}$.
+
+The \emph{inertial} factor relates consecutive states through~\eqref{eq:dyn},
+\begin{equation}
+\bar{\phi}^{\,\mathrm{ins}}_k(\boldsymbol{\chi}_{k-1},\boldsymbol{\chi}_k)=
+\big\lVert\mathbf{x}_k-\boldsymbol{\Phi}_{k-1}\mathbf{x}_{k-1}\big\rVert^{2}_{\mathbf{Q}_{k-1}} .
+\label{eq:fins}
+\end{equation}
+
+The \emph{compensation} factor imposes the random walk~\eqref{eq:betawalk},
+\begin{equation}
+\bar{\phi}^{\,\beta}_k(\boldsymbol{\chi}_{k-1},\boldsymbol{\chi}_k)=
+\big\lVert\boldsymbol{\beta}_k-\boldsymbol{\beta}_{k-1}\big\rVert^{2}_{\mathbf{Q}^{\beta}} ,
+\label{eq:fbeta}
+\end{equation}
+so that the compensation is free to adapt along the flight at a rate set by
+$\mathbf{Q}^{\beta}$, and is not free to jump.
+
+The \emph{map} factor is the only one that couples the two chains,
+\begin{equation}
+\bar{\phi}^{\,\mathrm{map}}_k(\boldsymbol{\chi}_k)=
+\rho\!\Big(\big\lVert h(\bar{\mathbf{p}}_k+\delta\mathbf{p}_k)
++\mathbf{A}_k^{\top}\boldsymbol{\beta}_k+S_k-z_k\big\rVert^{2}_{R}\Big),
+\label{eq:fmap}
+\end{equation}
+with $\rho$ a robust kernel discussed below. Collecting the four types gives the
+objective
+\begin{equation}
+\tilde{J}(\mathbf{X};\mathbf{Z})=\bar{\phi}^{\,0}(\boldsymbol{\chi}_0)
++\sum_{k=1}^{N}\bar{\phi}^{\,\mathrm{ins}}_k
++\sum_{k=1}^{N}\bar{\phi}^{\,\beta}_k
++\sum_{k=0}^{N}\bar{\phi}^{\,\mathrm{map}}_k ,
+\label{eq:objective}
+\end{equation}
+minimized as in~\eqref{eq:nlls}. The graph has two parallel chains, the inertial
+error and the compensation, tied together at every epoch by a map factor, and it
+is this tie that makes the estimation joint rather than sequential.
+
+Map error and transient interference produce heavy-tailed residuals that a
+purely quadratic cost over-weights. We take $\rho$ to be the Huber
+kernel~\cite{huber1964}
+\begin{equation}
+\rho(u)=\begin{cases}\tfrac12 u^2,& |u|\le\delta,\\
+\delta\big(|u|-\tfrac12\delta\big),& |u|>\delta,\end{cases}
+\label{eq:huber}
+\end{equation}
+minimized by iteratively reweighted least squares, in which each iteration
+scales the map factor at epoch $k$ by $w_k=\min(1,\delta/|u_k|)$ with
+$u_k=r_k/\sqrt{R}$, so that gross outliers are pulled toward an absolute-value
+penalty while inliers keep the efficient quadratic cost. We use
+$\delta=1.345$, the standard choice for $95\%$ Gaussian efficiency. Switchable
+constraints~\cite{sunderhauf2012} and dynamic covariance
+scaling~\cite{agarwal2013} fit the same factor interface and could
+replace~\eqref{eq:huber} without touching the rest of the formulation.
+
+\subsection{Incremental fixed-lag solution}\label{sec:incremental}
+Minimizing~\eqref{eq:objective} over the whole line is a batch problem, and by
+Section~\ref{sec:fgo} it is available only after the flight. For onboard use we
+solve it at a fixed lag and incrementally.
+
+\subsubsection{Fixed lag}
+Let $L$ be the lag, in seconds. At epoch $k$ the graph retains the variables
+whose timestamps lie within $L$ of the newest, and the variables older than that
+are marginalized: their information is compressed into a Gaussian factor on the
+oldest retained state, as described in Section~\ref{sec:fgo}. Two estimates are
+therefore produced at every epoch, and they are different products.
+\begin{itemize}
+\item The \emph{causal} estimate is the value of the newest variable
+$\boldsymbol{\chi}_k$ immediately after the update. It uses no measurement taken
+after $k$, so it is available with zero delay and is the estimate that a
+real-time navigator would read.
+\item The \emph{committed} estimate is the value a variable holds when it leaves
+the lag, that is after it has been revised by every measurement in the following
+$L$ seconds. It is the more accurate of the two and it is available only $L$
+seconds late.
+\end{itemize}
+Both are reported throughout Section~\ref{sec:results}. Keeping them separate
+matters for comparison: a causal filter such as an EKF can only be compared
+against the causal estimate, whereas the committed estimate is the output of a
+system that is allowed to lag real time by $L$.
+
+\subsubsection{Incremental update}
+Re-solving the retained interval from scratch at every epoch would repeat almost
+all of the previous work, since one new measurement disturbs only a small part
+of a long chain. We instead update the factorization in place using the
+Bayes-tree formulation of iSAM2~\cite{kaess2012}. At each epoch the inertial
+factor~\eqref{eq:fins}, the compensation factor~\eqref{eq:fbeta} and the map
+factor~\eqref{eq:fmap} of that epoch are added; iSAM2 identifies the variables
+whose linearization the new factors disturb, re-eliminates only that part of the
+tree, and marginalizes what has left the lag. The per-epoch cost is therefore
+set by the number of retained states, $L$ divided by the state interval, and not
+by the flight duration.
+
+\subsubsection{State interval}
+Placing one variable per magnetometer sample makes the retained set large for
+any useful lag. We therefore place variables at an interval $\Delta$ longer than
+the sampling period, compounding the transition and accumulating the process
+noise exactly across the $K$ samples that a variable interval spans,
+\begin{equation}
+\boldsymbol{\Phi}'=\boldsymbol{\Phi}_{k+K-1}\cdots\boldsymbol{\Phi}_{k},
+\qquad
+\mathbf{Q}'\leftarrow\boldsymbol{\Phi}\mathbf{Q}'\boldsymbol{\Phi}^{\top}+\mathbf{Q},
+\label{eq:compound}
+\end{equation}
+so that the retained chain is an exact marginal of the full-rate chain in its
+process model. The map factors at the intermediate samples are not carried; the
+cost of that choice is measured in Section~\ref{sec:cost}.
+
+\subsubsection{Conditioning}
+One numerical point matters for reproduction. The position channel of
+$\mathbf{Q}_k$ is minute, of order $10^{-31}\,\mathrm{rad}^2$ in the horizontal
+states, because position error is driven only through velocity over a single
+sample; whitening the inertial factor by $\mathbf{Q}_k^{-1/2}$ then spans some
+thirty orders of magnitude. A Cholesky factorization of the information matrix
+squares this conditioning and fails outright, returning an indeterminate
+variable. Two changes remove the failure: a floor of $10^{-20}\mathbf{I}$ added
+to $\mathbf{Q}_k$, which injects under a millimetre of position uncertainty per
+step and is dynamically negligible, and a QR factorization of the square-root
+information matrix in place of Cholesky, which works on the square root and so
+tolerates the residual spread~\cite{dellaert2006}. A larger floor, or a
+regularizing prior at every epoch, also suppresses the exception but pins the
+estimate onto the propagated INS and defeats the correction.
+
+\subsection{Prior selection}\label{sec:coldprior}
+One element of~\eqref{eq:fprior} is set with the cold start in mind. The block
+$\mathbf{P}_0^{\beta}$ states what is believed about the compensation
+coefficients before any measurement, and at a cold start that belief must admit
+the field of an uncalibrated installation: the uncompensated cabin field is of
+order \SI{2000}{\nano\tesla}, and the coefficients that explain it are far from
+zero in the units of~\eqref{eq:tlbasis}. For initial stability we therefore
+widen the compensation block relative to a calibrated installation and use
+$\sigma_{\beta}=100$ throughout. The setting is not delicate: the ablation of
+Section~\ref{sec:ablation} varies it by an order of magnitude in each direction,
+and every other element of the configuration, and finds metre-level effects.

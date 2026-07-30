@@ -1,0 +1,108 @@
+%% Section V-A and V-B draft: protocol and baselines.
+%% The dataset prose carries over from the previous manuscript nearly verbatim
+%% (it survived four red-team rounds); the protocol paragraphs are rewritten for
+%% the incremental estimator and the causal/committed reporting rule.
+%% MPF numbers: research/mpf_*_results.csv, best per case, no-NN columns only.
+%% NOTE: the sigma_beta=100 MPF rerun (research/mpf_prior.jl) may upgrade the
+%% MPF paragraph from "unstable under best tuning" to a counted baseline; the
+%% paragraph is written so only its second half changes in that case.
+
+\section{Experiments and Results}\label{sec:results}
+
+\subsection{Dataset, maps, and protocol}\label{sec:protocol}
+All experiments use the public SGL~2020 challenge dataset~\cite{gnadt2020}: a
+Cessna~208B instrumented with a flight-grade INS, several onboard scalar
+magnetometers (a compensated tail-stinger sensor and uncompensated cabin sensors
+Mag~4 and Mag~5, all optically pumped cesium-vapor units), a three-axis
+fluxgate, and reference truth. The flights serve distinct purposes, and we
+choose lines accordingly (Table~\ref{tab:lines}). Flt1007 is the free-flight
+mission, in which the aircraft flies freely within the mapped areas, so its
+lines are the closest to a navigation task and are what prior
+work~\cite{gnadt2020,canciani2017,hager2026} reports; 1007.06 is our
+representative line for that reason. Flt1003 is a crustal-field survey flight,
+and its lines 1003.02 and 1003.08 are straighter than the free-flight legs.
+Flt1006 is a calibration-manoeuvre flight; its single short line is listed for
+completeness but not counted, since at \SI{14}{\minute} the warm-up leaves too
+little line to score. The map-building flights (Flt1004--1005) are not used.
+Two honest points remain. None of these lines is a dedicated long,
+straight-and-level operational transit; the free-flight and survey legs carry
+attitude variation, which stresses the compensation but also aids its
+observability by exciting the regressor, so performance on a pure operational
+cruise is not established here. And the lines span two altitude regimes, four
+near the \SI{400}{\meter} survey-drape altitude and 1007.02 near
+\SI{800}{\meter}, where upward continuation attenuates the anomaly.
+
+Map matching uses the Eastern and Renfrew high-resolution anomaly grids,
+upward-continued to flight altitude, with the IGRF core field restored so that
+measurement and map share an absolute scale. Cold start means the compensation
+coefficients are initialized at zero with no calibration flight; the navigation
+solution itself is accurately initialized (position standard deviation
+\SI{0.1}{\meter}, Table~\ref{tab:params}), so the term denotes a compensation
+cold start, not an unknown-position start.
+
+The error metric is the horizontal distance root-mean-square (DRMS) of position
+error, counted after a \SI{600}{\second} warm-up. Following
+Section~\ref{sec:incremental}, the proposed estimator is reported twice in every
+table: the \emph{causal} value, read at the newest state with no look-ahead,
+and the \emph{committed} value, read as states leave the \SI{300}{\second} lag.
+The causal value is the like-for-like comparison against the recursive
+baselines, which also use no future data; the committed value is the output of
+a system permitted to lag real time by the lag length, and the look-ahead
+behind every reported number is stated in its table. One configuration
+(Table~\ref{tab:params}) is used for every line and both magnetometers; nothing
+is tuned per case, and parameter sensitivity is quantified in the ablation of
+Section~\ref{sec:ablation}. All numbers are produced by scripted runs under a
+fixed software environment and are available from the authors on request.
+
+\subsection{Baselines}\label{sec:baselines}
+Four references frame the comparison, all run by us on the same lines, the same
+maps, and the same inertial model.
+
+\emph{Free-inertial INS.} The unaided INS drift (Table~\ref{tab:lines}) is the
+floor every aided estimator must beat, and the common reference that makes DRMS
+values comparable across lines of different length and roughness.
+
+\emph{Online-TL EKF.} The direct recursive counterpart of the proposed
+estimator: the same Pinson error state augmented with the same \num{19}
+time-varying TL coefficients, updated by the same scalar measurement, in an
+extended Kalman filter~\cite{gnadt2022}. It shares every model term with the
+factor graph, so the margin between the two isolates the estimator structure,
+recursive commitment against windowed re-linearization, from the modelling.
+
+\emph{Online EKF+TL+NN.} The strongest published causal method for this
+dataset augments the TL state with the weights of a small feed-forward network
+that absorbs what the linear basis cannot~\cite{gnadt2022,hager2026}. We run
+the reference implementation of~\cite{gnadt2022}, tuned by us for a stable cold
+start, and do not claim to reproduce the extended filter of~\cite{hager2026}.
+Cold start forces one substantive change: with no calibration flight to
+warm-start from, the network output normalization is initialized from the first
+five minutes of onboard interference; a naive port instead drives the network
+bias to $\sim\!5\times10^{4}$\,\si{\nano\tesla} and the filter to \texttt{NaN}.
+We keep the uncompensated scalar out of the network inputs: a
+position-dependent input carries the map gradient, so the network absorbs map
+signal and position drifts while the residual stays small (the scalar-augmented
+variant of~\cite{hager2026} escapes this only by freezing the network after its
+transient). The tuned filter uses the permanent TL group with an eight-unit
+hidden layer and reaches \num{48.8}/\SI{18.3}{\meter} on 1007.06 Mag~4/5,
+consistent with published cold-start operating
+points~\cite{gnadt2022,hager2026}.
+
+\emph{Marginalized particle filter (MPF+TL).} The nonparametric reference,
+included because particle methods are the standard resort when the map term is
+strongly nonlinear~\cite{nordlund2009,park2024}. Since the TL model is linear
+in its coefficients, $\boldsymbol{\beta}$ is conditionally linear-Gaussian and
+fits the Rao--Blackwellized structure exactly: our implementation carries
+position in \num{1000} particles and marginalizes the remaining states,
+including $\boldsymbol{\beta}$, in the conditional Kalman block, with the
+fluxgate row entering the linear measurement Jacobian. Weights are computed in
+the log domain and position diversity is reinjected after resampling. Despite
+this, and under per-case tuning of measurement variance, resampling threshold
+and roughening that no other estimator in this paper receives, the filter is
+unstable at a cold start: its best per-case results range from
+\SI{38.7}{\meter} on the cleanest Mag~5 leg to kilometres on Mag~4, with strong
+seed dependence. We report it in the text rather than in the comparison tables,
+and we do not claim it represents the best achievable particle filter.
+Attaching the neural network of the EKF+TL+NN to the particle filter does not
+rescue it and is sharply harmful on the well-conditioned sensor, degrading
+Mag~5 by one to two orders of magnitude across lines, the same direction seen
+for the NN-augmented EKF where the linear basis already suffices.

@@ -1,0 +1,54 @@
+%% Section VI draft: Conclusion.
+%% Every number quoted here appears in Tables III-VI; nothing new is claimed.
+
+\section{Conclusion}\label{sec:conclusion}
+This paper posed cold-start magnetic-anomaly navigation as a single estimation
+problem: an aircraft with an uncalibrated magnetometer installation must
+recover its position from a scalar reading in which the map signal and the
+aircraft's own field are mixed, with no calibration flight and no satellite
+aiding. The formulation carries the Tolles--Lawson compensation coefficients as
+time-varying variables of a factor graph alongside the inertial error state,
+ties the two chains through the map measurement, and solves the graph with an
+incremental fixed-lag smoother built on iSAM2, at a \SI{300}{\second} lag and a
+\SI{1}{\hertz} state cadence. The estimator produces two outputs, a causal
+estimate with no look-ahead and a committed estimate revised by the full lag,
+and we report both throughout, because they answer different questions: the
+causal output is what a navigator reads in flight, the committed output is what
+a system that may lag real time delivers.
+
+On the SGL~2020 flight data the answers are as follows. Against a recursive EKF
+carrying the identical models, the causal output alone is more accurate on six
+of eight cold-start cases, so windowed relinearization pays before any
+look-ahead is spent. Against the strongest published causal method, an EKF
+augmented with an online neural network, the linear-basis smoother is more
+accurate on both magnetometers of the representative line with no learned
+component at all. The committed output is the most accurate estimate on all
+eight counted cases, between \SI{10.5}{} and \SI{28.4}{\meter} where
+free-inertial drift is hundreds of metres, at \num{1.5} to \num{5.2} times the
+accuracy of the best causal baseline. The lag sweep locates the design knee
+near \SI{300}{\second}, about \SI{20}{\kilo\meter} of track, and shows that the
+causal output is indifferent to the lag, so the choice of lag is purely a
+purchase of smoothing accuracy with latency. The ablation finds no delicate
+setting: one configuration serves every line and both sensors, and the update
+costs \SIrange{6.0}{9.0}{\milli\second} per state in an unoptimized
+implementation, two orders of magnitude inside real time.
+
+Several limitations bound the study. Each line is a single physical
+realization, so every DRMS is a point estimate; the statistical statements are
+counts across cases, not distributions. The reported covariance of the
+incremental smoother has not been validated for consistency on flight data,
+and we do not report uncertainty bounds. The
+baselines are our own implementations under one shared protocol; the
+particle-filter reference in particular is reported as unstable under per-case
+tuning, and we do not claim it represents the best achievable particle filter.
+None of the lines is a long, straight-and-level operational transit, so
+performance under the weak regressor excitation of a pure cruise is not
+established. And the compensation prior that a cold start needs is a measured
+setting rather than a derived one: we show a broad insensitive range, but give
+no rule for choosing its scale from installation data.
+
+These limitations set the agenda: consistency evaluation of the reported
+covariance, a transit-like flight regime, sparser instantiation of the
+compensation chain in the manner of~\cite{park2024}, and a native-factor
+implementation that would carry the real-time margin from the state cadence
+down to the raw sensor rate.

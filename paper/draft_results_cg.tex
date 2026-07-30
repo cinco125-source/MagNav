@@ -1,0 +1,98 @@
+%% Section V-C through V-G draft: results prose.
+%% Sources: Tables III-VI in draft_tables.tex; timing from
+%% research/gtsam_poc/gtsam_poc_result_ps100_*.txt (6.0-9.0 ms/state, mean 7.8,
+%% 42 s for the 87-minute line), x_abfullrelin_m4.log (68 ms/state),
+%% x_abdense_m4.log (31 ms/state). Ground speed 68 m/s from the line exports.
+
+\subsection{Representative line}\label{sec:repline}
+Table~\ref{tab:1007} reports the longest line, 1007.06 (\SI{87}{\minute}), on
+both cabin magnetometers, with the free-inertial drift at \SI{317.5}{\meter}.
+Read causally, with no look-ahead at all, the proposed estimator reaches
+\SI{42.7}{\meter} on Mag~4 and \SI{16.0}{\meter} on Mag~5, ahead of the
+online-TL EKF (\num{46.7}/\SI{17.8}{\meter}) and of the NN-augmented filter
+(\num{48.8}/\SI{18.3}{\meter}). The margin over the online-TL EKF is the purest
+number in this paper: the two estimators share the error model, the
+compensation model, the measurement model, and every noise setting, and differ
+only in that the filter commits each state once while the graph relinearizes
+and revises every state inside its lag. The margin over the EKF+TL+NN says
+something further: the network exists to absorb what the linear TL basis
+cannot, yet carrying the linear basis in a smoother beats carrying the linear
+basis plus a network in a filter, on both sensors, without any learned
+component. Allowed its \SI{300}{\second} lag, the committed estimate roughly
+halves the causal error, to \num{24.2}/\SI{11.5}{\meter}. Fig.~\ref{fig:prior}
+shows the error history.
+
+\subsection{Breadth}\label{sec:breadth}
+Table~\ref{tab:breadth} repeats the comparison on every counted line, spanning
+two flights, two maps, two altitude regimes, and both cabin magnetometers, with
+nothing re-tuned. The committed estimate is the most accurate entry on all
+eight counted cases, between \SI{10.5}{} and \SI{28.4}{\meter}, and between
+\num{1.5} and \num{5.2} times better than the strongest causal baseline on the
+same case. Read causally, the proposed estimator is the best causal method on
+six of the eight; it trails the EKF+TL+NN on 1007.02 Mag~5 by \SI{2.7}{\meter}
+and on 1003.08 Mag~4 by \SI{2.3}{\meter}, and we report both rather than
+claiming a sweep. Where the online-TL EKF fails outright, diverging on two
+Mag~4 lines and leaving the map on a third, both readings of the proposed
+estimator stay bounded; the mechanism is the one
+Section~\ref{sec:sysmodel} anticipated, since the filter must explain the
+uncompensated field with whatever state is cheapest at each instant, while the
+smoother may revise its attribution for \SI{300}{\second} before committing.
+The set-aside calibration line 1006.08 behaves as expected from its length and
+content, and no conclusion is drawn from it.
+
+\subsection{Lag design}\label{sec:lagdesign}
+The lag is the estimator's single design variable, and Table~\ref{tab:lag}
+sweeps it from \SI{30}{} to \SI{600}{\second} on the four counted lines. Two
+regularities carry the design guidance. First, the committed error improves
+with lag on every case, steeply up to about \SI{300}{\second} and weakly after
+it: lengthening the lag from \SI{300}{} to \SI{600}{\second}, a
+doubling of both latency and computation, buys at most \SI{2.6}{\meter} and on
+one case slightly degrades, while the step from \SI{30}{} to \SI{300}{\second}
+buys between \SI{3.6}{} and \SI{41.8}{\meter}. The knee reflects the physics: at
+survey speed a \SI{300}{\second} lag corresponds to roughly \SI{20}{\kilo\meter}
+of track, enough for the map gradient and the attitude-driven regressor to
+decorrelate, after which further look-ahead adds little. We take
+\SI{300}{\second} as the default. Second, the causal column is flat: across a
+twentyfold change in lag the causal error moves by less than a metre on every
+case. The lag decides only how long a state is revised before it is frozen, not
+how good the newest state is, so the accuracy bought by look-ahead is entirely
+smoothing gain, and a designer who cannot afford latency loses exactly the gap
+between the two columns and nothing else.
+
+\subsection{Ablation}\label{sec:ablation}
+Table~\ref{tab:ablation} varies each element of the configuration on line
+1007.06, one at a time. The estimator is insensitive at the metre level to all
+of them. The compensation prior may move an order of magnitude in either
+direction, or be replaced by a per-column prior that assigns each regressor
+column \SI{100}{\nano\tesla} of measurement contribution, for changes under a
+metre. Slowing the compensation walk a hundredfold costs about two metres,
+consistent with a real installation state that drifts in flight; speeding it up
+costs little. Removing the Huber kernel or widening its threshold costs one to
+two metres, so robustness to map error helps but does not carry the result.
+Inflating the assumed measurement noise fivefold, or relinearizing every
+variable at every epoch, changes the estimate by less than half a metre; the
+latter confirms that iSAM2's selective relinearization gives up nothing here.
+The largest single effect is the process-noise floor: raising it from
+$10^{-16}$ to $10^{-12}$ times the nominal position channel, i.e.\ from
+$10^{-20}\mathbf{I}$ to $10^{-16}\mathbf{I}$, costs \SI{8.9}{\meter} on Mag~4,
+which is why Section~\ref{sec:incremental} treats the floor as a conditioning
+device to be kept minimal rather than a tuning knob. Attaching all ten raw
+measurements to each state instead of one costs \SI{2.3}{\meter} on Mag~4 and
+nothing on Mag~5, at four times the computation, supporting the
+\SI{1}{\hertz} state cadence.
+
+\subsection{Computational cost}\label{sec:cost}
+All timings are single-core, on a laptop-class x86 processor under WSL2, with
+the measurement factor evaluated through a Python callback; they are upper
+bounds on a native implementation. At the reference configuration the
+incremental update takes \SIrange{6.0}{9.0}{\milli\second} per state across the
+ten line-magnetometer cases, mean \SI{7.8}{\milli\second}, so the
+\SI{87}{\minute} line completes in \SI{42}{\second} and the margin to the
+\SI{1}{\hertz} state cadence exceeds two orders of magnitude. The cost scales
+with the number of retained states, so halving the lag halves it, and the two
+expensive variants of the ablation bound the alternatives: relinearizing every
+variable at every epoch costs \SI{68}{\milli\second} per state and attaching
+all ten raw measurements \SI{31}{\milli\second}, both still real time at
+\SI{1}{\hertz} but paying roughly ninefold and fourfold for accuracy changes
+the ablation shows to be, respectively, below half a metre and a two-metre
+degradation.
