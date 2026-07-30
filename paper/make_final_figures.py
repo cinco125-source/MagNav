@@ -96,7 +96,7 @@ ax.set_xlim(0, 16.4); ax.set_ylim(-0.35, 5.75); ax.axis("off")
 i0 = np.searchsorted(glat, bbox["lat"][0]); i1 = np.searchsorted(glat, bbox["lat"][1])
 j0 = np.searchsorted(glon, bbox["lon"][0]); j1 = np.searchsorted(glon, bbox["lon"][1])
 patch = anom[i0:i1, j0:j1]
-mx0, mx1, my0, my1 = 0.55, 6.05, 0.12, 1.86
+mx0, mx1, my0, my1 = 1.45, 6.95, 0.12, 1.86
 shear = Affine2D().skew_deg(-32, 0)
 imm = ax.imshow(patch, origin="lower", cmap=CMAP,
                 extent=[mx0, mx1, my0, my1],
@@ -410,28 +410,42 @@ cb.ax.tick_params(labelsize=6)
 axm.legend(loc="upper left", fontsize=6.6, framealpha=0.9)
 axm.set_title("(a) flown line on the map", fontsize=8.5)
 
+# (b) zoomed latitude/longitude window where the navigation paths visibly
+# separate from the truth: centred where the INS deviation is largest.
+_w10 = int(600 / dt)                     # search after the warm-up only
+i_max = _w10 + int(np.argmax(np.hypot(e_ekf_e, e_ekf_n)[_w10:]))
+clat0, clon0 = tdeg(tlat[i_max]), tdeg(tlon[i_max])
+half_lat = 380.0 / R_EARTH * 180 / np.pi              # ~0.38 km half-height
+half_lon = 540.0 / (R_EARTH * np.cos(tlat[i_max])) * 180 / np.pi
+zl = dict(lat=(clat0 - half_lat, clat0 + half_lat),
+          lon=(clon0 - half_lon, clon0 + half_lon))
+axm.add_patch(Rectangle((zl["lon"][0], zl["lat"][0]),
+                        2 * half_lon, 2 * half_lat, fill=False, ec="k",
+                        lw=1.0, zorder=6))
+
 axe = fig.add_subplot(gs[1])
-w10 = int(600 / dt)                       # warm-up cut, 10 Hz series
-w1 = 600                                  # warm-up cut, 1 Hz series
-axe.plot(e_ins_e[w10::40], e_ins_n[w10::40], ":", color="0.55", lw=0.9,
-         label="INS (drifts out)")
-axe.plot(e_ekf_e[w10::20], e_ekf_n[w10::20], color="#9aa4b2", lw=0.65,
-         alpha=0.9, label="EKF, online TL")
-axe.plot(e_nn_e[w10::20], e_nn_n[w10::20], color=C_BASE1, lw=0.65,
-         alpha=0.9, label="EKF+TL+NN")
-axe.plot(e_cau_e[w1::2], e_cau_n[w1::2], color=C_BASE3, lw=0.65, alpha=0.9,
-         label="proposed, causal")
-axe.plot(e_com_e[w1:], e_com_n[w1:], color=C_PROPOSED, lw=1.0,
-         label="proposed, committed")
-axe.plot(0, 0, marker="+", color="k", ms=8, mew=1.4, zorder=6)
-axe.set_xlim(-140, 140); axe.set_ylim(-140, 140)
-axe.set_aspect("equal")
-axe.set_xlabel("east error [m]"); axe.set_ylabel("north error [m]")
-axe.grid(True)
-axe.legend(loc="lower right", fontsize=6.0, framealpha=0.9,
-           handlelength=1.3, labelspacing=0.3)
-axe.set_title("(b) paths about the true position", fontsize=8.5)
-despine(axe)
+axe.imshow(anom, origin="lower", cmap=CMAP,
+           extent=[glon[0], glon[-1], glat[0], glat[-1]],
+           vmin=-np.percentile(np.abs(anom), 99),
+           vmax=np.percentile(np.abs(anom), 99), aspect="auto",
+           interpolation="bilinear", alpha=0.45)
+axe.plot(tdeg(ilon), tdeg(ilat), ":", color="0.3", lw=1.1, label="INS")
+axe.plot(tdeg(_get("ekf_lon")), tdeg(_get("ekf_lat")), color="#8b95a5",
+         lw=1.0, label="EKF, online TL")
+axe.plot(tdeg(_get("nn_lon")), tdeg(_get("nn_lat")), color=C_BASE1, lw=1.0,
+         label="EKF+TL+NN")
+axe.plot(tdeg(io1 + est_rt[:, 1]), tdeg(il1 + est_rt[:, 0]), color=C_BASE3,
+         lw=1.0, label="proposed, causal")
+axe.plot(tdeg(io1 + est[:, 1]), tdeg(il1 + est[:, 0]), color=C_PROPOSED,
+         lw=1.2, ls=(0, (5, 2)), label="proposed, committed")
+axe.plot(tdeg(tlon), tdeg(tlat), color="k", lw=1.5, label="truth")
+axe.set_xlim(*zl["lon"]); axe.set_ylim(*zl["lat"])
+axe.set_xlabel("longitude [deg]"); axe.set_ylabel("latitude [deg]")
+axe.ticklabel_format(useOffset=False)
+axe.tick_params(labelsize=6)
+axe.legend(loc="upper left", fontsize=6.0, framealpha=0.92,
+           handlelength=1.4, labelspacing=0.3)
+axe.set_title("(b) zoom: paths separate from the truth", fontsize=8.5)
 fig.tight_layout(pad=0.3)
 fig.savefig(os.path.join(OUT, "fig_track.pdf"))
 fig.savefig(os.path.join(OUT, "fig_track.png"), dpi=170)
