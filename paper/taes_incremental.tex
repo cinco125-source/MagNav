@@ -1089,8 +1089,19 @@ cannot, yet carrying the linear basis in a smoother beats carrying the linear
 basis plus a network in a filter, on both sensors, without any learned
 component. Allowed its \SI{300}{\second} lag, the committed estimate roughly
 halves the causal error, to \num{24.2}/\SI{11.5}{\meter}. Fig.~\ref{fig:errhist}
-shows the error history, Fig.~\ref{fig:track} the recovered track on the map,
+shows the error history, Fig.~\ref{fig:latlon} its north and east components
+against every baseline, Fig.~\ref{fig:track} the recovered track on the map,
 and Fig.~\ref{fig:comp} the compensation the graph learned while recovering it.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figs/fig_latlon.pdf}
+\caption{North and east error histories of the compared methods on line 1007.06
+Mag~4. The EKF+TL+NN trace is a fresh run of the seed-sensitive filter
+(\SI{40.0}{\meter} on this run, against the fixed reference run of
+Table~\ref{tab:1007}).}
+\label{fig:latlon}
+\end{figure}
 
 \begin{figure}[t]
 \centering
