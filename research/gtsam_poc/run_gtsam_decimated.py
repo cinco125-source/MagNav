@@ -136,6 +136,16 @@ def main():
         sig_TL = float(sys.argv[sys.argv.index("--tl-sigma") + 1])
         P0 = P0.copy(); P0[iTL, iTL] = P0[iTL, iTL] * sig_TL ** 2
         print(f"TL prior sigma scaled by {sig_TL:g}", flush=True)
+    # --pos-sigma X: initial horizontal position prior standard deviation in
+    # metres (the export was built with 0.1 m). Controls the initial-uncertainty
+    # sweep the cold-start claim rests on: at 0.1 m the estimator starts from a
+    # known position and unknown compensation; larger values relax the former.
+    if "--pos-sigma" in sys.argv:
+        ps = float(sys.argv[sys.argv.index("--pos-sigma") + 1])
+        sc = (ps / 0.1) ** 2
+        P0 = P0.copy()
+        P0[0, 0] = P0[0, 0] * sc; P0[1, 1] = P0[1, 1] * sc
+        print(f"position prior sigma set to {ps:g} m", flush=True)
     # --tl-cols S: give each coefficient a prior standard deviation of
     # S / ||A_:,j||, i.e. a common prior on that column's CONTRIBUTION in nT
     # rather than on the coefficient itself. The 19 columns of the regressor
@@ -314,6 +324,14 @@ def main():
         print(f"batch bootstrap over first {W} states ({W*dtK:g}s): "
               f"{time.time()-t0:.0f}s", flush=True)
 
+    # --dump-cov: record the 2x2 position marginal covariance of the causal
+    # (newest) state and of the state about to leave the lag, for the flight
+    # coverage diagnostic (Laplace covariance at the working linearization and
+    # IRLS weights -- a diagnostic, not a formal NEES, on real data).
+    dump_cov = "--dump-cov" in sys.argv
+    cov_c = np.full((M, 2, 2), np.nan)
+    cov_s = np.full((M, 2, 2), np.nan)
+
     for s in range(s_boot, M):
         graph.add(gtsam.CustomFactor(dyn_nms[s-1], [X(s-1), X(s)], dyn_err(PhiK[s-1])))
         add_meas(graph, s)
@@ -332,6 +350,12 @@ def main():
         for k in range(max(0, s - lag_states), s + 1):
             if cur.exists(X(k)):
                 est[k] = cur.atVector(X(k))
+        if dump_cov:
+            isam = sm.getISAM2()
+            cov_c[s] = isam.marginalCovariance(X(s))[:2, :2]
+            k_old = s - lag_states
+            if k_old >= 0 and cur.exists(X(k_old)):
+                cov_s[k_old] = isam.marginalCovariance(X(k_old))[:2, :2]
         if s % 500 == 0:
             el = time.time() - t0
             print(f"s={s}/{M}  elapsed={el:.0f}s  ({el/s*1000:.0f} ms/state)",
@@ -346,8 +370,10 @@ def main():
     il_ = ins_lat[idx]; io_ = ins_lon[idx]
     est_lat = il_ + est[:, 0]; est_lon = io_ + est[:, 1]
     rt_lat = il_ + est_rt[:, 0]; rt_lon = io_ + est_rt[:, 1]
+    extra = {"cov_c": cov_c, "cov_s": cov_s} if dump_cov else {}
     np.savez(f"research/gtsam_poc/est_gtsam{tag}.npz", est=est, est_rt=est_rt,
-             idx=idx, ins_lat=il_, ins_lon=io_, true_lat=tl_, true_lon=tn_)
+             idx=idx, ins_lat=il_, ins_lon=io_, true_lat=tl_, true_lon=tn_,
+             **extra)
 
     def drms_of(lat_, lon_, warm_v):
         m = ti >= warm_v
@@ -365,6 +391,19 @@ def main():
         lines.append(f"warm={wv:g}s  smoothed_drms={g:.2f} m  "
                      f"realtime_drms={r:.2f} m  ins_drms={i:.2f} m")
         print(lines[-1], flush=True)
+
+    # transient window [0, warm): DRMS and peak horizontal error, both outputs
+    def tran_of(lat_, lon_):
+        m = ti < warm
+        dn = (lat_[m] - tl_[m]) * R_EARTH
+        de = (lon_[m] - tn_[m]) * R_EARTH * np.cos(tl_[m])
+        e = np.sqrt(dn**2 + de**2)
+        return math.sqrt(np.mean(e**2)), float(e.max())
+    gt, gp = tran_of(est_lat, est_lon)
+    rt_, rp = tran_of(rt_lat, rt_lon)
+    lines.append(f"transient[0,{warm:g}s)  smoothed_drms={gt:.2f} m "
+                 f"peak={gp:.2f} m  realtime_drms={rt_:.2f} m peak={rp:.2f} m")
+    print(lines[-1], flush=True)
     with open(f"research/gtsam_poc/gtsam_poc_result{tag}.txt", "w") as f:
         f.write("\n".join(lines) + f"\nlag {lag:g} K {K} mag {mag} "
                 f"ms_per_state {el/(M-1)*1000:.1f}\n")

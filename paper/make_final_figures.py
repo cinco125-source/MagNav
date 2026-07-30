@@ -134,7 +134,7 @@ ax.text(cx + 0.55, 5.48,
 ax.annotate("", xy=(2.05, 1.62), xytext=(cx - 0.42, cz - 0.55),
             arrowprops=dict(arrowstyle="-|>", color="0.35", lw=1.0,
                             linestyle=(0, (4, 3))))
-ax.text(1.55, 2.62, "where am I?", fontsize=7.2, style="italic",
+ax.text(1.55, 2.62, "position drift", fontsize=7.2, style="italic",
         color="0.35", ha="center")
 
 # --- measurement into the estimator --------------------------------------
