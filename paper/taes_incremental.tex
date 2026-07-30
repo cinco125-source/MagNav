@@ -69,12 +69,12 @@ solve it on board with an incremental fixed-lag smoother built on iSAM2, at a
 \SIrange{6.0}{9.0}{\milli\second} per update. The smoother produces two
 estimates and we report both throughout: a causal estimate with no look-ahead,
 which is the like-for-like comparison against recursive filters, and a
-committed estimate revised by the full lag, which is the output of a system
+smoothed estimate revised by the full lag, which is the output of a system
 permitted to lag real time. On the SGL~2020 flight data, across eight
 cold-start cases spanning four lines, two flights, two maps and two altitude
 regimes under one untuned configuration, the causal estimate alone beats an
 identically modelled online-TL EKF and a neural-network-augmented EKF on six of
-eight cases, and the committed estimate is the most accurate on all eight, at
+eight cases, and the smoothed estimate is the most accurate on all eight, at
 \SIrange{10.5}{28.4}{\meter} where free-inertial drift is hundreds of metres. A
 lag sweep locates the design knee near \SI{300}{\second} and shows the causal
 estimate is indifferent to the lag, so look-ahead buys smoothing accuracy only;
@@ -151,7 +151,7 @@ magnetic signature can be removed in flight.
 signature flies over the anomaly map with no satellite aiding; the one scalar
 reading mixes the map value with the aircraft field, coupling position and
 compensation. A joint factor graph, solved incrementally at a fixed lag,
-estimates both and emits a causal answer now and a committed answer revised by
+estimates both and emits a causal answer now and a smoothed answer revised by
 the lag.}
 \label{fig:concept}
 \end{figure*}
@@ -251,7 +251,7 @@ they commit each state online with no access to future measurements, and the
 position-centric ones carry no compensation state of their own. When a large
 uncompensated cold-start residual enters, a causal filter has no mechanism to
 attribute the mismatch to the aircraft field rather than to position, and, unable to
-revise a committed state, the estimate can diverge.
+revise a state once made, the estimate can diverge.
 
 % P5: Cluster B -- online / learned compensation
 A second line of work makes the compensation itself adaptive. Classical
@@ -351,21 +351,21 @@ The paper makes the following contributions:
         \SI{300}{\second} lag and \SI{1}{\hertz} states, two orders of
         magnitude within the state cadence, in an unoptimized implementation.
         The lag is the single design variable, and we measure what it buys: the
-        committed estimate improves steeply up to a knee near
+        smoothed estimate improves steeply up to a knee near
         \SI{300}{\second}, about \SI{20}{\kilo\meter} of track, while the
         causal estimate is indifferent to it.
-  \item \textbf{A causal/committed evaluation protocol.} A fixed-lag smoother
+  \item \textbf{A causal/smoothed evaluation protocol.} A fixed-lag smoother
         produces two estimates, a causal one at the newest state and a
-        committed one revised by the full lag, and comparisons in the
+        smoothed one revised by the full lag, and comparisons in the
         literature rarely distinguish them. We report both throughout, so the
         comparison against causal filters is like for like and the price of
         latency is explicit: the causal output alone beats the recursive
-        baselines on most cases, and the committed output roughly halves its
+        baselines on most cases, and the smoothed output roughly halves its
         error at the cost of lagging real time by the lag.
   \item \textbf{Flight-data validation.} On uncompensated cabin magnetometers
         across eight cold-start cases spanning four lines, two flights, two
         maps and two altitude regimes, under one untuned configuration, the
-        committed estimate is the most accurate of the compared estimators on
+        smoothed estimate is the most accurate of the compared estimators on
         all eight cases and the causal estimate on six. Run rather than merely
         cited, the online EKF+TL+NN lineage of~\cite{gnadt2022,hager2026} is
         kept bounded by its network where a plain online-TL EKF diverges, yet
@@ -754,7 +754,7 @@ smoother. The inertial chain and the compensation chain evolve under their own
 process factors and are coupled at every epoch by the robust map factor, which
 reads the anomaly map and is the only place the two unknowns meet. States
 older than the lag are summarized by the marginal prior; the causal output is
-read at the newest state and the committed output where states leave the
+read at the newest state and the smoothed output where states leave the
 window.}
 \label{fig:graph}
 \end{figure*}
@@ -837,14 +837,14 @@ therefore produced at every epoch, and they are different products.
 $\boldsymbol{\chi}_k$ immediately after the update. It uses no measurement taken
 after $k$, so it is available with zero delay and is the estimate that a
 real-time navigator would read.
-\item The \emph{committed} estimate is the value a variable holds when it leaves
-the lag, that is after it has been revised by every measurement in the following
-$L$ seconds. It is the more accurate of the two and it is available only $L$
-seconds late.
+\item The \emph{smoothed} estimate is the value a variable holds when it
+leaves the lag, after revision by every measurement in the following $L$
+seconds: the classical fixed-lag smoothed output. It is the more accurate of
+the two and it is available only $L$ seconds late.
 \end{itemize}
 Both are reported throughout Section~\ref{sec:results}. Keeping them separate
 matters for comparison: a causal filter such as an EKF can only be compared
-against the causal estimate, whereas the committed estimate is the output of a
+against the causal estimate, whereas the smoothed estimate is the output of a
 system that is allowed to lag real time by $L$.
 
 \subsubsection{Incremental update}
@@ -984,9 +984,9 @@ The error metric is the horizontal distance root-mean-square (DRMS) of position
 error, counted after a \SI{600}{\second} warm-up. Following
 Section~\ref{sec:incremental}, the proposed estimator is reported twice in every
 table: the \emph{causal} value, read at the newest state with no look-ahead,
-and the \emph{committed} value, read as states leave the \SI{300}{\second} lag.
+and the \emph{smoothed} value, read as states leave the \SI{300}{\second} lag.
 The causal value is the like-for-like comparison against the recursive
-baselines, which also use no future data; the committed value is the output of
+baselines, which also use no future data; the smoothed value is the output of
 a system permitted to lag real time by the lag length, and the look-ahead
 behind every reported number is stated in its table. One configuration
 (Table~\ref{tab:params}) is used for every line and both magnetometers; nothing
@@ -1055,7 +1055,7 @@ for the NN-augmented EKF where the linear basis already suffices.
 \caption{Line 1007.06 Mag~4. (a)~Flown line on the map, with the zoom window
 marked. (b)~Zoom, in latitude/longitude, centred where the post-warm-up EKF
 error is largest: the estimated paths separate from the truth, with the
-committed estimate hugging it and the INS displaced to the east.}
+smoothed estimate hugging it and the INS displaced to the east.}
 \label{fig:track}
 \end{figure}
 
@@ -1069,7 +1069,7 @@ committed estimate hugging it and the INS displaced to the east.}
 
 
 \begin{table}[t]
-\caption{Line 1007.06 cold start: horizontal DRMS [m] after a \SI{600}{\second} warm-up. The causal output uses no look-ahead; the committed output lags by \SI{300}{\second}.}
+\caption{Line 1007.06 cold start: horizontal DRMS [m] after a \SI{600}{\second} warm-up. The causal output uses no look-ahead; the smoothed output lags by \SI{300}{\second}.}
 \label{tab:1007}
 \centering
 \begin{tabular}{lrrc}
@@ -1080,8 +1080,8 @@ EKF, online TL & 46.7 & 17.8 & none \\
 EKF{+}TL{+}NN~\cite{gnadt2022} & 48.8 & 18.3 & none \\
 MPF{+}TL (best tuning) & 1227.0 & 75.1 & none \\
 \midrule
-\textbf{Proposed, causal} & \textbf{42.7} & \textbf{16.0} & none \\
-\textbf{Proposed, committed} & \textbf{24.2} & \textbf{11.5} & \SI{300}{\second} \\
+Proposed, causal & 42.7 & 16.0 & none \\
+\textbf{Proposed, \SI{300}{\second} lag (smoothed)} & \textbf{24.2} & \textbf{11.5} & \SI{300}{\second} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1099,7 +1099,7 @@ and revises every state inside its lag. The margin over the EKF+TL+NN says
 something further: the network exists to absorb what the linear TL basis
 cannot, yet carrying the linear basis in a smoother beats carrying the linear
 basis plus a network in a filter, on both sensors, without any learned
-component. Allowed its \SI{300}{\second} lag, the committed estimate roughly
+component. Allowed its \SI{300}{\second} lag, the smoothed estimate roughly
 halves the causal error, to \num{24.2}/\SI{11.5}{\meter}. Fig.~\ref{fig:errhist}
 shows the error history, Fig.~\ref{fig:latlon} its north and east components
 against every baseline, Fig.~\ref{fig:track} the recovered track on the map,
@@ -1119,7 +1119,7 @@ Table~\ref{tab:1007}).}
 \centering
 \includegraphics[width=\columnwidth]{figs/fig_errhist.pdf}
 \caption{Line 1007.06 Mag~4, cold start: horizontal error of the causal and the
-committed estimates against free-inertial drift. The committed trace is the
+smoothed estimates against free-inertial drift. The smoothed trace is the
 causal trace revised by \SI{300}{\second} of look-ahead before each state is
 frozen.}
 \label{fig:errhist}
@@ -1136,7 +1136,7 @@ frozen.}
 
 
 \begin{table}[t]
-\caption{Breadth: DRMS [m] after a \SI{600}{\second} warm-up. ``div.''\ $>\SI{10}{\kilo\meter}$, ``err.''\ leaves the map; bold = best causal entry.}
+\caption{Breadth: DRMS [m] after a \SI{600}{\second} warm-up. ``div.''\ $>\SI{10}{\kilo\meter}$, ``err.''\ leaves the map; bold = best overall.}
 \label{tab:breadth}
 \centering
 \setlength{\tabcolsep}{3.5pt}
@@ -1144,16 +1144,16 @@ frozen.}
 \toprule
  & & EKF & EKF{+} & MPF{+} & \multicolumn{2}{c}{Proposed} \\
 \cmidrule(l){6-7}
-Line & Mag & online & TL{+}NN & TL & causal & \SI{300}{\second} \\
+Line & Mag & online & TL{+}NN & TL & causal & \SI{300}{\second} lag \\
 \midrule
-1007.06 & 4 & 46.7 & 48.8 & 1227.0 & \textbf{42.7} & 24.2 \\
-1007.06 & 5 & 17.8 & 18.3 & 75.1 & \textbf{16.0} & 11.5 \\
-1007.02 & 4 & div. & 130.0 & 1311.5 & \textbf{74.3} & 28.4 \\
-1007.02 & 5 & 31.6 & \textbf{30.4} & 2247.3 & 33.1 & 15.8 \\
-1003.02 & 4 & div. & 101.0 & 482.6 & \textbf{58.2} & 19.6 \\
-1003.02 & 5 & 28.1 & 29.5 & 40.9 & \textbf{21.9} & 12.0 \\
-1003.08 & 4 & err. & \textbf{46.6} & 2898.7 & 48.9 & 25.0 \\
-1003.08 & 5 & 21.1 & 20.7 & 77.1 & \textbf{19.2} & 10.5 \\
+1007.06 & 4 & 46.7 & 48.8 & 1227.0 & 42.7 & \textbf{24.2} \\
+1007.06 & 5 & 17.8 & 18.3 & 75.1 & 16.0 & \textbf{11.5} \\
+1007.02 & 4 & div. & 130.0 & 1311.5 & 74.3 & \textbf{28.4} \\
+1007.02 & 5 & 31.6 & 30.4 & 2247.3 & 33.1 & \textbf{15.8} \\
+1003.02 & 4 & div. & 101.0 & 482.6 & 58.2 & \textbf{19.6} \\
+1003.02 & 5 & 28.1 & 29.5 & 40.9 & 21.9 & \textbf{12.0} \\
+1003.08 & 4 & err. & 46.6 & 2898.7 & 48.9 & \textbf{25.0} \\
+1003.08 & 5 & 21.1 & 20.7 & 77.1 & 19.2 & \textbf{10.5} \\
 \midrule
 \multicolumn{5}{l}{best causal} & \textbf{6 / 8} & \\
 \multicolumn{5}{l}{best overall} & & \textbf{8 / 8} \\
@@ -1163,7 +1163,7 @@ Line & Mag & online & TL{+}NN & TL & causal & \SI{300}{\second} \\
 
 Table~\ref{tab:breadth} repeats the comparison on every counted line, spanning
 two flights, two maps, two altitude regimes, and both cabin magnetometers, with
-nothing re-tuned (Fig.~\ref{fig:breadthbar}). The committed estimate is the most accurate entry on all
+nothing re-tuned (Fig.~\ref{fig:breadthbar}). The smoothed estimate is the most accurate entry on all
 eight counted cases, between \SI{10.5}{} and \SI{28.4}{\meter}, and between
 \num{1.5} and \num{5.2} times better than the strongest causal baseline on the
 same case. Read causally, the proposed estimator is the best causal method on
@@ -1181,19 +1181,19 @@ smoother may revise its attribution for \SI{300}{\second} before committing.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figs/fig_lagsweep.pdf}
-\caption{Committed DRMS against lag (Table~\ref{tab:lag}); open markers show the lag-independent causal error.}
+\caption{Smoothed DRMS against lag (Table~\ref{tab:lag}); open markers show the lag-independent causal error.}
 \label{fig:lagsweep}
 \end{figure}
 
 
 \begin{table}[t]
-\caption{Lag sweep: committed DRMS [m], causal at $L=\SI{300}{\second}$. The causal output varies by under a metre across the sweep.}
+\caption{Lag sweep: smoothed DRMS [m], causal at $L=\SI{300}{\second}$. The causal output varies by under a metre across the sweep.}
 \label{tab:lag}
 \centering
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{ll rrrrr r}
 \toprule
- & & \multicolumn{5}{c}{lag $L$ [s], committed} & causal \\
+ & & \multicolumn{5}{c}{lag $L$ [s], smoothed} & causal \\
 \cmidrule(lr){3-7}
 Line & Mag & 30 & 60 & 150 & 300 & 600 & \\
 \midrule
@@ -1211,7 +1211,7 @@ Line & Mag & 30 & 60 & 150 & 300 & 600 & \\
 
 The lag is the estimator's single design variable, and Table~\ref{tab:lag}
 sweeps it from \SI{30}{} to \SI{600}{\second} on the four counted lines (Fig.~\ref{fig:lagsweep}). Two
-regularities carry the design guidance. First, the committed error improves
+regularities carry the design guidance. First, the smoothed error improves
 with lag on every case, steeply up to about \SI{300}{\second} and weakly after
 it: lengthening the lag from \SI{300}{} to \SI{600}{\second}, a
 doubling of both latency and computation, buys at most \SI{2.6}{\meter} and on
@@ -1230,7 +1230,7 @@ between the two columns and nothing else.
 \subsection{Ablation}\label{sec:ablation}
 
 \begin{table}[t]
-\caption{Ablation on line 1007.06, one change per row: committed (causal) DRMS [m].}
+\caption{Ablation on line 1007.06, one change per row: smoothed (causal) DRMS [m].}
 \label{tab:ablation}
 \centering
 \setlength{\tabcolsep}{4pt}
@@ -1303,9 +1303,9 @@ time-varying variables of a factor graph alongside the inertial error state,
 ties the two chains through the map measurement, and solves the graph with an
 incremental fixed-lag smoother built on iSAM2, at a \SI{300}{\second} lag and a
 \SI{1}{\hertz} state cadence. The estimator produces two outputs, a causal
-estimate with no look-ahead and a committed estimate revised by the full lag,
+estimate with no look-ahead and a smoothed estimate revised by the full lag,
 and we report both throughout, because they answer different questions: the
-causal output is what a navigator reads in flight, the committed output is what
+causal output is what a navigator reads in flight, the smoothed output is what
 a system that may lag real time delivers.
 
 On the SGL~2020 flight data the answers are as follows. Against a recursive EKF
@@ -1314,7 +1314,7 @@ of eight cold-start cases, so windowed relinearization pays before any
 look-ahead is spent. Against the strongest published causal method, an EKF
 augmented with an online neural network, the linear-basis smoother is more
 accurate on both magnetometers of the representative line with no learned
-component at all. The committed output is the most accurate estimate on all
+component at all. The smoothed output is the most accurate estimate on all
 eight counted cases, between \SI{10.5}{} and \SI{28.4}{\meter} where
 free-inertial drift is hundreds of metres, at \num{1.5} to \num{5.2} times the
 accuracy of the best causal baseline. The lag sweep locates the design knee

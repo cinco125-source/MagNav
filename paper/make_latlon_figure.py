@@ -56,7 +56,7 @@ for ax, comp, name in zip(axes, (0, 1), ("north (latitude)", "east (longitude)")
     ax.plot(t, e_nn[comp], color=C_BASE1, lw=0.8, label="EKF+TL+NN")
     ax.plot(tk, e_cau[comp], color=C_BASE3, lw=0.8, label="proposed, causal")
     ax.plot(tk, e_com[comp], color=C_PROPOSED, lw=1.1,
-            label="proposed, committed")
+            label="proposed, smoothed")
     ax.axhline(0, color="0.6", lw=0.5)
     ax.axvspan(0, 10, color="0.5", alpha=0.08, zorder=0)
     ax.set_ylabel(f"{name.split()[0]} error [m]", fontsize=8)

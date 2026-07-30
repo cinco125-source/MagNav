@@ -39,7 +39,7 @@ ax.plot(t, e_ins, ":", color=C_REF, lw=1.1, label="free inertial (317.5 m)")
 ax.plot(t, e_cau, "-", color=C_BASE1, lw=1.1, alpha=0.9,
         label="causal (42.7 m)")
 ax.plot(t, e_com, "-", color=C_PROPOSED, lw=1.4,
-        label="committed, 300 s lag (24.2 m)")
+        label="smoothed, 300 s lag (24.2 m)")
 ax.axvspan(0, 10, color="0.5", alpha=0.08, zorder=0)
 ax.text(5, 380, "warm-up", ha="center", fontsize=7, color="0.4")
 ax.set_xlabel("time [min]")

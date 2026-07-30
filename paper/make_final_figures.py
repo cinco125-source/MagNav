@@ -181,7 +181,7 @@ ax.annotate("", xy=(13.55, 3.95), xytext=(bx1 + 0.12, 3.95),
             arrowprops=dict(arrowstyle="-|>", color="#1c4587", lw=1.4))
 ax.text(13.75, 4.42, "position  $\\hat{\\mathbf{p}}$", fontsize=8.4,
         va="center", color="#1c4587")
-ax.text(13.75, 3.92, "causal: now\ncommitted: after lag $L$", fontsize=6.8,
+ax.text(13.75, 3.92, "causal: now\nsmoothed: after lag $L$", fontsize=6.8,
         va="center", color="0.35")
 ax.annotate("", xy=(13.55, 1.95), xytext=(bx1 + 0.12, 1.95),
             arrowprops=dict(arrowstyle="-|>", color="#8a5a00", lw=1.4))
@@ -333,6 +333,9 @@ ax.text((XS[0] + XS[1]) / 2, YB - 0.46, "$\\bar{\\phi}^{\\beta}_k$",
         fontsize=8.2, ha="center", color=C_BET)
 ax.text(XS[1] + 0.52, YZ + 0.04, "$\\bar{\\phi}^{\\mathrm{map}}_k$",
         fontsize=8.2, va="center", color=C_MAP)
+ax.annotate("scalar measurement $z_k$", xy=(XS[-1] + 0.13, YMAP + 0.02),
+            xytext=(14.35, YMAP + 0.55), fontsize=7.0, color=C_MAP,
+            arrowprops=dict(arrowstyle="-|>", color=C_MAP, lw=0.9))
 
 # read-out points
 ax.add_patch(FancyBboxPatch((XS[-1] - 0.52, YB - 0.40), 1.04, YX - YB + 0.80,
@@ -340,23 +343,36 @@ ax.add_patch(FancyBboxPatch((XS[-1] - 0.52, YB - 0.40), 1.04, YX - YB + 0.80,
                             ec=C_BASE3, lw=1.3, zorder=8))
 ax.text(XS[-1] + 0.75, YX + 0.52, "causal\noutput", fontsize=6.9,
         color="#7a5c00", ha="left")
-ax.annotate("committed output (leaves the lag)",
+ax.annotate("smoothed output (leaves the lag)",
             xy=(XS[0] - 0.60, YB - 0.48), xytext=(3.75, 1.16),
             fontsize=6.9, color="#0b5394",
             arrowprops=dict(arrowstyle="-|>", color=C_PROPOSED, lw=0.9))
 
-# the real anomaly map as the ground
+# the real anomaly map as a 3-D relief ground (height = anomaly strength)
 i0 = np.searchsorted(glat, bbox["lat"][0]); i1 = np.searchsorted(glat, bbox["lat"][1])
 j0 = np.searchsorted(glon, bbox["lon"][0]); j1 = np.searchsorted(glon, bbox["lon"][1])
 patch = anom[i0:i1, j0:j1]
-strip = patch[patch.shape[0] // 3, None, :].repeat(2, 0)
-strip = patch[: patch.shape[0] // 3]
-ax.imshow(strip, origin="lower", cmap=CMAP, extent=[1.2, 15.4, 0.02, 1.02],
-          vmin=-np.percentile(np.abs(patch), 99),
-          vmax=np.percentile(np.abs(patch), 99), interpolation="bilinear",
-          zorder=2, aspect="auto")
-ax.add_patch(Rectangle((1.2, 0.02), 14.2, 1.0, fill=False, ec="0.35", lw=0.8,
-                       zorder=3))
+band3 = patch[: patch.shape[0] // 3][::5, ::3]
+vmax3 = np.percentile(np.abs(band3), 99)
+X3, Y3 = np.meshgrid(np.linspace(0, 1, band3.shape[1]),
+                     np.linspace(0, 1, band3.shape[0]))
+import io as _io
+_f3 = plt.figure(figsize=(12.0, 2.1))
+_a3 = _f3.add_axes([0, 0, 1, 1], projection="3d")
+_a3.plot_surface(X3, Y3, np.clip(band3, -vmax3, vmax3), cmap=CMAP,
+                 vmin=-vmax3, vmax=vmax3, rstride=1, cstride=1, linewidth=0,
+                 antialiased=True)
+_a3.set_box_aspect((15.0, 2.0, 1.0), zoom=2.6)
+_a3.view_init(elev=36, azim=-90)
+_a3.set_axis_off(); _a3.patch.set_alpha(0); _f3.patch.set_alpha(0)
+_buf = _io.BytesIO()
+_f3.savefig(_buf, format="png", dpi=220, transparent=True)
+plt.close(_f3); _buf.seek(0)
+_img3 = plt.imread(_buf)
+_al = _img3[..., 3]
+_ys, _xs = np.where(_al > 0.02)
+_img3 = _img3[_ys.min():_ys.max() + 1, _xs.min():_xs.max() + 1]
+ax.imshow(_img3, extent=[1.0, 15.6, -0.10, 1.18], aspect="auto", zorder=2)
 ax.text(8.3, -0.26, "anomaly map $h(\\cdot)$ (Renfrew survey)", ha="center",
         fontsize=7.6)
 
@@ -402,7 +418,7 @@ axm = fig.add_subplot(gs[0])
 im = map_panel(axm)
 axm.plot(tdeg(tlon), tdeg(tlat), color="k", lw=1.2, label="truth")
 axm.plot(tdeg(io1 + est[:, 1]), tdeg(il1 + est[:, 0]), color=C_PROPOSED,
-         lw=0.9, ls=(0, (4, 2)), label="committed")
+         lw=0.9, ls=(0, (4, 2)), label="smoothed")
 axm.plot(tdeg(tlon[0]), tdeg(tlat[0]), marker="^", color="k", ms=6)
 cb = fig.colorbar(im, ax=axm, fraction=0.052, pad=0.02)
 cb.set_label("anomaly [nT]", fontsize=7, labelpad=1)
@@ -437,7 +453,7 @@ axe.plot(tdeg(_get("nn_lon")), tdeg(_get("nn_lat")), color=C_BASE1, lw=1.0,
 axe.plot(tdeg(io1 + est_rt[:, 1]), tdeg(il1 + est_rt[:, 0]), color=C_BASE3,
          lw=1.0, label="proposed, causal")
 axe.plot(tdeg(io1 + est[:, 1]), tdeg(il1 + est[:, 0]), color=C_PROPOSED,
-         lw=1.2, ls=(0, (5, 2)), label="proposed, committed")
+         lw=1.2, ls=(0, (5, 2)), label="proposed, smoothed")
 axe.plot(tdeg(tlon), tdeg(tlat), color="k", lw=1.5, label="truth")
 axe.set_xlim(*zl["lon"]); axe.set_ylim(*zl["lat"])
 axe.set_xlabel("longitude [deg]"); axe.set_ylabel("latitude [deg]")
@@ -492,7 +508,7 @@ ROWS = [("1007.06  M4", 46.7, 48.8, 42.7, 24.2),
         ("1003.08  M5", 21.1, 20.7, 19.2, 10.5)]
 C_WEAK = "#9aa4b2"
 SERIES = ((C_WEAK, "EKF, online TL"), (C_BASE1, "EKF+TL+NN"),
-          (C_BASE3, "proposed, causal"), (C_PROPOSED, "proposed, committed"))
+          (C_BASE3, "proposed, causal"), (C_PROPOSED, "proposed, smoothed"))
 fig, ax = plt.subplots(figsize=(COL_W, 3.4))
 y = np.arange(len(ROWS))[::-1]
 h = 0.19
@@ -553,16 +569,16 @@ for ax, mag in zip(axes, (4, 5)):
     ax.set_title(f"Mag {mag}", fontsize=8.5)
     ax.grid(True, which="both")
     despine(ax)
-axes[0].set_ylabel("committed DRMS [m]")
+axes[0].set_ylabel("smoothed DRMS [m]")
 for ax in axes:
     ax.set_xlim(26, LAGS[-1] * 1.9)
 axes[1].text(LAGS[-1] * 1.45, 30.5, "causal", fontsize=6, ha="center",
              color="0.35")
 handles, labels = axes[0].get_legend_handles_labels()
 fig.legend(handles, labels, loc="lower center", ncol=4, fontsize=6.4,
-           frameon=False, bbox_to_anchor=(0.5, -0.045), columnspacing=1.0,
+           frameon=False, bbox_to_anchor=(0.5, -0.135), columnspacing=1.0,
            handlelength=1.3)
-fig.subplots_adjust(bottom=0.40)
+fig.subplots_adjust(bottom=0.46)
 fig.tight_layout(pad=0.3)
 fig.savefig(os.path.join(OUT, "fig_lagsweep.pdf"))
 fig.savefig(os.path.join(OUT, "fig_lagsweep.png"), dpi=170)
