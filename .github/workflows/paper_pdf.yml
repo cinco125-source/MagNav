@@ -26,19 +26,8 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install matplotlib
-        run: pip install --quiet 'matplotlib>=3.7' numpy
-
-      - name: Regenerate figures
-        working-directory: paper
-        run: |
-          python make_figures.py
-          python plot_tracks.py
+      # Figures are committed build artifacts; regenerating them here would
+      # require the flight data and would overwrite the curated versions.
 
       - name: Compile with IEEEtran (pdflatex + bibtex)
         uses: xu-cheng/latex-action@v3
