@@ -46,7 +46,7 @@ jobs:
             git pull --rebase --autostash origin ${{ github.ref_name }} || true
             git push origin HEAD:${{ github.ref_name }}
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mc-nees-mpf-results
