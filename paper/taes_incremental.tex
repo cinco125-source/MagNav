@@ -518,7 +518,8 @@ unknown, here the state $\boldsymbol{\chi}_k$ at one epoch. A \emph{factor node}
 holds one piece of information, and an edge joins a factor to every variable
 that piece of information involves. No edge joins two variables or two factors,
 so the graph is bipartite, and a factor is a function only of the variables it
-touches. Fig.~\ref{fig:fgbasic} shows the pattern for a short trajectory.
+touches. Fig.~\ref{fig:graph} shows this pattern for the graph this paper
+builds in Section~\ref{sec:method}.
 
 Three kinds of factor appear in any navigation graph, and they exhaust the ones
 used in this paper. A \emph{prior} factor is unary and states what is believed
@@ -547,18 +548,6 @@ with $\mathbf{X}_i$ the variables adjacent to factor $i$. The graph is a
 picture of this factorization, and its sparsity is the problem's sparsity: each
 factor constrains one or two states, never the whole trajectory at once.
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figs/fig_fgbasic.pdf}
-\caption{The graph the smoother maintains, exactly as implemented. Circles are
-the joint states at the \SI{1}{\hertz} cadence; binary factors carry the
-transition and process noise compounded over the $K$ intervening samples; a
-robust map factor hangs from every state; everything older than the lag is
-summarized by the marginal prior on the oldest retained state. The causal
-output is read at the newest state, the committed output where states leave
-the lag.}
-\label{fig:fgbasic}
-\end{figure}
 
 \subsection{From factors to least squares}
 Each factor is modelled with a Gaussian kernel about its predicted value,
@@ -760,10 +749,13 @@ residual.
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.96\textwidth]{figs/fig_graph.pdf}
-\caption{Factor graph of the joint problem. The inertial error chain (top) and
-the compensation chain (bottom) evolve under their own process factors and are
-coupled at every epoch by the scalar map factor, which is the only place the
-two unknowns meet, and the reason they must be estimated together.}
+\caption{Factor graph of the joint problem, as maintained by the fixed-lag
+smoother. The inertial chain and the compensation chain evolve under their own
+process factors and are coupled at every epoch by the robust map factor, which
+reads the anomaly map and is the only place the two unknowns meet. States
+older than the lag are summarized by the marginal prior; the causal output is
+read at the newest state and the committed output where states leave the
+window.}
 \label{fig:graph}
 \end{figure*}
 
