@@ -966,9 +966,10 @@ forward is the Schur complement
 \end{equation}
 so for the linearized model no information is discarded. What is fixed is
 the linearization at which Eq.~\eqref{eq:schur} is evaluated: for the
-nonlinear factors the carried prior is a Laplace approximation, which can
-inject slight overconfidence, an effect measured in
-Section~\ref{sec:consistency}. This is the precise sense in which a smoothed
+nonlinear factors the carried prior is a Laplace approximation, a potential
+source of overconfidence that the simulation of
+Section~\ref{sec:consistency} finds below its resolution. This is the
+precise sense in which a smoothed
 state can no longer be revised. Equation~\eqref{eq:schur} also requires
 $\boldsymbol{\Lambda}_{mm}$ to be invertible, which the process-noise floor
 of Section~\ref{sec:incremental} guarantees.
@@ -1522,18 +1523,17 @@ covariance $\mathbf{P}$ from the Bayes tree, at the newest state for the
 causal output and at the state leaving the lag for the smoothed output. The
 synthetic measurements are generated through the nonlinear map at the
 perturbed position, so linearization error is present in the experiment.
-Over \num{20} independent runs the causal average NEES is $2.03\pm0.19$ and
-the smoothed average $2.26\pm0.27$, mean and 95\% $t$-interval over run
+Over \num{40} independent runs the causal average NEES is $2.10\pm0.13$ and
+the smoothed average $2.11\pm0.18$, mean and 95\% $t$-interval over run
 means, against the consistent value of \num{2}; within-run samples are
 serially correlated over the lag, so the run-level spread, not a per-sample
-chi-square band, is the honest error bar. The causal output is statistically
-consistent. The smoothed marginal is on average about \SI{13}{\percent} too
-small in the NEES (variance) sense, \SI{6}{\percent} in standard deviation,
-at the edge of significance, consistent with, though not isolated to, the
-linearizations frozen at marginalization
-(Section~\ref{sec:incremental}). The test exercises the Gaussian
-specialization; the robust kernel of the flown configuration is outside its
-scope.
+chi-square band, is the honest error bar. Both intervals contain \num{2}:
+the solver machinery, including the marginalization of
+Eq.~\eqref{eq:schur}, is statistically consistent when the model is true,
+and any overconfidence from the frozen linearizations is below the
+resolution of the test, under about ten percent in the NEES (variance)
+sense. The test exercises the Gaussian specialization; the robust kernel of
+the flown configuration is outside its scope.
 
 \emph{Coverage in flight.} On real data the model is not perfect, the map
 carries error and the interference is not white, so the same statistic is a
