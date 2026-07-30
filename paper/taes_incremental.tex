@@ -734,8 +734,9 @@ is quantified in Section~\ref{sec:obs}.
 
 \subsection{Separability of position and compensation}\label{sec:obs}
 The competition just described can be made exact. Collect, over a window of $W$
-epochs, the position sensitivities and the regressor rows of the linearized
-measurement Eq.~\eqref{eq:measlin} into
+epochs, the horizontal position sensitivities (the vertical channel is
+baro-aided) and the regressor rows of the linearized measurement
+Eq.~\eqref{eq:measlin} into
 \begin{equation}
 \mathbf{G}=\begin{bmatrix}\mathbf{g}_1^{\top}\\ \vdots\\ \mathbf{g}_W^{\top}\end{bmatrix}
 \in\mathbb{R}^{W\times2},
@@ -752,9 +753,11 @@ $\boldsymbol{\Psi}\,\delta\boldsymbol{\beta}$ respectively.
 \begin{proposition}[Position separability]\label{prop:obs}
 A position perturbation $\delta\mathbf{p}\neq\mathbf{0}$ is distinguishable
 from every compensation adjustment over the window if and only if
-$\mathbf{G}\,\delta\mathbf{p}\notin\mathrm{range}(\boldsymbol{\Psi})$;
-equivalently, horizontal position is locally identifiable, modulo
-$\ker\boldsymbol{\Psi}$, if and only if
+$\mathbf{G}\,\delta\mathbf{p}\notin\mathrm{range}(\boldsymbol{\Psi})$.
+Consequently every nonzero $\delta\mathbf{p}$ is distinguishable, so that the
+pair $(\delta\mathbf{p},\delta\boldsymbol{\beta})$ is locally identifiable up
+to $\delta\boldsymbol{\beta}\in\ker\boldsymbol{\Psi}$, and in particular
+horizontal position is locally identifiable, if and only if
 \begin{equation}
 \operatorname{rank}\!\big[(\mathbf{I}-\boldsymbol{\Psi}\boldsymbol{\Psi}^{\dagger})\,\mathbf{G}\big]=2,
 \label{eq:projrank}
@@ -766,24 +769,36 @@ The proof is in Appendix~\ref{app:proof}. The condition deliberately does not
 ask for identifiability of $\boldsymbol{\beta}$ itself, which would require
 $\ker\boldsymbol{\Psi}=\{\mathbf{0}\}$, because the \num{19}-term basis does
 not satisfy it: in continuous time
-$B_t(u\dot{u}+v\dot{v}+w\dot{w})=0$ ties the three diagonal eddy columns
-exactly, and $B_t(u^2+v^2+w^2)=B_t$ leaves the induced diagonal within about
-one percent of the constant bias column, since the total field varies little
-over a line. On the data, the smallest singular values of a
-\SI{300}{\second} window of $\boldsymbol{\Psi}$ are six orders of magnitude
-below the largest. Navigation, however, needs the compensation signal
-$\boldsymbol{\Psi}\boldsymbol{\beta}$, not the coefficients: two coefficient
-vectors differing by an element of $\ker\boldsymbol{\Psi}$ produce the same
-correction, so the gauge is harmless to position, and
-Eq.~\eqref{eq:projrank} is the condition that matters.
+$B_k(u\dot{u}+v\dot{v}+w\dot{w})=0$ ties the three diagonal eddy columns
+exactly, and $B_k(u^2+v^2+w^2)=B_k$ makes the sum of the three diagonal
+induced columns proportional to the constant bias column up to the variation
+of the total field, about one percent RMS over a line. Both ties hold
+exactly only in continuous time and are blurred at a comparable level by the
+finite-differenced fluxgate rates; on the data they survive, since with every
+column normalized to unit norm the smallest singular value of a
+\SI{300}{\second} window of $\boldsymbol{\Psi}$ is still six orders of
+magnitude below the largest. Navigation, however, needs the compensation
+signal $\boldsymbol{\Psi}\boldsymbol{\beta}$, not the coefficients: two
+coefficient vectors differing by an element of $\ker\boldsymbol{\Psi}$
+produce the same correction, so the gauge is harmless to position, and
+Eq.~\eqref{eq:projrank} is the condition that matters. The pseudoinverse
+makes the condition gauge-invariant by construction, the projector onto
+$\mathrm{range}(\boldsymbol{\Psi})$ being unchanged by the near-null
+directions; numerically, the metric below moves by nothing across four
+decades of rank tolerance. The FOGM disturbance $S_k$ of
+Eq.~\eqref{eq:measlin} competes for the same scalar as well: its
+window-constant part lies in $\mathrm{range}(\boldsymbol{\Psi})$ through the
+bias column and is projected out with it, while its variation inside the
+window is neglected in this analysis.
 
 The condition also reads directly onto the estimator design. At a single
 epoch, $\mathbf{G}$ has one row and the projected matrix has rank at most one,
 so Eq.~\eqref{eq:projrank} can never hold: a memoryless correction cannot
 separate the two effects. As the window grows, the map gradient under the
 flight path and the attitude-driven regressor decorrelate and the projected
-gradient accumulates rank and strength; the smallest singular value of the
-whitened projected gradient,
+gradient accumulates rank and strength; the smallest eigenvalue of the Gram
+matrix of the whitened projected gradient (the squared smallest singular
+value),
 \begin{equation}
 \mu(W)=\lambda_{\min}\!\Big(\bar{\mathbf{G}}^{\top}
 (\mathbf{I}-\bar{\boldsymbol{\Psi}}\bar{\boldsymbol{\Psi}}^{\dagger})
@@ -792,16 +807,22 @@ whitened projected gradient,
 \end{equation}
 with $\bar{\mathbf{G}}=R^{-1/2}\mathbf{G}$ and
 $\bar{\boldsymbol{\Psi}}=R^{-1/2}\boldsymbol{\Psi}$ the noise-whitened
-matrices,
-is a computable, flight-dependent measure of that strength, and
-$\mu(W)^{-1/2}$ predicts the weakest-direction position uncertainty a window
-of length $W$ can support under a static-coefficient reading of the model.
-Section~\ref{sec:lagdesign} evaluates $\mu$ on the flight lines against the
-measured lag knee. This static-perturbation analysis is a
-measurement-level statement; in the implemented estimator the compensation
-walk $\mathbf{Q}^{\beta}$, the inertial process factors, and the priors all
-contribute additional coupling, and the empirical ablation of
-Section~\ref{sec:ablation} is the measure of their effect.
+matrices, is a computable, flight-dependent measure of that strength:
+$\mu(W)^{-1/2}$ is the weakest-direction position standard deviation that a
+single isolated window of $W$ epochs supports under a static-coefficient
+reading of the model. It is not a bound on the estimator's error, and its
+assumptions cut both ways. It is optimistic in holding $\delta\mathbf{p}$
+and $\boldsymbol{\beta}$ fixed across the window and the residual white; it
+is pessimistic in seeing one window in isolation, whereas the smoother
+carries information across windows through the marginal prior of
+Eq.~\eqref{eq:schur} and the coefficients are quasi-static far beyond one
+window. Its absolute level scales as $\sqrt{R}$, an assumed constant, and it
+measures one direction while DRMS is a two-axis RMS. What survives these
+caveats is the shape in $W$ and the comparison across lines, and
+Section~\ref{sec:lagdesign} uses it for exactly that: where the knee sits,
+and which line is weakest. The empirical ablation of
+Section~\ref{sec:ablation} measures what the walk $\mathbf{Q}^{\beta}$, the
+inertial process factors, and the priors add.
 
 \begin{remark}\label{rem:floor}
 The condition is geometric: it depends on the map gradient under the
@@ -907,10 +928,10 @@ leaves the lag, after revision by every measurement in the following $L$
 seconds: the classical fixed-lag smoothed output. It is the more accurate of
 the two and it is available only $L$ seconds late.
 \end{itemize}
-Both are components of one optimization. Writing
-$J_k$ for the objective Eq.~\eqref{eq:objective} restricted to the retained
-window at epoch $k$, the smoother computes the joint estimate and reads two
-components of it,
+Both are components of one optimization. Writing $J_k$ for the objective
+Eq.~\eqref{eq:objective} restricted to the factors retained at epoch $k$,
+together with the marginal prior of Eq.~\eqref{eq:schur} below, the smoother
+computes the joint estimate and reads two components of it,
 \begin{equation}
 \hat{\mathbf{X}}_k=\arg\min_{\mathbf{X}}J_k(\mathbf{X}),\quad
 \hat{\boldsymbol{\chi}}^{\mathrm{c}}_{k}=[\hat{\mathbf{X}}_k]_{k},\quad
@@ -919,10 +940,12 @@ components of it,
 \end{equation}
 with $\ell=L/\Delta$ the lag in states. Under a linear-Gaussian
 specialization these components coincide with the classical filtering and
-fixed-lag smoothing estimates; in the nonlinear robust formulation they are
+fixed-lag smoothing estimates, since a component of a Gaussian joint mode is
+the corresponding marginal mean; in the nonlinear robust formulation they are
 the current and delayed components of the fixed-lag joint MAP solution, and
 any covariance attached to them is the Laplace approximation at the current
-linearization and IRLS weights.
+linearization and IRLS weights, without the M-estimator sandwich correction,
+hence if anything optimistic.
 Marginalization realizes the boundary compactly: if $\mathbf{x}_m$ denotes the
 states leaving the lag and $\mathbf{x}_b$ the retained states their factors
 touch, with joint information matrix and vector partitioned as
@@ -941,9 +964,14 @@ forward is the Schur complement
 -\boldsymbol{\Lambda}_{bm}\boldsymbol{\Lambda}_{mm}^{-1}\boldsymbol{\eta}_{m},
 \label{eq:schur}
 \end{equation}
-so no information is discarded, but the linearization at which
-Eq.~\eqref{eq:schur} is evaluated is frozen: this is the precise sense in
-which a smoothed state can no longer be revised.
+so for the linearized model no information is discarded. What is fixed is
+the linearization at which Eq.~\eqref{eq:schur} is evaluated: for the
+nonlinear factors the carried prior is a Laplace approximation, which can
+inject slight overconfidence, an effect measured in
+Section~\ref{sec:consistency}. This is the precise sense in which a smoothed
+state can no longer be revised. Equation~\eqref{eq:schur} also requires
+$\boldsymbol{\Lambda}_{mm}$ to be invertible, which the process-noise floor
+of Section~\ref{sec:incremental} guarantees.
 
 Both are reported throughout Section~\ref{sec:results}. Keeping them separate
 matters for comparison: a causal filter such as an EKF can only be compared
@@ -1003,7 +1031,10 @@ the field of an uncalibrated installation: the uncompensated cabin field is of
 order \SI{2000}{\nano\tesla}, and the coefficients that explain it are far from
 zero in the units of Eq.~\eqref{eq:tlbasis}. For initial stability we therefore
 widen the compensation block relative to a calibrated installation and use
-$\sigma_{\beta}=100$ throughout. The setting is not delicate: the ablation of
+$\sigma_{\beta}=100$ throughout. The isotropic form mixes the units of the
+coefficient groups; the dimensionally uniform alternative, a common prior
+contribution of \SI{100}{\nano\tesla} per regressor column, performs
+identically in the ablation. The setting is not delicate: the ablation of
 Section~\ref{sec:ablation} varies it by an order of magnitude in each direction,
 and every other element of the configuration, and finds metre-level effects.
 
@@ -1145,13 +1176,24 @@ fits the Rao--Blackwellized structure exactly: our implementation carries
 position in \num{1000} particles and marginalizes the remaining states,
 including $\boldsymbol{\beta}$, in the conditional Kalman block, with the
 fluxgate row entering the linear measurement Jacobian. Weights are computed in
-the log domain and position diversity is reinjected after resampling. Despite
-this, and under per-case tuning of measurement variance, resampling threshold
-and roughening that no other estimator in this paper receives, the filter is
-unstable at a cold start: its best per-case results range from
-\SI{38.7}{\meter} on the cleanest Mag~5 leg to kilometres on Mag~4, with strong
-seed dependence. We report it in the text rather than in the comparison tables,
-and we do not claim it represents the best achievable particle filter.
+the log domain and position diversity is reinjected after resampling. The
+filter's cold-start behaviour is dominated by the compensation prior. Run at
+$\sigma_{\beta}=1$, the scale of a calibrated installation, it fails at
+kilometre scale on every Mag~4 case: the conditional Kalman block then
+predicts a measurement variance orders of magnitude below the truth, and the
+particle weights degenerate into a directed walk up the local map gradient.
+Matching the prior to the installation scale ($\sigma_{\beta}=700$, the
+magnitude the fitted coefficients reach) repairs the dominant term, bringing
+five of the eight cases to \SIrange{25}{95}{\meter} (\SI{1227}{} to
+\SI{93.5}{\meter} on 1007.06 Mag~4), but both sensors of 1007.02, the line
+with the weakest separability in Fig.~\ref{fig:obsmetric}, still diverge, and
+the results remain seed-sensitive. The contrast with the windowed estimator
+is the instructive part: a one-step filter must trust its compensation prior
+at every epoch, whereas the smoother amortizes the same prior over the window
+and is insensitive to it across two orders of magnitude
+(Section~\ref{sec:ablation}). We therefore report the MPF in the text rather
+than in the comparison tables, and we do not claim it represents the best
+achievable particle filter.
 Attaching the neural network of the EKF+TL+NN to the particle filter does not
 rescue it and is sharply harmful on the well-conditioned sensor, degrading
 Mag~5 by one to two orders of magnitude across lines, the same direction seen
@@ -1312,33 +1354,40 @@ Line & Mag & 30 & 60 & 150 & 300 & 600 & \\
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figs/fig_obsmetric.pdf}
-\caption{Separability metric $\mu(L)^{-1/2}$ of Eq.~\eqref{eq:mu} (dashed,
-median and interquartile range over sliding windows) against the measured
-smoothed DRMS (solid, Mag~4), per line.}
+\caption{Separability metric $\mu^{-1/2}$ of Eq.~\eqref{eq:mu} at window
+length $L$ (dashed, median and interquartile range over sliding windows)
+against the measured smoothed DRMS at lag $L$ (solid, Mag~4; the metric is
+sensor-independent), per line.}
 \label{fig:obsmetric}
 \end{figure}
 
 The lag is the estimator's principal design variable, and Table~\ref{tab:lag}
 sweeps it from \SI{30}{} to \SI{600}{\second} on the four counted lines (Fig.~\ref{fig:lagsweep}). Two
 regularities carry the design guidance. First, the smoothed error improves
-with lag on every case, steeply up to about \SI{300}{\second} and weakly after
-it: lengthening the lag from \SI{300}{} to \SI{600}{\second}, a
+monotonically with lag up to \SI{300}{\second} on every case, and weakly
+after it: lengthening the lag from \SI{300}{} to \SI{600}{\second}, a
 doubling of both latency and computation, buys at most \SI{2.6}{\meter} and on
 one case slightly degrades, while the step from \SI{30}{} to \SI{300}{\second}
 buys between \SI{3.6}{} and \SI{41.8}{\meter}. The knee is anticipated by the
 separability metric of Eq.~\eqref{eq:mu}: Fig.~\ref{fig:obsmetric} evaluates
-$\mu(L)^{-1/2}$ in sliding windows along each line at the \SI{1}{\hertz} kept
-cadence. At \SI{30}{\second} the weakest-direction bound is
-\SIrange{184}{1585}{\meter}, no useful window; it falls steeply with window
-length and by \SI{300}{\second} reaches \SIrange{6.7}{19.3}{\meter}, the
-scale of the measured smoothed error, so past the knee separability is no
-longer the binding constraint and the residual error is set by map error,
-inertial noise, and coefficient drift, which more look-ahead does not remove. The
-metric also reproduces the ordering across lines: 1007.02, whose metric is
-the weakest at every window length (\SI{19.3}{\meter} at \SI{300}{\second}
-against \SIrange{6.7}{7.6}{\meter} for the other three), is the line with the
-largest measured error at every lag. We take \SI{300}{\second} as the
-default. Second, the causal column is flat: across a
+$\mu^{-1/2}$ in sliding windows of length equal to the lag, at the
+\SI{1}{\hertz} kept cadence. Being a single-window quantity, the metric does
+not bound the smoothed error, which draws on information carried across
+windows by the marginal prior: at \SI{30}{\second} the per-line medians are
+\SIrange{184}{1585}{\meter} while the measured smoothed DRMS is
+\SIrange{15.1}{70.2}{\meter}. It is also blind to the magnetometer, so the
+Mag~4 to Mag~5 gap is outside its reach. What it carries is the shape and
+the geography, and both match. The metric falls by one and a half to two
+orders of magnitude between \SI{30}{} and \SI{300}{\second}, the range in
+which the measured smoothing gain is concentrated; past \SI{300}{\second}
+the measured DRMS stops improving even though the single-window metric keeps
+falling, so beyond the knee the error is no longer separability-limited but
+set by map error, inertial noise, and coefficient drift, which more
+look-ahead does not remove. And the metric identifies the weakest line:
+1007.02, lowest at every window length (median \SI{19.3}{\meter} at
+\SI{300}{\second} against \SIrange{6.7}{7.6}{\meter} for the other three),
+is the line with the largest measured error at every lag on both sensors.
+We take \SI{300}{\second} as the default. Second, the causal column is flat: across a
 twentyfold change in lag the causal error moves by less than a metre on every
 case. The lag decides only how long a state is revised before it is frozen, not
 how good the newest state is, so the accuracy bought by look-ahead is entirely
@@ -1394,6 +1443,115 @@ device to be kept minimal rather than a tuning knob. Attaching all ten raw
 measurements to each state instead of one costs \SI{2.3}{\meter} on Mag~4 and
 nothing on Mag~5, at four times the computation, supporting the
 \SI{1}{\hertz} state cadence.
+
+\subsection{Cold-start transient and initial uncertainty}\label{sec:transient}
+
+\begin{table}[t]
+\caption{First \SI{600}{\second} of the cold start: DRMS and peak horizontal
+error [m] inside the warm-up window.}
+\label{tab:transient}
+\centering
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{ll rr rr}
+\toprule
+ & & \multicolumn{2}{c}{smoothed} & \multicolumn{2}{c}{causal} \\
+\cmidrule(lr){3-4}\cmidrule(l){5-6}
+Line & Mag & DRMS & peak & DRMS & peak \\
+\midrule
+1007.06 & 4 & 55.0 & 95.0 & 135.5 & 323.1 \\
+1007.06 & 5 & 10.7 & 18.6 & 41.2 & 107.6 \\
+1007.02 & 4 & 36.7 & 73.3 & 93.2 & 220.3 \\
+1007.02 & 5 & 36.5 & 53.2 & 65.2 & 134.4 \\
+1003.02 & 4 & 21.5 & 48.9 & 72.3 & 206.8 \\
+1003.02 & 5 & 11.9 & 15.2 & 40.0 & 107.6 \\
+1003.08 & 4 & 23.3 & 31.4 & 110.6 & 303.6 \\
+1003.08 & 5 & 13.2 & 18.8 & 31.0 & 57.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Every DRMS so far excludes the first \SI{600}{\second}, so Table~\ref{tab:transient}
+reports what happens inside that window, when the compensation is least
+known. The smoothed value of an epoch is the value it holds when it leaves
+the lag, so every entry in the smoothed columns has been revised by up to
+\SI{300}{\second} of later measurements. The estimator does not pass through
+a divergent phase: the smoothed output runs at \SIrange{10.7}{55.0}{\meter}
+DRMS during the transient, within \SI{30}{\percent} of its own converged
+value on six of the eight cases and within a factor of \num{2.3} on the
+remaining two. What the transient taxes is causality. The causal output
+peaks between \SI{57}{} and \SI{323}{\meter}, and over the same interval the
+free-inertial drift is only \SIrange{33}{65}{\meter} DRMS with peaks of
+\SIrange{64}{116}{\meter}: while the window is too short for position and
+compensation to be separable (Proposition~\ref{prop:obs} at small $W$), the
+causal estimate can attribute interference to position in a way the unaided
+INS cannot, and on most cases it is transiently worse than coasting. The
+mis-attribution is repaid within the lag, since the smoothed revision of the
+same epochs is already at the converged scale, and after the warm-up the
+causal output beats the free-inertial drift on every counted case.
+
+The cold start of this paper assumes a known takeoff position
+(\SI{0.1}{\meter} horizontal prior) and an unknown installation field.
+Relaxing the former tests how much the results lean on it: widening the
+initial horizontal position prior to \SI{10}{}, \SI{50}{}, and
+\SI{100}{\meter} on both sensors of 1007.06 moves the post-warm-up smoothed
+DRMS by at most \SI{0.4}{\meter} (\SI{24.19}{} to \SI{24.54}{\meter} on
+Mag~4, \SI{11.53}{} to \SI{11.66}{\meter} on Mag~5) and the causal DRMS by
+at most \SI{4.6}{\meter}. The transient pays more: at the \SI{100}{\meter}
+prior the in-window smoothed DRMS rises from \SI{55.0}{} to
+\SI{69.1}{\meter} on Mag~4 and from \SI{10.7}{} to \SI{22.0}{\meter} on
+Mag~5, while the causal transient is essentially unchanged. The two cases of
+Table~\ref{tab:transient} that beat their converged values do so by leaning
+on the tight anchor, and the advantage disappears with it. The information
+that converges the estimator is the map gradient accumulated over the first
+window, not the decimetre anchor, and the post-warm-up claims do not depend
+on a surveyed takeoff point.
+
+\subsection{Statistical consistency}\label{sec:consistency}
+Whether the reported covariance can be believed is a separate question from
+accuracy, and we answer it in two parts, formal and diagnostic.
+
+\emph{Monte Carlo under a perfect model.} The error-state truth is simulated
+from the estimator's own discretized model on the 1007.06 geometry, the
+transition and process noise of Eq.~\eqref{eq:compound} at the \SI{1}{\hertz}
+cadence, and measurements are synthesized from the same map, regressor, and
+$R$ with Gaussian noise; the robust kernel is disabled, since the noise is
+truly Gaussian, and the smoother runs exactly as flown otherwise. For each
+epoch the two-degree-of-freedom horizontal-position NEES
+$\mathbf{e}^{\top}\mathbf{P}^{-1}\mathbf{e}$ is evaluated with the marginal
+covariance $\mathbf{P}$ from the Bayes tree, at the newest state for the
+causal output and at the state leaving the lag for the smoothed output. The
+synthetic measurements are generated through the nonlinear map at the
+perturbed position, so linearization error is present in the experiment.
+Over \num{20} independent runs the causal average NEES is $2.03\pm0.19$ and
+the smoothed average $2.26\pm0.27$, mean and 95\% $t$-interval over run
+means, against the consistent value of \num{2}; within-run samples are
+serially correlated over the lag, so the run-level spread, not a per-sample
+chi-square band, is the honest error bar. The causal output is statistically
+consistent. The smoothed marginal is on average about \SI{13}{\percent} too
+small in the NEES (variance) sense, \SI{6}{\percent} in standard deviation,
+at the edge of significance, consistent with, though not isolated to, the
+linearizations frozen at marginalization
+(Section~\ref{sec:incremental}). The test exercises the Gaussian
+specialization; the robust kernel of the flown configuration is outside its
+scope.
+
+\emph{Coverage in flight.} On real data the model is not perfect, the map
+carries error and the interference is not white, so the same statistic is a
+diagnostic of the reported covariance rather than a consistency test. On
+1007.06, the fraction of post-warm-up epochs whose horizontal error lies
+inside the 95\% ellipse of the reported Laplace covariance
+($\chi^2_2$ threshold \num{5.99}) is \SI{93}{\percent} causal and
+\SI{62}{\percent} smoothed on Mag~5, and \SI{53}{\percent} causal and
+\SI{27}{\percent} smoothed on Mag~4; the errors are correlated over roughly
+the lag, so these fractions carry an effective sample size of order tens,
+not thousands. The pattern is informative: the covariance is nearly honest
+where the model is nearly right, and optimistic exactly where unmodeled map
+error and residual interference dominate, more so for the smoothed output
+whose reported uncertainty is smaller. Restoring \SI{95}{\percent} coverage
+would take a standard-deviation inflation of roughly \num{1.1} (Mag~5
+causal) to \num{3} (Mag~4 smoothed); an integrity layer built on this
+estimator should inflate accordingly, and the accuracy claims of this paper
+rest on the measured DRMS, not on the reported covariance.
 
 \subsection{Computational cost}\label{sec:cost}
 All timings are single-core, on a laptop-class x86 processor under WSL2, with
