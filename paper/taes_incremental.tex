@@ -1032,11 +1032,19 @@ noise exactly across the $K$ samples that a variable interval spans,
 \label{eq:compound}
 \end{equation}
 so that the retained chain is an exact marginal of the full-rate chain in its
-process model. The map factors at the intermediate samples are not carried:
-at survey speed the along-track anomaly signal lies well below the
+process model. The map factors at the intermediate samples are not carried.
+At survey speed the along-track anomaly signal lies well below the
 \SI{0.5}{\hertz} Nyquist frequency of the retained cadence, so the discarded
-samples are largely redundant, and the cost of the choice is measured
-directly in Section~\ref{sec:cost}.
+samples are largely redundant, and denser sampling cannot substitute for a
+longer window: keeping all ten samples per state multiplies the rows of
+$\mathbf{G}$ and $\boldsymbol{\Psi}$ without changing the path they trace, so
+$\mu$ of Eq.~\eqref{eq:mu} improves by exactly the $\sqrt{10}$ of independent
+averaging and its geometry not at all. That factor is not realized in flight,
+because at \SI{67}{\meter\per\second} consecutive samples are under
+\SI{7}{\meter} apart and share their map error; the ablation of
+Section~\ref{sec:ablation} measures the outcome as a loss of
+\SI{2.3}{\meter} on Mag~4 at four times the computation. Separability is
+bought with track, not with samples.
 
 \subsubsection{Conditioning}
 One numerical point matters for reproduction. The position channel of
