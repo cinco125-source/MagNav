@@ -247,14 +247,14 @@ improve consistency under nonlinearity. The invariant line has reached this
 application: Hager et al.\ formulate map-matching aiding as an error-state
 filter on the $SE_2(3)$ group of extended poses, correcting the inertial
 solution in closed loop so that the linearized dynamics stay accurate even for
-a tactical-grade unit~\cite{hager2025lie}. That gain is on the propagation
-side, and it is complementary to the question studied here: the study is in
+a tactical-grade unit~\cite{hager2025lie}. The group structure improves the
+propagation and the closed-loop error dynamics, but it does not directly
+resolve the position--compensation ambiguity studied here, and the map
+sensitivity remains governed by the local spatial gradient; the study is in
 simulation and assumes every magnetic source but the anomaly field to be
-perfectly corrected beforehand, so the aircraft field never enters, and the
-map term itself gains nothing from the group structure, its Jacobian still
-being a finite difference of a map that is by construction not invariant to
-position. Its reported divergence on low-information maps is the same
-map-information floor we make explicit in Section~\ref{sec:obs}.
+perfectly corrected beforehand, so the aircraft field never enters. Its
+degradation on low-information maps is consistent with the map-information
+floor formalized in Section~\ref{sec:obs}.
 However, these estimators are causal:
 they commit each state online with no access to future measurements, and the
 position-centric ones carry no compensation state of their own. When a large
@@ -365,8 +365,8 @@ The paper makes the following contributions:
         identified, and turn it into a computable weakest-direction
         information metric. Evaluated on the flight lines, it explains where
         the accuracy gained by lengthening the lag comes from and which line
-        is hardest, and it identifies where the estimate stops being limited
-        by separability at all.
+        is hardest, and it indicates the transition beyond which the measured
+        error is no longer predominantly separability-limited.
   \item \textbf{Flight-data validation against reproduced baselines.} On
         uncompensated cabin magnetometers across eight cold-start cases
         spanning four lines, two flights, two maps and two altitude regimes,
@@ -1421,9 +1421,9 @@ lag, which is set by where the separability-limited regime ends. We take
 \SI{300}{\second} as the default. Second, the causal column is flat: across a
 twentyfold change in lag the causal error moves by less than a metre on every
 case. The lag decides only how long a state is revised before it is frozen, not
-how good the newest state is, so the accuracy bought by look-ahead is entirely
-smoothing gain, and a designer who cannot afford latency loses exactly the gap
-between the two columns and nothing else.
+how good the newest state is, so across this sweep the accuracy bought by
+look-ahead is smoothing gain to within a metre, and a designer who cannot
+afford latency loses essentially the gap between the two columns.
 
 \subsection{Ablation}\label{sec:ablation}
 
@@ -1627,9 +1627,10 @@ component at all. The smoothed output is the most accurate estimate on all
 eight counted cases, between \SI{10.5}{} and \SI{28.4}{\meter} where
 free-inertial drift is hundreds of metres, reducing DRMS by factors of
 \num{1.5} to \num{5.2} relative to the best causal baseline. The lag sweep locates the design knee
-near \SI{300}{\second}, about \SI{20}{\kilo\meter} of track, and shows that the
-causal output is indifferent to the lag, so the choice of lag is purely a
-purchase of smoothing accuracy with latency. The ablation finds no delicate modelling
+near \SI{300}{\second}, about \SI{20}{\kilo\meter} of track. In the tested
+cases, lengthening the lag acts almost purely as a purchase of smoothing
+accuracy with latency, since the causal DRMS varies by less than a metre
+across the sweep. The ablation finds no delicate modelling
 parameter, apart from the numerical process-noise floor that must be kept
 minimal: one configuration serves every line and both sensors, and the update
 costs \SIrange{7.3}{9.0}{\milli\second} per state in an unoptimized
@@ -1737,24 +1738,26 @@ dataset~\cite{gnadt2020}.
 \bibliography{references}
 
 \begin{biography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{figs/author_lee.png}}]{Jayden Dongwoo Lee}
-received the M.S. degree in aerospace engineering from the Korea Advanced Institute
-of Science and Technology (KAIST), Daejeon, South Korea, in 2021. He is currently
-pursuing the Ph.D. degree in aerospace engineering at KAIST. His research interests
-include unmanned aircraft systems (UAS), guidance and navigation, adaptive and
-data-driven control, and estimation.
+received the M.S. and Ph.D. degrees in aerospace engineering from the Korea
+Advanced Institute of Science and Technology (KAIST), Daejeon, Republic of Korea,
+in 2021 and 2025, respectively. He is currently a postdoctoral researcher at KAIST.
+His research interests include GNSS-denied navigation, magnetic-anomaly navigation,
+fault diagnosis and fault-tolerant control, and data-driven estimation and control
+for autonomous aerospace systems.
 \end{biography}
 
 \begin{biography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{figs/author_chang.png}}]{Bohyun Chang}
-is with the Department of Aerospace Engineering, Korea Advanced Institute of Science
-and Technology (KAIST), Daejeon, South Korea. His research interests include
-guidance, navigation, and control of aerospace vehicles.
+received the M.S. degree in aerospace engineering from the Korea Advanced Institute
+of Science and Technology (KAIST), Daejeon, Republic of Korea. He is currently
+pursuing the Ph.D. degree in aerospace engineering at KAIST. His research interests
+include guidance, navigation, and control of aerospace vehicles.
 \end{biography}
 
 \begin{biography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{figs/author_bang.jpg}}]{Hyochoong Bang}
 received his Ph.D. degree in aerospace engineering from Texas
 A\&M University in 1992. Since 2001, he has been with the Department of Aerospace
 Engineering, Korea Advanced Institute of Science and Technology (KAIST), Daejeon,
-South Korea, as a professor. His research interests include spacecraft guidance,
+Republic of Korea, as a professor. His research interests include spacecraft guidance,
 attitude dynamics and control, unmanned aerial vehicle flight dynamics and control,
 and flight control system design.
 \end{biography}
