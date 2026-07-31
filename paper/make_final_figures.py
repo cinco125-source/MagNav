@@ -426,13 +426,13 @@ cb.ax.tick_params(labelsize=6)
 axm.legend(loc="upper left", fontsize=6.6, framealpha=0.9)
 axm.set_title("(a) flown line on the map", fontsize=8.5)
 
-# (b) zoomed latitude/longitude window where the navigation paths visibly
-# separate from the truth: centred where the INS deviation is largest.
-_w10 = int(600 / dt)                     # search after the warm-up only
-i_max = _w10 + int(np.argmax(np.hypot(e_ekf_e, e_ekf_n)[_w10:]))
+# (b) zoomed latitude/longitude window late in the line, centred where the
+# free-inertial deviation peaks (~430 m north of the truth), so the INS trail
+# is visibly far off while the aided paths hug the truth.
+i_max = int(np.argmax(np.hypot(e_ins_e, e_ins_n)))
 clat0, clon0 = tdeg(tlat[i_max]), tdeg(tlon[i_max])
-half_lat = 380.0 / R_EARTH * 180 / np.pi              # ~0.38 km half-height
-half_lon = 540.0 / (R_EARTH * np.cos(tlat[i_max])) * 180 / np.pi
+half_lat = 580.0 / R_EARTH * 180 / np.pi              # ~0.58 km half-height
+half_lon = 700.0 / (R_EARTH * np.cos(tlat[i_max])) * 180 / np.pi
 zl = dict(lat=(clat0 - half_lat, clat0 + half_lat),
           lon=(clon0 - half_lon, clon0 + half_lon))
 axm.add_patch(Rectangle((zl["lon"][0], zl["lat"][0]),
@@ -458,10 +458,14 @@ axe.plot(tdeg(tlon), tdeg(tlat), color="k", lw=1.5, label="truth")
 axe.set_xlim(*zl["lon"]); axe.set_ylim(*zl["lat"])
 axe.set_xlabel("longitude [deg]"); axe.set_ylabel("latitude [deg]")
 axe.ticklabel_format(useOffset=False)
+from matplotlib.ticker import MaxNLocator
+axe.xaxis.set_major_locator(MaxNLocator(4))
+axe.yaxis.set_major_locator(MaxNLocator(5))
 axe.tick_params(labelsize=6)
-axe.legend(loc="upper left", fontsize=6.0, framealpha=0.92,
+axe.legend(loc="lower left", fontsize=6.0, framealpha=0.92,
            handlelength=1.4, labelspacing=0.3)
-axe.set_title("(b) zoom: paths separate from the truth", fontsize=8.5)
+axe.set_title("(b) zoom: the INS has drifted; aided paths hold the truth",
+              fontsize=8.0)
 fig.tight_layout(pad=0.3)
 fig.savefig(os.path.join(OUT, "fig_track.pdf"))
 fig.savefig(os.path.join(OUT, "fig_track.png"), dpi=170)

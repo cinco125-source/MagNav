@@ -77,9 +77,11 @@ identically modelled online-TL EKF and a neural-network-augmented EKF on six of
 eight cases, and the smoothed estimate is the most accurate on all eight, at
 \SIrange{10.5}{28.4}{\meter} where free-inertial drift is hundreds of metres. A
 lag sweep locates the design knee near \SI{300}{\second} and shows the causal
-estimate is indifferent to the lag, so look-ahead buys smoothing accuracy only;
-an ablation over every element of the configuration finds metre-level
-sensitivity and no delicate setting.
+estimate is indifferent to the lag, so look-ahead buys smoothing accuracy only.
+A projected-gradient separability metric, derived from a condition that does
+not require the redundant compensation coefficients to be identified, falls by
+one and a half to two orders of magnitude across the \SIrange{30}{300}{\second}
+gain regime and identifies the weakest flight line.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -365,7 +367,15 @@ The paper makes the following contributions:
         cited, the online EKF+TL+NN lineage of~\cite{gnadt2022,hager2026} is
         reproduced and tuned for the cold start, yet the smoother beats it
         with no learned component; an ablation over every element of the
-        configuration finds metre-level sensitivity and no delicate setting.
+        configuration finds metre-level sensitivity to the modelling
+        parameters, and the expected sensitivity to excessive numerical
+        regularization.
+  \item \textbf{A separability condition and a flight-dependent lag metric.}
+        We give a necessary and sufficient local condition for separating
+        horizontal position from the compensation subspace that does not
+        require the redundant Tolles--Lawson coefficients to be uniquely
+        identified, and turn it into a computable weakest-direction
+        information metric that we evaluate against the measured lag sweep.
 \end{enumerate}
 
 % P8: Organization
@@ -538,7 +548,6 @@ J(\mathbf{X};\mathbf{Z})=\prod_i\phi_i(\mathbf{X}_i;\mathbf{Z}),
 with $\mathbf{X}_i$ the variables adjacent to factor $i$. The graph is a
 picture of this factorization, and its sparsity is the problem's sparsity: each
 factor constrains one or two states, never the whole trajectory at once.
-
 
 \subsection{From factors to least squares}
 Each factor is modelled with a Gaussian kernel about its predicted value,
@@ -768,12 +777,14 @@ The proof is in Appendix~\ref{app:proof}. The condition deliberately does not
 ask for identifiability of $\boldsymbol{\beta}$ itself, which would require
 $\ker\boldsymbol{\Psi}=\{\mathbf{0}\}$, because the \num{19}-term basis does
 not satisfy it: in continuous time
-$B_k(u\dot{u}+v\dot{v}+w\dot{w})=0$ ties the three diagonal eddy columns
-exactly, and $B_k(u^2+v^2+w^2)=B_k$ makes the sum of the three diagonal
-induced columns proportional to the constant bias column up to the variation
-of the total field, about one percent RMS over a line. Both ties hold
-exactly only in continuous time and are blurred at a comparable level by the
-finite-differenced fluxgate rates; on the data they survive, since with every
+$B_k(u\dot{u}+v\dot{v}+w\dot{w})=0$ ties the three diagonal eddy columns.
+This identity is exact in continuous time and is weakly violated by the
+finite-differenced fluxgate rates. The induced columns are tied differently:
+with normalized direction cosines $B_k(u^2+v^2+w^2)=B_k$ holds sample by
+sample exactly, so their sum equals the total-field column, which is
+collinear with the constant bias column only up to the variation of $B_k$,
+about one percent RMS over a line. Both ties survive on the data, since with
+every
 column normalized to unit norm the smallest singular value of a
 \SI{300}{\second} window of $\boldsymbol{\Psi}$ is still six orders of
 magnitude below the largest. Navigation, however, needs the compensation
@@ -1059,7 +1070,6 @@ Line & Purp. & Map & alt.\ [m] & dur.\ [min] & INS [m] \\
 \end{tabular}
 \end{table}
 
-
 \begin{table}[t]
 \caption{Proposed-estimator settings, one configuration for every case.}
 \label{tab:params}
@@ -1182,8 +1192,9 @@ case (\num{48.8}/\SI{18.3}{\meter} on this line).
 \emph{Marginalized particle filter (MPF+TL).} The nonparametric reference,
 included because particle methods are the standard resort when the map term is
 strongly nonlinear~\cite{nordlund2009,park2024}. Since the TL model is linear
-in its coefficients, $\boldsymbol{\beta}$ is conditionally linear-Gaussian and
-fits the Rao--Blackwellized structure exactly: our implementation carries
+in its coefficients, $\boldsymbol{\beta}$ is conditionally linear-Gaussian, which
+motivates a Rao--Blackwellized implementation carrying the compensation and
+the remaining approximately linear states in conditional Kalman blocks: ours carries
 position in \num{1000} particles and marginalizes the remaining states,
 including $\boldsymbol{\beta}$, in the conditional Kalman block, with the
 fluxgate row entering the linear measurement Jacobian. Weights are computed in
@@ -1215,10 +1226,9 @@ for the NN-augmented EKF where the linear basis already suffices.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figs/fig_track.pdf}
-\caption{Line 1007.06 Mag~4: (a) flown line with the zoom window; (b) the estimated paths separate from the truth, at the largest post-warm-up EKF error.}
+\caption{Line 1007.06 Mag~4: (a) flown line with the zoom window; (b) late in the line, where the free-inertial drift peaks near \SI{430}{\meter}, every aided path still holds the truth.}
 \label{fig:track}
 \end{figure}
-
 
 \begin{figure}[t]
 \centering
@@ -1226,7 +1236,6 @@ for the NN-augmented EKF where the linear basis already suffices.
 \caption{Estimated $\mathbf{A}^{\top}\boldsymbol{\beta}+S$ against the interference reference, and the residual (line 1007.06 Mag~4).}
 \label{fig:comp}
 \end{figure}
-
 
 \begin{table}[t]
 \caption{Line 1007.06 cold start: DRMS [m] after a \SI{600}{\second} warm-up.}
@@ -1287,7 +1296,6 @@ and Fig.~\ref{fig:comp} the compensation the graph learned while recovering it.
 \label{fig:breadthbar}
 \end{figure}
 
-
 \begin{table}[t]
 \caption{Breadth: DRMS [m]; bold = best overall.}
 \label{tab:breadth}
@@ -1343,7 +1351,6 @@ prior.
 \label{fig:lagsweep}
 \end{figure}
 
-
 \begin{table}[t]
 \caption{Lag sweep: smoothed DRMS [m]; the causal output varies by under a metre across the sweep.}
 \label{tab:lag}
@@ -1384,10 +1391,10 @@ monotonically with lag up to \SI{300}{\second} on every case, and weakly
 after it: lengthening the lag from \SI{300}{} to \SI{600}{\second}, a
 doubling of both latency and computation, buys at most \SI{2.6}{\meter} and on
 one case slightly degrades, while the step from \SI{30}{} to \SI{300}{\second}
-buys between \SI{3.6}{} and \SI{41.8}{\meter}. The knee is anticipated by the
-separability metric of Eq.~\eqref{eq:mu}: Fig.~\ref{fig:obsmetric} evaluates
-$\mu^{-1/2}$ in sliding windows of length equal to the lag, at the
-\SI{1}{\hertz} kept cadence. Being a single-window quantity, the metric does
+buys between \SI{3.6}{} and \SI{41.8}{\meter}. The knee separates two regimes,
+and the separability metric of Eq.~\eqref{eq:mu} says which is which:
+Fig.~\ref{fig:obsmetric} evaluates $\mu^{-1/2}$ in sliding windows of length
+equal to the lag, at the \SI{1}{\hertz} kept cadence. Being a single-window quantity, the metric does
 not bound the smoothed error, which draws on information carried across
 windows by the marginal prior: at \SI{30}{\second} the per-line medians are
 \SIrange{184}{1585}{\meter} while the measured smoothed DRMS is
@@ -1402,8 +1409,11 @@ set by map error, inertial noise, and coefficient drift, which more
 look-ahead does not remove. And the metric identifies the weakest line:
 1007.02, lowest at every window length (median \SI{19.3}{\meter} at
 \SI{300}{\second} against \SIrange{6.7}{7.6}{\meter} for the other three),
-is the line with the largest measured error at every lag on both sensors.
-We take \SI{300}{\second} as the default. Second, the causal column is flat: across a
+is the line with the largest measured error at every lag on both sensors. The
+metric therefore explains the pre-knee regime and ranks the relative
+difficulty of the lines, but it is not by itself a predictor of the optimal
+lag, which is set by where the separability-limited regime ends. We take
+\SI{300}{\second} as the default. Second, the causal column is flat: across a
 twentyfold change in lag the causal error moves by less than a metre on every
 case. The lag decides only how long a state is revised before it is frozen, not
 how good the newest state is, so the accuracy bought by look-ahead is entirely
@@ -1612,16 +1622,19 @@ free-inertial drift is hundreds of metres, at \num{1.5} to \num{5.2} times the
 accuracy of the best causal baseline. The lag sweep locates the design knee
 near \SI{300}{\second}, about \SI{20}{\kilo\meter} of track, and shows that the
 causal output is indifferent to the lag, so the choice of lag is purely a
-purchase of smoothing accuracy with latency. The ablation finds no delicate
-setting: one configuration serves every line and both sensors, and the update
+purchase of smoothing accuracy with latency. The ablation finds no delicate modelling
+parameter, apart from the numerical process-noise floor that must be kept
+minimal: one configuration serves every line and both sensors, and the update
 costs \SIrange{7.3}{9.0}{\milli\second} per state in an unoptimized
 implementation, two orders of magnitude inside real time.
 
 Several limitations bound the study. Each line is a single physical
 realization, so every DRMS is a point estimate; the statistical statements are
-counts across cases, not distributions. The reported covariance of the
-incremental smoother has not been validated for consistency on flight data,
-and we do not report uncertainty bounds. The
+counts across cases, not distributions. The reported covariance is consistent
+under matched-model Monte Carlo simulation, but the flight coverage
+diagnostic shows substantial overconfidence where unmodeled map error and
+residual interference dominate, most of all for the smoothed Mag~4 output, so
+the covariance should not be used as an integrity bound as it stands. The
 baselines are our own implementations under one shared protocol; the
 particle-filter reference in particular is reported as unstable under per-case
 tuning, and we do not claim it represents the best achievable particle filter.
@@ -1631,11 +1644,11 @@ established. And the compensation prior that a cold start needs is a measured
 setting rather than a derived one: we show a broad insensitive range, but give
 no rule for choosing its scale from installation data.
 
-These limitations set the agenda: consistency evaluation of the reported
-covariance, a transit-like flight regime, sparser instantiation of the
-compensation chain in the manner of~\cite{park2024}, and a native-factor
-implementation that would carry the real-time margin from the state cadence
-down to the raw sensor rate.
+These limitations set the agenda: robust covariance calibration and integrity
+monitoring under model mismatch, a transit-like flight regime, sparser
+instantiation of the compensation chain in the manner of~\cite{park2024}, and
+a native-factor implementation that would carry the real-time margin from the
+state cadence down to the raw sensor rate.
 
 \appendices
 \section{Pinson Error-State Dynamics}\label{app:pinson}
@@ -1681,9 +1694,32 @@ graph as ordinary linear-measurement variables. In the cold-start regime the
 calibration flight that classically fixes $\boldsymbol{\beta}$ is unavailable, which
 is precisely why we carry it as a graph variable.
 
+\section{Proof of Proposition~\ref{prop:obs}}\label{app:proof}
+Over the window, a position perturbation $\delta\mathbf{p}$ and a coefficient
+perturbation $\delta\boldsymbol{\beta}$ change the stacked residual by
+$\mathbf{G}\,\delta\mathbf{p}+\boldsymbol{\Psi}\,\delta\boldsymbol{\beta}$.
+The perturbation $\delta\mathbf{p}$ is indistinguishable from a compensation
+adjustment exactly when some $\delta\boldsymbol{\beta}$ cancels it, that is
+when $\mathbf{G}\,\delta\mathbf{p}=-\boldsymbol{\Psi}\,\delta\boldsymbol{\beta}
+\in\mathrm{range}(\boldsymbol{\Psi})$, which proves the first statement.
+For the second, decompose
+$\mathbf{G}\,\delta\mathbf{p}=\boldsymbol{\Psi}\boldsymbol{\Psi}^{\dagger}
+\mathbf{G}\,\delta\mathbf{p}+(\mathbf{I}-\boldsymbol{\Psi}\boldsymbol{\Psi}^{\dagger})
+\mathbf{G}\,\delta\mathbf{p}$: the first term always lies in
+$\mathrm{range}(\boldsymbol{\Psi})$, so
+$\mathbf{G}\,\delta\mathbf{p}\in\mathrm{range}(\boldsymbol{\Psi})$ if and only
+if $(\mathbf{I}-\boldsymbol{\Psi}\boldsymbol{\Psi}^{\dagger})\mathbf{G}\,
+\delta\mathbf{p}=\mathbf{0}$. Hence every nonzero $\delta\mathbf{p}$ is
+distinguishable if and only if the projected matrix
+$(\mathbf{I}-\boldsymbol{\Psi}\boldsymbol{\Psi}^{\dagger})\mathbf{G}$ has
+trivial kernel, that is rank two. \hfill$\blacksquare$
+
 \section*{Acknowledgment}
 The experiments use the publicly released SGL~2020 challenge
 dataset~\cite{gnadt2020}.
+
+\bibliographystyle{IEEEtaes}
+\bibliography{references}
 
 \begin{biography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{figs/author_lee.png}}]{Jayden Dongwoo Lee}
 received the M.S. degree in aerospace engineering from the Korea Advanced Institute
@@ -1707,29 +1743,5 @@ South Korea, as a professor. His research interests include spacecraft guidance,
 attitude dynamics and control, unmanned aerial vehicle flight dynamics and control,
 and flight control system design.
 \end{biography}
-
-\section{Proof of Proposition~\ref{prop:obs}}\label{app:proof}
-Over the window, a position perturbation $\delta\mathbf{p}$ and a coefficient
-perturbation $\delta\boldsymbol{\beta}$ change the stacked residual by
-$\mathbf{G}\,\delta\mathbf{p}+\boldsymbol{\Psi}\,\delta\boldsymbol{\beta}$.
-The perturbation $\delta\mathbf{p}$ is indistinguishable from a compensation
-adjustment exactly when some $\delta\boldsymbol{\beta}$ cancels it, that is
-when $\mathbf{G}\,\delta\mathbf{p}=-\boldsymbol{\Psi}\,\delta\boldsymbol{\beta}
-\in\mathrm{range}(\boldsymbol{\Psi})$, which proves the first statement.
-For the second, decompose
-$\mathbf{G}\,\delta\mathbf{p}=\boldsymbol{\Psi}\boldsymbol{\Psi}^{\dagger}
-\mathbf{G}\,\delta\mathbf{p}+(\mathbf{I}-\boldsymbol{\Psi}\boldsymbol{\Psi}^{\dagger})
-\mathbf{G}\,\delta\mathbf{p}$: the first term always lies in
-$\mathrm{range}(\boldsymbol{\Psi})$, so
-$\mathbf{G}\,\delta\mathbf{p}\in\mathrm{range}(\boldsymbol{\Psi})$ if and only
-if $(\mathbf{I}-\boldsymbol{\Psi}\boldsymbol{\Psi}^{\dagger})\mathbf{G}\,
-\delta\mathbf{p}=\mathbf{0}$. Hence every nonzero $\delta\mathbf{p}$ is
-distinguishable if and only if the projected matrix
-$(\mathbf{I}-\boldsymbol{\Psi}\boldsymbol{\Psi}^{\dagger})\mathbf{G}$ has
-trivial kernel, that is rank two. \hfill$\blacksquare$
-
-
-\bibliographystyle{IEEEtaes}
-\bibliography{references}
 
 \end{document}
