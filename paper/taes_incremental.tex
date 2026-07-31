@@ -425,7 +425,18 @@ initial state,
 \end{equation}
 Terrain-referenced navigation is solved in this form
 routinely~\cite{hollowell1990,cowie2008}, and the same form underlies the
-magnetic case~\cite{canciani2016,canciani2017}.
+magnetic case~\cite{canciani2016,canciani2017}. Operationally the batch form
+is a fix-taking scheme rather than a continuous one: a profile is collected
+over a pass, correlated against the stored map to yield one position fix at
+the end of that pass, and the inertial solution coasts until the next
+one~\cite{golden1980}. A long flight is a sequence of such fixes. Three
+properties of that scheme are worth carrying forward. The fix is available
+only after the profile that produced it, so a delay of the profile length is
+intrinsic to map matching and not something a smoother introduces. Successive
+correlations are independent, so what one pass learned is not carried into the
+next. And Eq.~\eqref{eq:inshard} makes the inertial increment exact within a
+pass, which is why the recursive alternatives~\cite{hostetler1983} were
+developed for continuous operation.
 
 We state Eqs.~\eqref{eq:mad}--Eq.~\eqref{eq:batchmm} as the reference formulation of
 database-referenced navigation rather than as a competing method: airborne
@@ -1630,7 +1641,11 @@ incremental update takes \SIrange{7.3}{9.0}{\milli\second} per state across the
 eight counted line--magnetometer cases, mean \SI{8.2}{\milli\second},
 so the
 \SI{87}{\minute} line completes in \SI{42}{\second} and the margin to the
-\SI{1}{\hertz} state cadence exceeds two orders of magnitude. The cost scales
+\SI{1}{\hertz} state cadence exceeds two orders of magnitude. The per-epoch
+cost is set by the number of retained states and not by elapsed time, so a
+flight of several hours costs the same per update as the lines measured here;
+what we demonstrate is the cost model, on lines of \SIrange{63}{87}{\minute},
+not an hours-long endurance run. The cost scales
 with the number of retained states, so halving the lag halves it, and the two
 expensive variants of the ablation bound the alternatives: relinearizing every
 variable at every epoch costs \SI{68}{\milli\second} per state and attaching
