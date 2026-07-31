@@ -243,7 +243,19 @@ data~\cite{canciani2016,canciani2017}, later demonstrating airborne magnetic
 navigation with online calibration~\cite{canciani2020}. Beyond the EKF, unscented
 filtering~\cite{julier2004}, invariant formulations that respect the state
 manifold~\cite{barrau2017}, and mixture/particle representations~\cite{barshalom2001}
-improve consistency under nonlinearity. However, these estimators are causal:
+improve consistency under nonlinearity. The invariant line has reached this
+application: Hager et al.\ formulate map-matching aiding as an error-state
+filter on the $SE_2(3)$ group of extended poses, correcting the inertial
+solution in closed loop so that the linearized dynamics stay accurate even for
+a tactical-grade unit~\cite{hager2025lie}. That gain is on the propagation
+side, and it is complementary to the question studied here: the study is in
+simulation and assumes every magnetic source but the anomaly field to be
+perfectly corrected beforehand, so the aircraft field never enters, and the
+map term itself gains nothing from the group structure, its Jacobian still
+being a finite difference of a map that is by construction not invariant to
+position. Its reported divergence on low-information maps is the same
+map-information floor we make explicit in Section~\ref{sec:obs}.
+However, these estimators are causal:
 they commit each state online with no access to future measurements, and the
 position-centric ones carry no compensation state of their own. When a large
 uncompensated cold-start residual enters, a causal filter has no mechanism to
@@ -1641,7 +1653,15 @@ These limitations set the agenda: robust covariance calibration and integrity
 monitoring under model mismatch, a transit-like flight regime, sparser
 instantiation of the compensation chain in the manner of~\cite{park2024}, and
 a native-factor implementation that would carry the real-time margin from the
-state cadence down to the raw sensor rate.
+state cadence down to the raw sensor rate. A further direction composes
+naturally with this work rather than competing with it: the inertial chain
+could be carried on the group of extended poses in the manner
+of~\cite{hager2025lie}, whose benefit is that the propagation Jacobians stop
+depending on the estimate. That is attractive here for a reason specific to a
+smoother, since it is at the marginalization boundary, where
+Eq.~\eqref{eq:schur} freezes a linearization, that estimate-dependent
+Jacobians do the most damage, and the flight coverage of
+Section~\ref{sec:consistency} is where such a change would show up.
 
 \appendices
 \section{Pinson Error-State Dynamics}\label{app:pinson}
