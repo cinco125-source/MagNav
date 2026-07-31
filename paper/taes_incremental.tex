@@ -326,10 +326,14 @@ part of the factorization the new measurement disturbs. Every state inside the
 lag is relinearized and revised as later measurements arrive, so late
 calibration information corrects early navigation states, the mechanism a
 causal filter lacks; a causal filter commits each state once and cannot revise
-it. We are explicit about scope: for a linear--Gaussian model the fixed-lag MAP
+it. We are explicit about scope. For a linear--Gaussian model the fixed-lag MAP
 estimate coincides with classical fixed-lag smoothing~\cite{rauch1965}, so
-smoothing per se is not the contribution; the joint estimation of a
-time-varying compensation, delivered incrementally in real time, is.
+smoothing per se is not a contribution, and the incremental solver is standard
+machinery used as published~\cite{kaess2012}: what is new is the formulation
+that the solver is applied to, and what it makes possible. That the resulting
+estimator runs comfortably in real time, at \SIrange{7.3}{9.0}{\milli\second}
+per state for a \SI{300}{\second} lag at \SI{1}{\hertz} states, is reported as
+a feasibility result rather than claimed as novelty.
 The paper makes the following contributions:
 \begin{enumerate}
   \item \textbf{Joint navigation and compensation on a factor graph.} We carry
@@ -342,40 +346,29 @@ The paper makes the following contributions:
         the compensation adapt along the flight, the role a learned online
         model plays in the competing filter, while the graph keeps every
         quantity an explicit, physically interpretable state.
-  \item \textbf{A real-time incremental realization.} The graph is solved by an
-        incremental fixed-lag smoother whose per-epoch cost is set by the lag,
-        not the flight: \SIrange{7.3}{9.0}{\milli\second} per state at a
-        \SI{300}{\second} lag and \SI{1}{\hertz} states, two orders of
-        magnitude within the state cadence, in an unoptimized implementation.
-        The lag is the principal architecture-level design variable, and we measure what it buys: the
-        smoothed estimate improves steeply up to a knee near
-        \SI{300}{\second}, about \SI{20}{\kilo\meter} of track, while the
-        causal estimate is indifferent to it.
-  \item \textbf{A causal/smoothed evaluation protocol.} A fixed-lag smoother
-        produces two estimates, a causal one at the newest state and a
-        smoothed one revised by the full lag, and comparisons in the
-        literature rarely distinguish them. We report both throughout, so the
-        comparison against causal filters is like for like and the price of
-        latency is explicit: the causal output alone beats the recursive
-        baselines on most cases, and the smoothed output roughly halves its
-        error at the cost of lagging real time by the lag.
-  \item \textbf{Flight-data validation.} On uncompensated cabin magnetometers
-        across eight cold-start cases spanning four lines, two flights, two
-        maps and two altitude regimes, under one untuned configuration, the
-        smoothed estimate is the most accurate of the compared estimators on
-        all eight cases and the causal estimate on six. Run rather than merely
-        cited, the online EKF+TL+NN lineage of~\cite{gnadt2022,hager2026} is
-        reproduced and tuned for the cold start, yet the smoother beats it
-        with no learned component; an ablation over every element of the
-        configuration finds metre-level sensitivity to the modelling
-        parameters, and the expected sensitivity to excessive numerical
-        regularization.
   \item \textbf{A separability condition and a flight-dependent lag metric.}
         We give a necessary and sufficient local condition for separating
-        horizontal position from the compensation subspace that does not
+        horizontal position from the compensation subspace, one that does not
         require the redundant Tolles--Lawson coefficients to be uniquely
         identified, and turn it into a computable weakest-direction
-        information metric that we evaluate against the measured lag sweep.
+        information metric. Evaluated on the flight lines, it explains where
+        the accuracy gained by lengthening the lag comes from and which line
+        is hardest, and it identifies where the estimate stops being limited
+        by separability at all.
+  \item \textbf{Flight-data validation against reproduced baselines.} On
+        uncompensated cabin magnetometers across eight cold-start cases
+        spanning four lines, two flights, two maps and two altitude regimes,
+        under one untuned configuration, the smoothed estimate is the most
+        accurate of the compared estimators on all eight cases and the causal
+        estimate on six. The baselines are run rather than cited: the online
+        EKF+TL+NN lineage of~\cite{gnadt2022,hager2026} is reproduced and
+        tuned for the cold start, and the recursive EKF is given the
+        proposed estimator's own compensation prior, yet the smoother beats
+        both with no learned component. Because a fixed-lag smoother produces
+        a causal and a smoothed estimate and comparisons in the literature
+        rarely distinguish them, we report both throughout, so that the
+        comparison against causal filters is like for like and the price of
+        latency is explicit.
 \end{enumerate}
 
 % P8: Organization
