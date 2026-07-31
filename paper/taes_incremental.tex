@@ -75,13 +75,16 @@ cold-start cases spanning four lines, two flights, two maps and two altitude
 regimes under one untuned configuration, the causal estimate alone beats an
 identically modelled online-TL EKF and a neural-network-augmented EKF on six of
 eight cases, and the smoothed estimate is the most accurate on all eight, at
-\SIrange{10.5}{28.4}{\meter} where free-inertial drift is hundreds of metres. A
+\SIrange{10.5}{28.4}{\meter} where free-inertial drift is
+\SIrange{121}{318}{\meter}. A
 lag sweep locates the design knee near \SI{300}{\second} and shows the causal
-estimate is indifferent to the lag, so look-ahead buys smoothing accuracy only.
+estimate is nearly indifferent to the lag beyond \SI{60}{\second}, so
+look-ahead buys smoothing accuracy almost exclusively.
 A projected-gradient separability metric, derived from a condition that does
 not require the redundant compensation coefficients to be identified, falls by
-one and a half to two orders of magnitude across the \SIrange{30}{300}{\second}
-gain regime and identifies the weakest flight line.
+a factor of \numrange{24}{82} across the \SIrange{30}{300}{\second} gain
+regime, of which a factor of six is dimension counting, and identifies the
+weakest flight line.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -373,10 +376,10 @@ The paper makes the following contributions:
         under one untuned configuration, the smoothed estimate is the most
         accurate of the compared estimators on all eight cases and the causal
         estimate on six. The baselines are run rather than cited: the online
-        EKF+TL+NN lineage of~\cite{gnadt2022,hager2026} is reproduced and
-        tuned for the cold start, and the recursive EKF is given the
-        proposed estimator's own compensation prior, yet the smoother beats
-        both with no learned component. Because a fixed-lag smoother produces
+        EKF+TL+NN model of~\cite{gnadt2022} is reproduced and tuned for the
+        cold start, and the recursive EKF is given the proposed estimator's
+        own compensation prior, yet the smoother beats both with no learned
+        component. Because a fixed-lag smoother produces
         a causal and a smoothed estimate and comparisons in the literature
         rarely distinguish them, we report both throughout, so that the
         comparison against causal filters is like for like and the price of
@@ -708,7 +711,7 @@ $B_k$, the permanent (3), induced (6) and eddy-current (9) groups are
 \underbrace{B_ku\dot u,\dots,B_kw\dot w}_{\text{eddy}}\big]^{\top},
 \label{eq:tlbasis}
 \end{equation}
-optionally augmented by a constant term, giving $m\le19$ coefficients.
+with $B_k$ in nanotesla, optionally augmented by a constant term, giving $m\le19$ coefficients.
 In the calibrated setting $\boldsymbol{\beta}$ is fit once on a calibration
 flight and frozen. At a cold start it is unknown at takeoff, and the
 installation state drifts slowly in flight, so we carry it as a variable with a
@@ -833,11 +836,13 @@ value),
 \end{equation}
 with $\bar{\mathbf{G}}=R^{-1/2}\mathbf{G}$ and
 $\bar{\boldsymbol{\Psi}}=R^{-1/2}\boldsymbol{\Psi}$ the noise-whitened
-matrices, is a computable, flight-dependent measure of that strength:
-$\mu(W)^{-1/2}$ is the weakest-direction position standard deviation that a
-single isolated window of $W$ epochs supports under a static-coefficient
-reading of the model. It is not a bound on the estimator's error, and its
-assumptions cut both ways. It is optimistic in holding $\delta\mathbf{p}$
+matrices, is a computable, flight-dependent measure of that strength. It is
+not an ad hoc quantity: for the linear model with independent noise it is
+the Schur complement of the Fisher information after the compensation is
+profiled out, so $\mu(W)^{-1/2}$ is the weakest-direction Cram\'er--Rao
+standard deviation of a single isolated window of $W$ epochs under a
+static-coefficient reading of the model. It is a bound for that idealized single-window model and not for the
+smoother, and its assumptions cut both ways. It is optimistic in holding $\delta\mathbf{p}$
 and $\boldsymbol{\beta}$ fixed across the window and the residual white; it
 is pessimistic in seeing one window in isolation, whereas the smoother
 carries information across windows through the marginal prior of
@@ -849,6 +854,20 @@ Section~\ref{sec:lagdesign} uses it for exactly that: where the knee sits,
 and which line is weakest. The empirical ablation of
 Section~\ref{sec:ablation} measures what the walk $\mathbf{Q}^{\beta}$, the
 inertial process factors, and the priors add.
+
+\begin{remark}\label{rem:nuisance}
+The condition treats $\delta\mathbf{p}$ and $\delta\boldsymbol{\beta}$ only.
+The window residual also carries the velocity and attitude errors and the
+disturbance state, and projecting those out as further nuisance directions
+can only reduce $\mu$, so the metric is an upper bound on the information a
+window makes available. The velocity channel is the significant one: with the
+\SI{1}{\meter\per\second} prior of Table~\ref{tab:params} the position ramp
+it generates spans up to \SI{300}{\meter} over a \SI{300}{\second} window,
+and over that window a ramp is not far from a constant offset. The
+disturbance state is partly absorbed already, its window-constant part lying
+in $\mathrm{range}(\boldsymbol{\Psi})$ through the bias column, but with
+$\tau=\SI{180}{\second}$ it decorrelates appreciably inside the window.
+\end{remark}
 
 \begin{remark}\label{rem:floor}
 The condition is geometric: it depends on the map gradient under the
@@ -1290,8 +1309,8 @@ Estimator & Mag 4 & Mag 5 & look-ahead \\
 EKF, online TL & 46.3 & 17.6 & none \\
 EKF{+}TL{+}NN~\cite{gnadt2022} & 48.8 & 18.3 & none \\
 \midrule
-Proposed, causal & 42.7 & 16.0 & none \\
-\textbf{Proposed, \SI{300}{\second} lag (smoothed)} & \textbf{24.2} & \textbf{11.5} & \SI{300}{\second} \\
+Proposed, current state (causal) & 42.7 & 16.0 & none \\
+\textbf{Proposed, fixed-lag smoothed (\SI{300}{\second})} & \textbf{24.2} & \textbf{11.5} & \SI{300}{\second} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1300,7 +1319,7 @@ Table~\ref{tab:1007} reports the longest line, 1007.06 (\SI{87}{\minute}), on
 both cabin magnetometers, with the free-inertial drift at \SI{317.5}{\meter}.
 Read causally, with no look-ahead at all, the proposed estimator reaches
 \SI{42.7}{\meter} on Mag~4 and \SI{16.0}{\meter} on Mag~5, ahead of the
-online-TL EKF (\num{46.7}/\SI{17.8}{\meter}) and of the NN-augmented filter
+online-TL EKF (\num{46.3}/\SI{17.6}{\meter}) and of the NN-augmented filter
 (\num{48.8}/\SI{18.3}{\meter}). The margin over the online-TL EKF is the purest
 number in this paper: the two estimators share the error model, the
 compensation model, the measurement model, and every noise setting, and differ
@@ -1347,7 +1366,8 @@ and Fig.~\ref{fig:comp} the compensation the graph learned while recovering it.
 \toprule
  & & EKF & EKF{+} & \multicolumn{2}{c}{Proposed} \\
 \cmidrule(l){5-6}
-Line & Mag & online & TL{+}NN & causal & \SI{300}{\second} lag \\
+ & & & & current state & fixed-lag smoothed \\
+Line & Mag & online & TL{+}NN & (causal) & (\SI{300}{\second}) \\
 \midrule
 1007.06 & 4 & 46.3 & 48.8 & 42.7 & \textbf{24.2} \\
 1007.06 & 5 & 17.6 & 18.3 & 16.0 & \textbf{11.5} \\
@@ -1368,9 +1388,14 @@ Table~\ref{tab:breadth} repeats the comparison on every counted line, spanning
 two flights, two maps, two altitude regimes, and both cabin magnetometers, with
 nothing re-tuned (Fig.~\ref{fig:breadthbar}). The smoothed estimate is the most accurate entry on all
 eight counted cases, between \SI{10.5}{} and \SI{28.4}{\meter}, its DRMS
-lower than that of the best causal baseline on the same case by factors of
-\num{1.5} to \num{5.2}. Read causally, the proposed estimator is the best causal method on
-six of the eight; it trails the EKF+TL+NN on 1007.02 Mag~5 by \SI{2.7}{\meter}
+lower than that of the better causal baseline on the same case by factors of
+\numrange{1.5}{5.2}, a geometric mean of \num{2.29} with a 95\% interval of
+\numrange{1.65}{3.16} over the eight cases ($d_z=2.13$; sign test
+$p=0.004$). The causal reading is weaker and we state it as such: the
+proposed estimator is at least as accurate as the better causal baseline on
+six of the eight cases, a geometric-mean advantage of \num{1.14} whose 95\%
+interval \numrange{0.96}{1.35} contains unity, so with eight cases the causal
+advantage is not statistically established (sign test $p=0.14$); it trails the EKF+TL+NN on 1007.02 Mag~5 by \SI{2.7}{\meter}
 and on 1003.08 Mag~4 by \SI{2.3}{\meter}, and we report both rather than
 claiming a sweep. The margin is widest where the lines are hardest: on the
 two Mag~4 cases where the shared-prior EKF reaches \SI{87.5}{} and
@@ -1394,24 +1419,24 @@ prior.
 \end{figure}
 
 \begin{table}[t]
-\caption{Lag sweep: smoothed DRMS [m]; the causal output varies by under a metre across the sweep.}
+\caption{Lag sweep: smoothed DRMS [m], with the causal DRMS at the shortest and longest lag.}
 \label{tab:lag}
 \centering
 \setlength{\tabcolsep}{4pt}
-\begin{tabular}{ll rrrrr r}
+\begin{tabular}{ll rrrrr rr}
 \toprule
- & & \multicolumn{5}{c}{lag $L$ [s], smoothed} & causal \\
-\cmidrule(lr){3-7}
-Line & Mag & 30 & 60 & 150 & 300 & 600 & \\
+ & & \multicolumn{5}{c}{lag $L$ [s], smoothed} & \multicolumn{2}{c}{causal} \\
+\cmidrule(lr){3-7}\cmidrule(l){8-9}
+Line & Mag & 30 & 60 & 150 & 300 & 600 & $L{=}30$ & $L{=}300$ \\
 \midrule
-1007.06 & 4 & 40.2 & 37.1 & 29.7 & 24.2 & 21.9 & 42.7 \\
-1007.06 & 5 & 15.1 & 14.3 & 12.6 & 11.5 & 11.4 & 16.0 \\
-1007.02 & 4 & 70.2 & 60.4 & 43.2 & 28.4 & 25.8 & 74.3 \\
-1007.02 & 5 & 27.9 & 24.6 & 18.3 & 15.8 & 14.2 & 33.1 \\
-1003.02 & 4 & 48.9 & 43.3 & 28.8 & 19.6 & 18.2 & 58.2 \\
-1003.02 & 5 & 20.1 & 18.3 & 14.9 & 12.0 & 10.6 & 21.9 \\
-1003.08 & 4 & 50.3 & 41.5 & 31.5 & 25.0 & 24.6 & 48.9 \\
-1003.08 & 5 & 17.4 & 15.8 & 12.5 & 10.5 & 10.7 & 19.2 \\
+1007.06 & 4 & 40.2 & 37.1 & 29.7 & 24.2 & 21.9 & 43.5 & 42.7 \\
+1007.06 & 5 & 15.1 & 14.3 & 12.6 & 11.5 & 11.4 & 16.1 & 16.0 \\
+1007.02 & 4 & 70.2 & 60.4 & 43.2 & 28.4 & 25.8 & 78.1 & 74.3 \\
+1007.02 & 5 & 27.9 & 24.6 & 18.3 & 15.8 & 14.2 & 32.9 & 33.1 \\
+1003.02 & 4 & 48.9 & 43.3 & 28.8 & 19.6 & 18.2 & 57.2 & 58.2 \\
+1003.02 & 5 & 20.1 & 18.3 & 14.9 & 12.0 & 10.6 & 21.9 & 21.9 \\
+1003.08 & 4 & 50.3 & 41.5 & 31.5 & 25.0 & 24.6 & 55.5 & 48.8 \\
+1003.08 & 5 & 17.4 & 15.8 & 12.5 & 10.5 & 10.7 & 19.2 & 19.2 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1442,9 +1467,18 @@ windows by the marginal prior: at \SI{30}{\second} the per-line medians are
 \SIrange{184}{1585}{\meter} while the measured smoothed DRMS is
 \SIrange{15.1}{70.2}{\meter}. It is also blind to the magnetometer, so the
 Mag~4 to Mag~5 gap is outside its reach. What it carries is the shape and
-the geography, and both match. The metric falls by one and a half to two
-orders of magnitude between \SI{30}{} and \SI{300}{\second}, the range in
-which the measured smoothing gain is concentrated; past \SI{300}{\second}
+the geography, and both match, once one correction is made. Part of the fall
+with window length is arithmetic rather than geometric: the residual space
+orthogonal to the $m=19$ compensation columns has $W-m$ dimensions, only
+\num{11} at \SI{30}{\second} against \num{281} at \SI{300}{\second}, and
+under an independent-noise null $\bar{\mathbf{G}}^{\top}(\mathbf{I}-
+\bar{\boldsymbol{\Psi}}\bar{\boldsymbol{\Psi}}^{\dagger})\bar{\mathbf{G}}$
+is Wishart with $W-m$ degrees of freedom, which alone predicts a fall of
+\num{6.1} with no geometry at all. The measured fall is \numrange{24}{82},
+so the geometric contribution, the decorrelation of gradient from regressor,
+is a factor of \numrange{3.9}{13.3}. That contribution is concentrated in
+the \SIrange{30}{300}{\second} range in which the measured smoothing gain
+lies; past \SI{300}{\second}
 the measured DRMS stops improving even though the single-window metric keeps
 falling, so beyond the knee the error is no longer separability-limited but
 set by map error, inertial noise, and coefficient drift, which more
@@ -1455,9 +1489,15 @@ is the line with the largest measured error at every lag on both sensors. The
 metric therefore explains the pre-knee regime and ranks the relative
 difficulty of the lines, but it is not by itself a predictor of the optimal
 lag, which is set by where the separability-limited regime ends. We take
-\SI{300}{\second} as the default. Second, the causal column is flat: across a
-twentyfold change in lag the causal error moves by less than a metre on every
-case. This is the behaviour Section~\ref{sec:incremental} anticipates, and it
+\SI{300}{\second} as the default. Second, the causal columns are nearly flat:
+from \SI{60}{\second} upward the causal error moves by at most
+\SI{1.6}{\meter} on every case, and across the whole sweep by under
+\SI{1.1}{\meter} on six of the eight. The two exceptions are both Mag~4,
+\SI{3.8}{\meter} on 1007.02 and \SI{6.7}{\meter} on 1003.08, and both are
+incurred entirely at the \SI{30}{\second} lag, where the window is shorter
+than separability requires and the compensation inside it is poorly determined
+for the newest state as well as the old ones. Above that threshold the
+flatness is the behaviour Section~\ref{sec:incremental} anticipates, and it
 is a check on the marginalization rather than a disappointment. Because the
 states leaving the lag are compressed into the marginal prior of
 Eq.~\eqref{eq:schur} rather than dropped, the newest state conditions on the
@@ -1469,9 +1509,10 @@ the current-epoch error improves steadily as the window grows, from
 \SI{5.18}{\meter} at \SI{1}{\second} to \SI{3.65}{\meter} at the batch limit,
 because there the window length decides how much information the estimate has
 at all. Here it decides only how long a state is revised before it is frozen,
-so across this sweep the accuracy bought by look-ahead is smoothing gain to
-within a metre, and a designer who cannot afford latency loses essentially the
-gap between the two columns.
+so once the lag is long enough to separate the two effects at all, the
+accuracy bought by look-ahead is smoothing gain to within a metre or two, and
+a designer who cannot afford latency loses essentially the gap between the
+smoothed and causal columns.
 
 \subsection{Ablation}\label{sec:ablation}
 
@@ -1503,24 +1544,41 @@ Meas.\ density & all \num{10} samples per state & 26.5 (44.2) & 11.7 (16.0) \\
 \end{table}
 
 Table~\ref{tab:ablation} varies each element of the configuration on line
-1007.06, one at a time. The estimator is insensitive at the metre level to the
-modelling parameters, while excessive numerical regularization through the
-process-noise floor produces a larger degradation. The compensation prior may
+1007.06, one at a time. Each entry is the smoothed DRMS with the causal value
+in parentheses, and the two react differently: the smoothed output is
+insensitive at the metre level to every modelling parameter, whereas the
+causal output is not, so the sentences below quote the largest change across
+the four columns rather than the smoothed column alone. The compensation prior may
 move an order of magnitude in either
 direction, or be replaced by a per-column prior that assigns each regressor
 column \SI{100}{\nano\tesla} of measurement contribution, for changes under a
-metre. Slowing the compensation walk a hundredfold costs about two metres,
-consistent with a real installation state that drifts in flight; speeding it up
-costs little. Removing the Huber kernel or widening its threshold costs one to
+metre. Slowing the compensation walk a hundredfold costs \SI{2.1}{\meter}
+smoothed but \SI{13.7}{\meter} causal, the largest modelling effect in the
+table and a direct measure of how much the filtering estimate depends on the
+compensation being free to move; speeding it up costs little smoothed and
+\SI{9.8}{\meter} causal on Mag~5. Removing the Huber kernel or widening its threshold costs one to
 two metres, so robustness to map error helps but does not carry the result.
-Inflating the assumed measurement noise fivefold, or relinearizing every
-variable at every epoch, changes the estimate by less than half a metre; the
-latter confirms that iSAM2's selective relinearization gives up nothing here.
+Inflating the assumed measurement noise fivefold changes the smoothed
+estimate by under half a metre but costs \SI{7.7}{\meter} causal on Mag~5;
+relinearizing every variable at every epoch changes nothing measurable,
+confirming that iSAM2's selective relinearization gives up nothing here.
+One row improves on the reference: widening the FOGM disturbance prior
+tenfold gains \SI{3.9}{\meter} causal on Mag~4 and a few tenths elsewhere,
+which we read as the disturbance state absorbing a little of the map error
+the nominal $\sigma_S=\SI{3}{\nano\tesla}$ is too tight to admit. We keep
+the nominal value because it is the physical setting and the gain is within
+the spread of the other rows.
 The largest single effect is the process-noise floor: raising it from
-$10^{-16}$ to $10^{-12}$ times the nominal position channel, i.e.\ from
-$10^{-20}\mathbf{I}$ to $10^{-16}\mathbf{I}$, costs \SI{8.9}{\meter} on Mag~4,
-which is why Section~\ref{sec:incremental} treats the floor as a conditioning
-device to be kept minimal rather than a tuning knob. Attaching all ten raw
+$10^{-20}\mathbf{I}$ to $10^{-16}\mathbf{I}$ costs \SI{8.9}{\meter} smoothed
+and \SI{32.0}{\meter} causal on Mag~4. The floor is worth being explicit
+about. The mechanization gives a horizontal position channel of order
+$10^{-31}\,\mathrm{rad}^2$ per step, so even the smaller floor exceeds it by
+some eleven orders of magnitude and is, numerically, the operative position
+process noise; at $10^{-16}\mathbf{I}$ it injects a random walk of
+\SI{1.1}{\meter} over the lag, which is the scale of the degradation
+observed. It is therefore a setting to be kept as small as conditioning
+allows, and the two points reported here bound it from above rather than
+demonstrate a plateau. Attaching all ten raw
 measurements to each state instead of one costs \SI{2.3}{\meter} on Mag~4 and
 nothing on Mag~5, at four times the computation, supporting the
 \SI{1}{\hertz} state cadence.
@@ -1580,9 +1638,9 @@ Mag~4, \SI{11.53}{} to \SI{11.66}{\meter} on Mag~5) and the causal DRMS by
 at most \SI{4.6}{\meter}. The transient pays more: at the \SI{100}{\meter}
 prior the in-window smoothed DRMS rises from \SI{55.0}{} to
 \SI{69.1}{\meter} on Mag~4 and from \SI{10.7}{} to \SI{22.0}{\meter} on
-Mag~5, while the causal transient is essentially unchanged. The two cases of
-Table~\ref{tab:transient} that beat their converged values do so by leaning
-on the tight anchor, and the advantage disappears with it. The information
+Mag~5, while the causal transient is essentially unchanged. The three cases of
+Table~\ref{tab:transient} whose transient DRMS is below their converged value
+do so by leaning on the tight anchor, and the advantage disappears with it. The information
 that converges the estimator is the map gradient accumulated over the first
 window, not the decimetre anchor, and the post-warm-up claims do not depend
 on a surveyed takeoff point.
@@ -1677,8 +1735,10 @@ augmented with an online neural network, the linear-basis smoother is more
 accurate on both magnetometers of the representative line with no learned
 component at all. The smoothed output is the most accurate estimate on all
 eight counted cases, between \SI{10.5}{} and \SI{28.4}{\meter} where
-free-inertial drift is hundreds of metres, reducing DRMS by factors of
-\num{1.5} to \num{5.2} relative to the best causal baseline. The lag sweep locates the design knee
+free-inertial drift is \SIrange{121}{318}{\meter}, reducing DRMS by a
+geometric-mean factor of \num{2.29} (95\% interval \numrange{1.65}{3.16},
+$d_z=2.13$) relative to the better causal baseline. The causal margin is
+smaller and not statistically established on eight cases. The lag sweep locates the design knee
 near \SI{300}{\second}, about \SI{20}{\kilo\meter} of track. In the tested
 cases, lengthening the lag acts almost purely as a purchase of smoothing
 accuracy with latency, since the causal DRMS varies by less than a metre
@@ -1721,7 +1781,10 @@ Section~\ref{sec:consistency} is where such a change would show up.
 \appendices
 \section{Pinson Error-State Dynamics}\label{app:pinson}
 The navigation-error block of $\boldsymbol{\Phi}_t$ in Eq.~\eqref{eq:dyn} follows the
-Pinson model in a local north-east-down frame~\cite{titterton2004,groves2013}. With
+Pinson model in a local north-east-down frame~\cite{titterton2004,groves2013}. The
+attitude error is defined by
+$\hat{\mathbf{C}}^n_b=(\mathbf{I}-[\boldsymbol{\psi}\times])\mathbf{C}^n_b$,
+the convention of~\cite{groves2013}. With
 position, velocity, and attitude errors $(\delta\mathbf{p},\delta\mathbf{v},
 \boldsymbol{\psi})$ and sensor biases $(\mathbf{b}_a,\mathbf{b}_g)$, the continuous
 error dynamics are
@@ -1730,7 +1793,7 @@ error dynamics are
 \dot{\delta\mathbf{p}}&=\mathbf{F}_{pp}\,\delta\mathbf{p}+\delta\mathbf{v},\\
 \dot{\delta\mathbf{v}}&=\mathbf{F}_{vp}\,\delta\mathbf{p}
 +\mathbf{F}_{vv}\,\delta\mathbf{v}
--[\mathbf{f}^n\times]\,\boldsymbol{\psi}+\mathbf{C}^n_b\mathbf{b}_a,\\
++[\mathbf{f}^n\times]\,\boldsymbol{\psi}+\mathbf{C}^n_b\mathbf{b}_a,\\
 \dot{\boldsymbol{\psi}}&=\mathbf{F}_{\psi p}\,\delta\mathbf{p}
 +\mathbf{F}_{\psi v}\,\delta\mathbf{v}
 -[\boldsymbol{\omega}^n_{in}\times]\,\boldsymbol{\psi}-\mathbf{C}^n_b\mathbf{b}_g,
