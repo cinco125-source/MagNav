@@ -797,10 +797,10 @@ signal $\boldsymbol{\Psi}\boldsymbol{\beta}$, not the coefficients: two
 coefficient vectors differing by an element of $\ker\boldsymbol{\Psi}$
 produce the same correction, so the gauge is harmless to position, and
 Eq.~\eqref{eq:projrank} is the condition that matters. The pseudoinverse
-makes the condition gauge-invariant by construction, the projector onto
-$\mathrm{range}(\boldsymbol{\Psi})$ being unchanged by the near-null
-directions; numerically, the metric below moves by nothing across four
-decades of rank tolerance. The FOGM disturbance $S_k$ of
+makes the condition gauge-invariant by construction: the projector is
+unchanged by any reparameterization of the coefficients that preserves the
+compensation column space. Numerically, the metric below is unchanged across
+four decades of rank tolerance despite the near-null directions. The FOGM disturbance $S_k$ of
 Eq.~\eqref{eq:measlin} competes for the same scalar as well: its
 window-constant part lies in $\mathrm{range}(\boldsymbol{\Psi})$ through the
 bias column and is projected out with it, while its variation inside the
@@ -1330,9 +1330,9 @@ Line & Mag & online & TL{+}NN & causal & \SI{300}{\second} lag \\
 Table~\ref{tab:breadth} repeats the comparison on every counted line, spanning
 two flights, two maps, two altitude regimes, and both cabin magnetometers, with
 nothing re-tuned (Fig.~\ref{fig:breadthbar}). The smoothed estimate is the most accurate entry on all
-eight counted cases, between \SI{10.5}{} and \SI{28.4}{\meter}, and between
-\num{1.5} and \num{5.2} times better than the strongest causal baseline on the
-same case. Read causally, the proposed estimator is the best causal method on
+eight counted cases, between \SI{10.5}{} and \SI{28.4}{\meter}, its DRMS
+lower than that of the best causal baseline on the same case by factors of
+\num{1.5} to \num{5.2}. Read causally, the proposed estimator is the best causal method on
 six of the eight; it trails the EKF+TL+NN on 1007.02 Mag~5 by \SI{2.7}{\meter}
 and on 1003.08 Mag~4 by \SI{2.3}{\meter}, and we report both rather than
 claiming a sweep. The margin is widest where the lines are hardest: on the
@@ -1455,8 +1455,10 @@ Meas.\ density & all \num{10} samples per state & 26.5 (44.2) & 11.7 (16.0) \\
 \end{table}
 
 Table~\ref{tab:ablation} varies each element of the configuration on line
-1007.06, one at a time. The estimator is insensitive at the metre level to all
-of them. The compensation prior may move an order of magnitude in either
+1007.06, one at a time. The estimator is insensitive at the metre level to the
+modelling parameters, while excessive numerical regularization through the
+process-noise floor produces a larger degradation. The compensation prior may
+move an order of magnitude in either
 direction, or be replaced by a per-column prior that assigns each regressor
 column \SI{100}{\nano\tesla} of measurement contribution, for changes under a
 metre. Slowing the compensation walk a hundredfold costs about two metres,
@@ -1623,8 +1625,8 @@ augmented with an online neural network, the linear-basis smoother is more
 accurate on both magnetometers of the representative line with no learned
 component at all. The smoothed output is the most accurate estimate on all
 eight counted cases, between \SI{10.5}{} and \SI{28.4}{\meter} where
-free-inertial drift is hundreds of metres, at \num{1.5} to \num{5.2} times the
-accuracy of the best causal baseline. The lag sweep locates the design knee
+free-inertial drift is hundreds of metres, reducing DRMS by factors of
+\num{1.5} to \num{5.2} relative to the best causal baseline. The lag sweep locates the design knee
 near \SI{300}{\second}, about \SI{20}{\kilo\meter} of track, and shows that the
 causal output is indifferent to the lag, so the choice of lag is purely a
 purchase of smoothing accuracy with latency. The ablation finds no delicate modelling
