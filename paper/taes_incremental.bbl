@@ -322,4 +322,10 @@ P.~Agarwal, G.~D. Tipaldi, L.~Spinello, C.~Stachniss, and W.~Burgard
   In \emph{IEEE International Conference on Robotics and Automation (ICRA)},
   2013, pp. 62--69.
 
+\bibitem{wen2021}
+W.~Wen, T.~Pfeifer, X.~Bai, and L.-T. Hsu
+\newblock  Factor graph optimization for {GNSS/INS} integration: A comparison
+  with the extended {Kalman} filter \newblock  \emph{NAVIGATION: Journal of the
+  Institute of Navigation}, vol.~68, no.~2, pp. 315--331, 2021.
+
 \end{thebibliography}
