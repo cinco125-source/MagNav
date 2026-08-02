@@ -42,11 +42,36 @@
 # unclaimed. That regime is not information-limited, and it is the one place all
 # session where the estimator demonstrably leaves something behind.
 #
-# WHAT THE Mag 4 CASES TURN ON. The bound is exactly linear in sigma -- 1.69 m
-# at 1.0 nT, 7.42 at 4.40, 20.24 at 12.0, a slope of 1.687 m per nT. With the
-# full-line Mag 4 smoothed DRMS at 24.19 m, ratio_s = 14.3 / sigma_Mag4, so the
-# question is only whether Mag 4's post-TL residual clears 14.3 nT against
-# Mag 5's 4.40. Step 1 of the audit answers it in seconds, no estimator needed.
+# WHAT THE Mag 4 CASES TURN ON. Every bound here is evaluated at the nominal
+# 12 nT, for both sensors, and the bound is linear in sigma. Mag 4 carries nine
+# times Mag 5's raw interference (1771 nT rms against 197), so if the post-TL
+# residual scales anywhere near that ratio it is around 40 nT against Mag 5's
+# measured 4.40, and every Mag 4 bound in this table is roughly 3x too low.
+#
+# That is not a detail, it decides the two cases the smoother trails a causal
+# filter on. 1003.08 Mag 4 looks like 4.6x of unclaimed room against the q3
+# bound; at sigma = 30 nT its smoothed 24.98 m sits exactly on its own bound and
+# the room is 1.4x, which is the same reading as 1007.02 Mag 5 -- the case
+# already explained by the 799 m line altitude attenuating the short-wavelength
+# anomaly the causal estimate depends on. So the break-even is sigma_Mag4 = 30 nT
+# and step 1 of the audit settles both cases in seconds.
+#
+# Two hypotheses are already dead, from runs in the repository. Currents: adding
+# the 14 channels to the basis moves 1003.08 Mag 4 by -7%
+# (fgo_current_basis_results.csv A 26.1 -> D 24.3), and they explain 28% of the
+# raw interference but 1.8% of the post-fit residual
+# (fgo_current_corr_summary.csv) because the time-varying TL has already
+# absorbed the current-aligned part. Compensation quality: a calibration-box TL
+# leaves 1768 to 1973 nT on Mag 4 (fgo_calTL_results.csv) on all four lines
+# alike, so it is not what singles out 1003.08.
+#
+# ONE AGGREGATION CAVEAT, which also bounds how far the segment result carries.
+# sig_med is a median over sliding windows while DRMS is an RMS over the line,
+# and 84% of the squared error sits in the worst 20% of the time, so on an
+# 87-minute line the median window is not what the error is made of. On the
+# ten-minute segment the two aggregate alike, which is why the 1.06 reading
+# there is sound and why it should not be transcribed onto a full line without
+# re-aggregating the bound the same way the error is aggregated.
 #
 # ONE HONEST SOFTNESS. sigma comes from a STATIC TL fit at the true position,
 # which is what the model class cannot explain without letting the compensation
