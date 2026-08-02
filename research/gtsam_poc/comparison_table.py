@@ -99,9 +99,15 @@ def main():
               f"{fmt(r['ekf'])}{fmt(r['nn'])}"
               f"{fmt(r['causal'],9)}{fmt(r['smooth'])}   "
               f"{r['causal']/best:7.2f}{r['smooth']/best:7.2f}")
-    print("  stinger = causal EKF on the COMPENSATED mag_1_c with no TL states")
-    print("  (fgo_breadth.jl). It is the clean-sensor reference the cabin columns")
-    print("  are trying to reach; causal, so it compares against the causal column.")
+    print("  stinger = causal EKF on the COMPENSATED mag_1_c with no TL states,")
+    print("  from fgo_breadth.jl at warm=600 s, the convention of this whole table.")
+    print("  DO NOT mix in fgo_benchmark.jl / README section 2, which report the")
+    print("  same estimator on the same sensor and line with NO warm-up: there the")
+    print("  stinger EKF is 28.3 and the INS 114.6 against 21.5 and 124.0 here. Both")
+    print("  differences go the way they must -- dropping the first ten minutes")
+    print("  removes the filter's transient and keeps the INS's later drift -- and")
+    print("  the batch FGO's 14.0 m on mag_1_c carries the same no-warm-up")
+    print("  convention, so it does not belong in this table either.")
 
     print()
     print("=" * 78)
