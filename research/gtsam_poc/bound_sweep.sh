@@ -28,6 +28,33 @@
 # eight cases: not how much information is available, but how much of the margin
 # comes from relinearizing rather than from smoothing. Run both; they share the
 # ps100 runs and neither invalidates the other.
+# THE RATIO DISCRIMINATES. Four configurations on the same segment against the
+# same 7.42 m bound, from npz already in the repository:
+#
+#   sigma_beta = 100, relinearizing   7.88 m   1.06
+#   sigma_beta = 100, --norelin       8.31 m   1.12
+#   sigma_beta =   1, relinearizing  15.11 m   2.04
+#   sigma_beta =   1, --norelin      28.12 m   3.79
+#
+# The wide prior is at the bound whether or not the graph relinearizes, which is
+# why the knob is inert there. The tight prior is not: relinearization takes it
+# from 3.79 to 2.04, closing 47% of the gap, and two full factors are still
+# unclaimed. That regime is not information-limited, and it is the one place all
+# session where the estimator demonstrably leaves something behind.
+#
+# WHAT THE Mag 4 CASES TURN ON. The bound is exactly linear in sigma -- 1.69 m
+# at 1.0 nT, 7.42 at 4.40, 20.24 at 12.0, a slope of 1.687 m per nT. With the
+# full-line Mag 4 smoothed DRMS at 24.19 m, ratio_s = 14.3 / sigma_Mag4, so the
+# question is only whether Mag 4's post-TL residual clears 14.3 nT against
+# Mag 5's 4.40. Step 1 of the audit answers it in seconds, no estimator needed.
+#
+# ONE HONEST SOFTNESS. sigma comes from a STATIC TL fit at the true position,
+# which is what the model class cannot explain without letting the compensation
+# chase the map. The estimator's own post-fit residual (2.76 nT) would read 1.69
+# instead of 1.06 and would be circular. Either choice is near one, not five.
+# The bound also projects a static TL subspace while the estimator carries a
+# walking one, so the real nuisance space is larger and this bound is
+# optimistic -- the right direction for a bound, but worth stating.
 set -e
 cd /mnt/c/Users/cin64/Desktop/MagNav
 PY=~/gtsam_env/bin/python
