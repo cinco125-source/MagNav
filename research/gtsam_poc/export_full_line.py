@@ -13,7 +13,20 @@ line_1007_06.h5 (which Julia exported for the same line) to float32 accuracy.
 
 Usage:
   export_full_line.py <Flt1007_train.h5> <Renfrew_395_map.h5> <out.h5> \
-      [--validate line_1007_06.h5]
+      [--line 1003.02] [--validate line_1007_06.h5] [--comp] [--no-phi]
+
+--comp adds the aeromagnetic-compensation channels the navigation export never
+pulled: every scalar magnetometer including the mag_1_c stinger reference, all
+four fluxgates in raw x/y/z/t rather than only the Tolles-Lawson matrix built
+from flux D, the 14 current channels, the voltage rails with vol_cabt, and the
+auxiliary series. --no-phi drops the Pinson tensor, which is the bulk of the
+file and is of no use to a compensation study.
+
+  # navigation (unchanged)
+  export_full_line.py Flt1007_train.h5 Renfrew_395.h5 line_1007_06_full.h5
+  # compensation, small file
+  export_full_line.py Flt1007_train.h5 Renfrew_395.h5 comp_1007_06.h5 \
+      --comp --no-phi
 """
 import sys
 import numpy as np
@@ -143,6 +156,41 @@ def get_pinson(nx, lat, vn, ve, vd, fn, fe, fd, Cnb,
     return F
 
 
+# --comp: the channels an aeromagnetic-compensation study needs and the
+# navigation export never pulled. All of them are in the SGL flight file; the
+# gap was here, not in the data. Without mag_1_c there is no clean reference to
+# score a compensated cabin sensor against, which is the metric a compensation
+# paper is built on, and the export carried only the Tolles-Lawson matrix built
+# from flux D, so neither the raw fluxgates nor the other three booms survived.
+# Fields absent from a given flight are skipped and reported, since not every
+# SGL flight records every channel.
+COMP_SCALAR = ["mag_1_c", "mag_1_uc", "mag_2_c", "mag_2_uc", "mag_3_c",
+               "mag_3_uc", "mag_4_uc", "mag_5_uc", "mag_6_uc"]
+COMP_FLUX = [f"flux_{b}_{c}" for b in "abcd" for c in "xyzt"]
+COMP_CUR = ["cur_com_1", "cur_ac_hi", "cur_ac_lo", "cur_tank", "cur_flap",
+            "cur_strb", "cur_srvo_o", "cur_srvo_m", "cur_srvo_i", "cur_heat",
+            "cur_acpwr", "cur_outpwr", "cur_bat_1", "cur_bat_2"]
+# vol_cabt is the cabin temperature channel; the rest are the platform's
+# voltage rails, the other half of the electrical-interference picture
+COMP_VOL = ["vol_acc_p", "vol_acc_n", "vol_block", "vol_back", "vol_back_p",
+            "vol_back_n", "vol_srvo", "vol_cabt", "vol_fan", "vol_bat_1",
+            "vol_bat_2", "vol_res_p", "vol_res_n", "vol_outpwr", "vol_acpwr",
+            "vol_gyro_1", "vol_gyro_2"]
+COMP_AUX = ["diurnal", "igrf", "ogs_mag", "ogs_alt", "utm_x", "utm_y", "utm_z",
+            "baro", "radar", "topo", "dem", "drape"]
+
+
+def read_comp(f, ind):
+    """Read every compensation channel present in the flight file."""
+    out, missing = {}, []
+    for k in COMP_SCALAR + COMP_FLUX + COMP_CUR + COMP_VOL + COMP_AUX:
+        if k in f:
+            out[k] = np.asarray(f[k][()])[ind].astype(float)
+        else:
+            missing.append(k)
+    return out, missing
+
+
 def main():
     flt_path, map_path, out_path = sys.argv[1], sys.argv[2], sys.argv[3]
     val_path = sys.argv[sys.argv.index("--validate") + 1] if "--validate" in sys.argv else None
@@ -179,6 +227,17 @@ def main():
     Bz = f["flux_d_z"][()][ind].astype(float)
     meas = f["mag_5_uc"][()][ind].astype(float)
     meas4 = f["mag_4_uc"][()][ind].astype(float)
+    comp, comp_missing = ({}, [])
+    if "--comp" in sys.argv:
+        comp, comp_missing = read_comp(f, ind)
+        print(f"comp channels: {len(comp)} present, {len(comp_missing)} absent",
+              flush=True)
+        if comp_missing:
+            print("  absent: " + " ".join(comp_missing), flush=True)
+        for k in ("mag_1_c", "flux_a_x"):
+            if k not in comp:
+                print(f"  WARNING: {k} absent -- this flight cannot support the "
+                      f"compensation reference/basis that depends on it", flush=True)
     f.close()
 
     # specific force: rotate wander (CW for NED), mirrors get_XYZ20
@@ -205,14 +264,22 @@ def main():
         Rm = float(g["R"][()])
     nx = P0.shape[0]
 
-    print("building Phi tensor...", flush=True)
-    Phi = np.zeros((N-1, nx, nx), dtype=np.float32)
-    for t in range(N-1):
-        F = get_pinson(nx, ins_lat[t], vn[t], ve[t], vd[t],
-                       fn[t], fe[t], fd[t], Cnb[:, :, t])
-        Phi[t] = expm(F * dt).astype(np.float32)
-        if t % 10000 == 0:
-            print(f"  Phi {t}/{N-1}", flush=True)
+    # --no-phi: the Pinson tensor is (N-1, nx, nx) float32, about 570 MB raw on a
+    # full 87-minute line and the bulk of the output. A compensation study never
+    # touches it, so skip it and the file drops to the channels themselves.
+    skip_phi = "--no-phi" in sys.argv
+    Phi = None
+    if skip_phi:
+        print("skipping Phi tensor (--no-phi)", flush=True)
+    else:
+        print("building Phi tensor...", flush=True)
+        Phi = np.zeros((N-1, nx, nx), dtype=np.float32)
+        for t in range(N-1):
+            F = get_pinson(nx, ins_lat[t], vn[t], ve[t], vd[t],
+                           fn[t], fe[t], fd[t], Cnb[:, :, t])
+            Phi[t] = expm(F * dt).astype(np.float32)
+            if t % 10000 == 0:
+                print(f"  Phi {t}/{N-1}", flush=True)
 
     # ---- map + IGRF grid ----
     print("building map grid...", flush=True)
@@ -315,7 +382,8 @@ def main():
 
     with h5py.File(out_path, "w") as o:
         o["N"] = N; o["dt"] = dt; o["nx"] = nx; o["nTL"] = nTL
-        o.create_dataset("Phi", data=Phi, compression="gzip", compression_opts=1)
+        if Phi is not None:
+            o.create_dataset("Phi", data=Phi, compression="gzip", compression_opts=1)
         o["A"] = A; o["meas"] = meas               # mag_5_uc (back-compat)
         o["meas_mag4"] = meas4; o["meas_mag5"] = meas
         o["ins_lat"] = ins_lat; o["ins_lon"] = ins_lon; o["ins_alt"] = ins_alt
@@ -326,6 +394,12 @@ def main():
         o["malt"] = malt
         o["warm"] = 600.0; o["win"] = 300.0; o["overlap"] = 90.0
         o["ref_drms"] = float("nan")
+        o["tt"] = tt[ind].astype(float)
+        o["ins_roll"] = roll; o["ins_pitch"] = pitch; o["ins_yaw"] = yaw
+        for k, v in comp.items():
+            o.create_dataset(k, data=v, compression="gzip", compression_opts=1)
+        if comp:
+            print(f"wrote {len(comp)} compensation channels", flush=True)
     print("wrote", out_path, flush=True)
 
 if __name__ == "__main__":
