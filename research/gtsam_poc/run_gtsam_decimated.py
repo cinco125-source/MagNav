@@ -189,6 +189,54 @@ def main():
         print(f"TL random walk sigma scaled by {Wk:g}", flush=True)
 
     x0_TL = np.zeros(nTL)
+    # --tl-init-bias T: the MATCHED analogue of what the EKF+TL+NN baseline
+    # receives. That filter cannot cold-start at all without it -- a naive port
+    # drives the network bias to ~5e4 nT -- so ekf_tlnn.jl initializes the
+    # network's output normalization from the median and spread of the
+    # interference over the first 300 s (ekf_tlnn.jl L38-43). Our runs start
+    # every coefficient at exactly zero, which is why the comparison inside the
+    # warm-up window is not like-for-like: one estimator is bootstrapped from
+    # the first five minutes and the other is not. This sets ONLY the bias
+    # column of the Tolles-Lawson basis (the trailing ones-column) to the median
+    # residual over the same window, which is the same DC information in the
+    # form this estimator already carries. --tl-init fits all nTL coefficients
+    # by ridge regression instead, which is strictly more than the baseline
+    # gets, so it answers a different question: not "is the comparison fair"
+    # but "what would a bootstrap buy".
+    #
+    # MEASURED, and it does not explain the gap. On the 1007.06 segment (Mag 5,
+    # scored from t=0 so the transient counts), causal/smoothed:
+    #   none                        39.89 / 10.42
+    #   bias only, 60 s  (matched)  42.37 / 10.94
+    #   bias only, 300 s (matched)  42.34 / 10.94
+    #   full 19-dof ridge, 300 s    33.72 /  9.17
+    # Handing ourselves exactly what the NN baseline gets makes things slightly
+    # WORSE, so the NN's advantage inside the warm-up window is not its DC
+    # initialization. The reason the matched version fails is visible in the
+    # bootstrap itself: it reads a 309.9 nT offset against an interference
+    # spread of only 12.6 nT, so on Mag 5 the interference is nearly pure DC
+    # that the estimator finds quickly anyway, and pinning all of it to the bias
+    # column under a sigma_beta = 100 prior mis-attributes whatever belonged to
+    # the other columns. The full ridge fit does help, by 15% on the whole-line
+    # causal score, but it is strictly more than the baseline receives, so it is
+    # a recipe rather than a fairness correction.
+    #
+    # The hypothesis still standing is the feature set. The NN filter is fed
+    # only the permanent group, three columns, where we carry all nineteen; the
+    # manuscript already reads that as the NN's weakness after the warm-up
+    # ("those linear higher-order terms matter"), and the same reduction should
+    # be a strength inside it, with six times less to identify. If that is the
+    # mechanism the answer is a schedule -- few coefficients through the
+    # transient, the full basis afterwards -- not a fixed choice.
+    if "--tl-init-bias" in sys.argv:
+        T_b = float(sys.argv[sys.argv.index("--tl-init-bias") + 1])
+        n_b = min(N, int(round(T_b / dt)))
+        r_b = np.array([meas[t] - grid.value(ins_lat[t], ins_lon[t])
+                        for t in range(n_b)])
+        x0_TL = np.zeros(nTL)
+        x0_TL[-1] = np.median(r_b)           # the ones-column of create_TL_A
+        print(f"TL bias initialized from first {T_b:g}s: {x0_TL[-1]:.1f} nT "
+              f"(interference spread {r_b.std():.1f} nT)", flush=True)
     if "--tl-init" in sys.argv:
         T_init = float(sys.argv[sys.argv.index("--tl-init") + 1])
         n_init = min(N, int(round(T_init / dt)))
