@@ -43,11 +43,21 @@ TSV=$G/bound_sweep.tsv
 for C in $CASES; do
     LINE=${C%:*}; MAG=${C#*:}
     H5=$DATA/line_${LINE}_full.h5
+    # prefer the committed run's npz, but never write over it: a regeneration
+    # goes to its own _bs_ tag, so a wrong --data path or a changed default can
+    # only produce a new file rather than silently replace a paper artifact
     NPZ=$G/est_gtsam_ps100_${LINE}_m${MAG}.npz
     if [ ! -f "$NPZ" ]; then
-        echo "=== regenerating $(basename $NPZ) ==="
-        $PY -u $G/run_gtsam_decimated.py $H5 $LAG $MAG 10 _ps100_${LINE}_m${MAG} \
-            --tl-sigma 100 > $G/x_ps100_${LINE}_m${MAG}.log 2>&1
+        NPZ=$G/est_gtsam_bs_${LINE}_m${MAG}.npz
+        if [ ! -f "$NPZ" ]; then
+            echo "=== regenerating as _bs_${LINE}_m${MAG} (ps100 npz absent) ==="
+            $PY -u $G/run_gtsam_decimated.py $H5 $LAG $MAG 10 _bs_${LINE}_m${MAG} \
+                --tl-sigma 100 > $G/x_bs_${LINE}_m${MAG}.log 2>&1
+            grep -h "warm=600" $G/gtsam_poc_result_bs_${LINE}_m${MAG}.txt
+            echo "  compare against gtsam_poc_result_ps100_${LINE}_m${MAG}.txt:"
+            grep -h "warm=600" $G/gtsam_poc_result_ps100_${LINE}_m${MAG}.txt 2>/dev/null \
+                || echo "  (no committed ps100 result to compare)"
+        fi
     fi
     echo "=== $LINE Mag $MAG ==="
     $PY -u $G/noise_model_audit.py $H5 --mag $MAG --lag $LAG --est $NPZ \

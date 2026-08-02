@@ -1,9 +1,17 @@
-lag=300s K=10 mag=5 (meas_mag5) N=6000 -> 600 states
+lag=300s K=10 mag=5 (meas_mag5) N=52401 -> 5240 states
 TL prior sigma scaled by 100
-s=500/600  elapsed=5s  (10 ms/state)
-total 6s  (11 ms/state, 1.1 ms/raw-epoch)
-warm=0s  smoothed_drms=10.42 m  realtime_drms=39.89 m  ins_drms=39.01 m
-warm=60s  smoothed_drms=10.90 m  realtime_drms=42.02 m  ins_drms=41.11 m
-warm=300s  smoothed_drms=7.88 m  realtime_drms=15.49 m  ins_drms=51.95 m
-warm=60s  smoothed_drms=10.90 m  realtime_drms=42.02 m  ins_drms=41.11 m
-transient[0,60s)  smoothed_drms=4.00 m peak=6.44 m  realtime_drms=3.70 m peak=7.18 m
+s=500/5241  elapsed=3s  (5 ms/state)
+s=1000/5241  elapsed=7s  (7 ms/state)
+s=1500/5241  elapsed=10s  (7 ms/state)
+s=2000/5241  elapsed=14s  (7 ms/state)
+s=2500/5241  elapsed=18s  (7 ms/state)
+s=3000/5241  elapsed=22s  (7 ms/state)
+s=3500/5241  elapsed=26s  (7 ms/state)
+s=4000/5241  elapsed=33s  (8 ms/state)
+s=4500/5241  elapsed=37s  (8 ms/state)
+s=5000/5241  elapsed=41s  (8 ms/state)
+total 43s  (8 ms/state, 0.8 ms/raw-epoch)
+warm=0s  smoothed_drms=11.43 m  realtime_drms=20.50 m  ins_drms=299.06 m
+warm=60s  smoothed_drms=11.49 m  realtime_drms=20.61 m  ins_drms=300.79 m
+warm=300s  smoothed_drms=11.34 m  realtime_drms=15.94 m  ins_drms=307.97 m
+warm=600s  smoothed_drms=11.53 m  realtime_drms=15.97 m  ins_drms=317.49 m
