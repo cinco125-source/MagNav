@@ -187,6 +187,12 @@ def main():
             print()
             print("  near 1.0 means the case is information-limited and no modelling")
             print("  change will help; well above 1.0 is where work remains.")
+        # one machine-readable line so a sweep can tabulate without parsing prose
+        print(f"AUDIT mag={mag} sigma={sig_meas:.2f} tau={tau:.1f} "
+              f"bound={b if b else float('nan'):.2f} "
+              f"smoothed={out['smoothed']:.2f} causal={out['causal']:.2f} "
+              f"ratio_s={out['smoothed']/b if b else float('nan'):.2f} "
+              f"ratio_c={out['causal']/b if b else float('nan'):.2f}")
 
 
 if __name__ == "__main__":

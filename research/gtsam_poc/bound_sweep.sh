@@ -1,0 +1,78 @@
+#!/bin/bash
+# Achieved error over the information bound, on all eight counted cases.
+#
+# WHY THIS FIRST. On the committed 1007.06 segment (Mag 5) the smoother reaches
+# 7.88 m against a bound of 7.42 m: 1.06x, and 1.01x once the disturbance is
+# retuned to what the residual actually shows. That single ratio explains why
+# every knob tried this session moved the case by a few percent -- the noise
+# model 4.8%, relinearization inert at sigma_beta = 100, the compensation node
+# period no trend at all. There were only six percent to move.
+#
+# The ratio is therefore the triage number, and it is worth having on all eight
+# cases before any more modelling effort is spent. Near 1.0 the case is
+# information-limited and nothing in the estimator will help it. Well above 1.0
+# is where the remaining work is, and the prediction to test is that the Mag 5
+# cases sit near 1.0 while the Mag 4 cold starts do not: Mag 4 carries nine
+# times the interference (1771 nT rms against 197) and diverges outright at the
+# tight prior, which is the same place relinearization was worth a factor of two
+# (gtsam_poc_result_sb1_l*). If that holds, the remaining work is one regime,
+# not eight cases.
+#
+# WHAT IT DOES. For each case: make sure the sigma_beta = 100 estimate exists,
+# re-running it if the npz was cleaned, then measure the unexplained field, fit
+# the disturbance correlation time, evaluate mu^-1/2 at the assumed and the
+# measured sigma, and report achieved over bound. The audit itself runs no
+# estimator and takes seconds; a missing npz costs about 40 s to regenerate.
+#
+# Pairs with norelin_baseline.sh, which asks a different question about the same
+# eight cases: not how much information is available, but how much of the margin
+# comes from relinearizing rather than from smoothing. Run both; they share the
+# ps100 runs and neither invalidates the other.
+set -e
+cd /mnt/c/Users/cin64/Desktop/MagNav
+PY=~/gtsam_env/bin/python
+DATA=~/magnav_data
+G=research/gtsam_poc
+CASES="1007_06:4 1007_06:5 1007_02:4 1007_02:5 1003_02:4 1003_02:5 1003_08:4 1003_08:5"
+LAG=300
+WARM=600
+
+OUT=$G/bound_sweep.log
+TSV=$G/bound_sweep.tsv
+: > $OUT; : > $TSV
+for C in $CASES; do
+    LINE=${C%:*}; MAG=${C#*:}
+    H5=$DATA/line_${LINE}_full.h5
+    NPZ=$G/est_gtsam_ps100_${LINE}_m${MAG}.npz
+    if [ ! -f "$NPZ" ]; then
+        echo "=== regenerating $(basename $NPZ) ==="
+        $PY -u $G/run_gtsam_decimated.py $H5 $LAG $MAG 10 _ps100_${LINE}_m${MAG} \
+            --tl-sigma 100 > $G/x_ps100_${LINE}_m${MAG}.log 2>&1
+    fi
+    echo "=== $LINE Mag $MAG ==="
+    $PY -u $G/noise_model_audit.py $H5 --mag $MAG --lag $LAG --est $NPZ \
+        --warm $WARM > $G/x_audit_${LINE}_m${MAG}.log 2>&1
+    cat $G/x_audit_${LINE}_m${MAG}.log >> $OUT
+    grep -E "static 19-dof|fitted FOGM|<- measured|<- assumed|DRMS" \
+        $G/x_audit_${LINE}_m${MAG}.log || true
+    A=$(grep -m1 "^AUDIT " $G/x_audit_${LINE}_m${MAG}.log || true)
+    [ -n "$A" ] && echo -e "${LINE}\tm${MAG}\t${A#AUDIT }" >> $TSV
+done
+
+echo
+echo "########## achieved over the information bound ##########"
+printf '%-14s %8s %8s %9s %10s %9s %8s %8s\n' \
+       case "sig[nT]" "tau[s]" "bound[m]" "smoothed" "causal" "ratio_s" "ratio_c"
+while IFS=$'\t' read -r LINE MAG REST; do
+    eval "$REST"
+    printf '%-14s %8s %8s %9s %10s %9s %8s %8s\n' \
+           "$LINE $MAG" "$sigma" "$tau" "$bound" "$smoothed" "$causal" \
+           "$ratio_s" "$ratio_c"
+done < $TSV
+
+echo
+echo "ratio_s near 1.0: information-limited, no modelling change will help."
+echo "ratio_s well above 1.0: that case is where the remaining work is."
+echo "ratio_c is expected near 2 even on a finished case -- the bound is"
+echo "two-sided over the lag and a causal estimate only has one side."
+echo BOUND_SWEEP_DONE
