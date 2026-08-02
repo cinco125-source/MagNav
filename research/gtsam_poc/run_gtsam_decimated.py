@@ -95,6 +95,20 @@ def main():
     qf = (float(sys.argv[sys.argv.index("--qfloor") + 1])
           if "--qfloor" in sys.argv else 1e-20)
     Qd = Qd + qf * np.eye(nx)                        # scale-aware floor (run_gtsam.py)
+    # --fogm-tau T: the disturbance correlation time, which the export bakes into
+    # Phi and Qd at the model's nominal 180 s. Fitting an exponential to the
+    # autocorrelation of the residual left by a static 19-dof Tolles-Lawson fit
+    # at the true position gives 35 s on line 1007.06 Mag 5, and the measured
+    # correlation falls to 0.03 by 60 s where exp(-60/180) is still 0.72. The
+    # stationary variance sigma_S^2 lives in P0 and is left alone; for a FOGM
+    # Qd = sigma_S^2 * 2 dt / tau, so rescaling by the tau ratio moves the
+    # correlation time without touching the amplitude. --sigma-s is the
+    # amplitude knob and composes with this one.
+    if "--fogm-tau" in sys.argv:
+        tau_new = float(sys.argv[sys.argv.index("--fogm-tau") + 1])
+        Phi[:, nx-1, nx-1] = np.exp(-dt / tau_new)
+        Qd[nx-1, nx-1] = (Qd[nx-1, nx-1] - qf) * (180.0 / tau_new) + qf
+        print(f"FOGM tau set to {tau_new:g} s (was 180)", flush=True)
     grid = Grid(d["glat"], d["glon"], d["gh_rowmajor"])
     print(f"lag={lag:g}s K={K} mag={mag} ({meas_key}) N={N} -> {N//K} states",
           flush=True)

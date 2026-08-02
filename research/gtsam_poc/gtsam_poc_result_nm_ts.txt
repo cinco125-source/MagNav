@@ -1,0 +1,6 @@
+warm=0s  smoothed_drms=9.80 m  realtime_drms=38.75 m  ins_drms=39.01 m
+warm=60s  smoothed_drms=10.26 m  realtime_drms=40.83 m  ins_drms=41.11 m
+warm=300s  smoothed_drms=7.50 m  realtime_drms=15.19 m  ins_drms=51.95 m
+warm=60s  smoothed_drms=10.26 m  realtime_drms=40.83 m  ins_drms=41.11 m
+transient[0,60s)  smoothed_drms=3.71 m peak=5.93 m  realtime_drms=3.57 m peak=6.88 m
+lag 300 K 10 mag 5 ms_per_state 9.8
