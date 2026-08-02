@@ -169,6 +169,48 @@ def main():
     print(f"  {'config':38s}{'smoothed':>10s}{'causal':>9s}{'over bound':>12s}")
     for lbl, s, c, r in seg:
         print(f"  {lbl:38s}{s:10.2f}{c:9.2f}{r:12.2f}")
+    # G. the compensated stinger, same column shape as A. Populated by
+    # clean_sensor.sh; absent until it has run.
+    EKF1 = {"1003.02": 21.5, "1003.08": 17.7, "1007.02": 25.6, "1007.06": 20.0}
+    cl = {}
+    for l in EKF1:
+        u = l.replace(".", "_")
+        for col in "ABCD":
+            p_ = os.path.join(HERE, f"gtsam_poc_result_cl_{col}_{u}.txt")
+            if os.path.exists(p_):
+                for ln in open(p_):
+                    if ln.startswith("warm=600s"):
+                        cl[(l, col)] = [float(x.split("=")[1].split()[0])
+                                        for x in ln.split("  ") if "drms" in x]
+    if cl:
+        print()
+        print("=" * 78)
+        print("G. Compensated stinger mag_1_c, sigma_beta = 100, warm=600.  DRMS [m]")
+        print("=" * 78)
+        print(f"{'line':9s}{'variant':16s}{'INS':>8s}{'EKF':>8s}"
+              f"{'causal':>9s}{'300 s':>8s}   {'c/EKF':>7s}{'s/EKF':>7s}")
+        names = {"A": "TL + relin", "B": "no TL", "C": "TL, norelin",
+                 "D": "no TL, norelin"}
+        for l in sorted(EKF1):
+            for col in "ABCD":
+                v = cl.get((l, col))
+                if not v:
+                    continue
+                sm, rt, ins = v
+                print(f"{l:9s}{names[col]:16s}{fmt(ins,8,0)}{fmt(EKF1[l])}"
+                      f"{fmt(rt,9)}{fmt(sm)}   {rt/EKF1[l]:7.2f}{sm/EKF1[l]:7.2f}")
+            for a, b, lbl in (("A", "C", "TL"), ("B", "D", "no TL")):
+                if (l, a) in cl and (l, b) in cl:
+                    ra = cl[(l, a)][1] / cl[(l, b)][1]
+                    rs = cl[(l, a)][0] / cl[(l, b)][0]
+                    print(f"{'':9s}{'-> relin buys ('+lbl+')':16s}{'':8s}{'':8s}"
+                          f"{ra:9.2f}{rs:8.2f}")
+            print()
+        print("  relin buys ~1.00 means the graph is doing what a linear fixed-lag")
+        print("  smoother does, and on this sensor there is no claim beyond smoothing.")
+        print("  A vs B says whether the TL states were absorbing map error rather")
+        print("  than interference on a sensor that has none to compensate.")
+
     print("  At the wide prior both sit at the bound, so relinearization has nothing")
     print("  to recover; at the tight prior it recovers 47% and the rest is the prior.")
 
