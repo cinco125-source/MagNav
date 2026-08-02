@@ -237,6 +237,22 @@ def main():
         params.setRelinearizeThreshold(0.0)
         params.relinearizeSkip = 1
         print("full relinearization every update", flush=True)
+    # --norelin: the opposite end of the same knob, and the control the accuracy
+    # claim needs. Each new state is still linearized at its initial value, which
+    # is Phi times the previous causal estimate -- the point a filter would
+    # linearize at -- but no state is ever relinearized afterwards. What is left
+    # is linear fixed-lag smoothing over the same window: the same error model,
+    # the same compensation model, the same lag, the same measurements, and none
+    # of the revision the graph is credited with. Section I concedes that for a
+    # linear-Gaussian model the fixed-lag MAP estimate coincides with classical
+    # fixed-lag smoothing, so smoothing per se is not the contribution; this run
+    # is what separates the two. The gap between this and the full run is the
+    # formulation's share of the margin, and the gap between this and the causal
+    # filters is the share that smoothing alone would have bought anyway.
+    if "--norelin" in sys.argv:
+        params.setRelinearizeThreshold(1e12)
+        params.relinearizeSkip = 10**9
+        print("no relinearization (linear fixed-lag smoothing control)", flush=True)
     sm = gtsam_unstable.IncrementalFixedLagSmoother(lag, params)
     KTM = gtsam_unstable.FixedLagSmootherKeyTimestampMap
 
