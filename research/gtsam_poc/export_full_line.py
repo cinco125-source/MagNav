@@ -24,6 +24,9 @@ file and is of no use to a compensation study.
 
   # navigation (unchanged)
   export_full_line.py Flt1007_train.h5 Renfrew_395.h5 line_1007_06_full.h5
+  # the clean stinger through the same estimator (needs --comp or a plain export)
+  export_full_line.py Flt1003_train.h5 Eastern_395.h5 line_1003_02_full.h5 --line 1003.02
+  run_gtsam_decimated.py line_1003_02_full.h5 300 1c 10 _clean_1003_02 --tl-sigma 100
   # compensation, small file
   export_full_line.py Flt1007_train.h5 Renfrew_395.h5 comp_1007_06.h5 \
       --comp --no-phi
@@ -227,6 +230,16 @@ def main():
     Bz = f["flux_d_z"][()][ind].astype(float)
     meas = f["mag_5_uc"][()][ind].astype(float)
     meas4 = f["mag_4_uc"][()][ind].astype(float)
+    # The compensated tail stinger, exported under the meas_mag<X> naming the
+    # runners already resolve, so `--mag 1c` runs the SAME estimator on the clean
+    # sensor with no other change. That is the control the causal table is
+    # missing: fgo_benchmark.jl runs mag_1_c but as a full batch, which cannot be
+    # compared against a causal filter. If the causal graph on mag_1c lands where
+    # it lands on the uncompensated cabin Mag 5, the map is the binding
+    # constraint and sensor cleanliness is not; if it lands well below, cabin
+    # interference is still costing the causal estimate something.
+    meas1c = f["mag_1_c"][()][ind].astype(float) if "mag_1_c" in f else None
+    meas1uc = f["mag_1_uc"][()][ind].astype(float) if "mag_1_uc" in f else None
     comp, comp_missing = ({}, [])
     if "--comp" in sys.argv:
         comp, comp_missing = read_comp(f, ind)
@@ -386,6 +399,10 @@ def main():
             o.create_dataset("Phi", data=Phi, compression="gzip", compression_opts=1)
         o["A"] = A; o["meas"] = meas               # mag_5_uc (back-compat)
         o["meas_mag4"] = meas4; o["meas_mag5"] = meas
+        if meas1c is not None:
+            o["meas_mag1c"] = meas1c         # run_gtsam_*.py --mag 1c
+        if meas1uc is not None:
+            o["meas_mag1uc"] = meas1uc       # run_gtsam_*.py --mag 1uc
         o["ins_lat"] = ins_lat; o["ins_lon"] = ins_lon; o["ins_alt"] = ins_alt
         o["true_lat"] = true_lat; o["true_lon"] = true_lon
         o["P0"] = P0; o["Qd"] = Qd; o["R"] = Rm

@@ -78,6 +78,7 @@ def main():
             ek1 = float(b["EKF_online"]) if b.get("EKF_online") else float("nan")
             dec = read_result("dec300", line, mag)
             rows.append(dict(line=line, mag=mag, ins=ins, ekf=ekf100.get((line, str(mag))),
+                             stinger=float(b["EKF_Mag1"]) if b.get("EKF_Mag1") else float("nan"),
                              nn=nn, causal=rt, smooth=sm,
                              ekf1=ek1, fgo1=dec[0] if dec else float("nan"),
                              fgo1c=dec[1] if dec else float("nan")))
@@ -90,13 +91,17 @@ def main():
     print("=" * 78)
     print("A. Per case, sigma_beta = 100 (the reported operating point).  DRMS [m]")
     print("=" * 78)
-    print(f"{'line':9s}{'mag':>4s}{'INS':>8s}{'EKF':>8s}{'EKF+NN':>8s}"
+    print(f"{'line':9s}{'mag':>4s}{'INS':>8s}{'stinger':>9s}{'EKF':>8s}{'EKF+NN':>8s}"
           f"{'causal':>9s}{'300 s':>8s}   {'c/best':>7s}{'s/best':>7s}")
     for r in rows:
         best = min(x for x in (r["ekf"], r["nn"]) if x and not math.isnan(x))
-        print(f"{r['line']:9s}{r['mag']:>4d}{fmt(r['ins'],8,0)}{fmt(r['ekf'])}{fmt(r['nn'])}"
+        print(f"{r['line']:9s}{r['mag']:>4d}{fmt(r['ins'],8,0)}{fmt(r['stinger'],9)}"
+              f"{fmt(r['ekf'])}{fmt(r['nn'])}"
               f"{fmt(r['causal'],9)}{fmt(r['smooth'])}   "
               f"{r['causal']/best:7.2f}{r['smooth']/best:7.2f}")
+    print("  stinger = causal EKF on the COMPENSATED mag_1_c with no TL states")
+    print("  (fgo_breadth.jl). It is the clean-sensor reference the cabin columns")
+    print("  are trying to reach; causal, so it compares against the causal column.")
 
     print()
     print("=" * 78)
