@@ -50,6 +50,7 @@ which is what one-sided information should give against a two-sided window.
 Usage: noise_model_audit.py <line.h5> [--mag 5] [--lag 300] [--K 10]
                             [--est est_gtsam_TAG.npz] [--warm 300]
 """
+import math
 import sys
 
 import numpy as np
@@ -83,8 +84,10 @@ class Grid:
                 (self.value(lat, lon+h) - self.value(lat, lon-h)) / (2*h))
 
 
-def mu_of_window(Gb, Pb):
+def mu_of_window(Gb, Pb=None):
     """lambda_min of Gb' (I - Pb Pb^+) Gb (obs_metric.py)."""
+    if Pb is None:                       # no nuisance: the clean-sensor case
+        return np.linalg.svd(Gb, compute_uv=False)[-1] ** 2
     U, s, _ = np.linalg.svd(Pb, full_matrices=False)
     Ur = U[:, s > max(Pb.shape) * np.finfo(float).eps * s[0]]
     return np.linalg.svd(Gb - Ur @ (Ur.T @ Gb), compute_uv=False)[-1] ** 2
@@ -158,6 +161,25 @@ def main():
             "  <- measured" if abs(s_ - sig_meas) < 0.02 else "")
         print(f"  sigma {s_:6.2f} nT : mu^-1/2 = {np.median(sg):7.2f} m "
               f"(IQR {np.percentile(sg,25):.1f}-{np.percentile(sg,75):.1f}){tagged}")
+
+    # What would a perfectly compensated sensor buy? Project out nothing and the
+    # same window becomes the clean-sensor case. The ratio isolates the cost of
+    # carrying the compensation at EQUAL sigma, as distinct from the cost of the
+    # interference itself, which shows up in sigma. On line 1007.06 the 19-column
+    # basis costs 1.2x: the Tolles-Lawson columns, built from fluxgate direction
+    # cosines, are close to orthogonal to the map gradient over a 300 s window,
+    # so estimating compensation jointly is nearly free in position information.
+    # That makes sigma, not the nuisance dimension, what sets the bound.
+    print()
+    print("-- 2b. what the compensation costs in information (at sigma = 1 nT) --")
+    for lbl, cols in (("clean sensor, no compensation", None),
+                      ("permanent TL only, 3 columns", slice(0, 3)),
+                      ("full TL, 19 columns (in use)", slice(None))):
+        mus = [mu_of_window(G0[i:i+L], None if cols is None else Ak[i:i+L, cols])
+               for i in range(0, G0.shape[0] - L + 1, max(1, L // 10))]
+        if mus:
+            b_ = 1 / math.sqrt(max(float(np.median(mus)), 1e-30))
+            print(f"  {lbl:32s}: mu^-1/2 = {b_:7.2f} m")
 
     if est_path:
         print()
