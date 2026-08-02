@@ -57,7 +57,18 @@ df_nav[!,:map_name] = Symbol.(df_nav[!,:map_name])
 xyz_cache = Dict{Symbol,Any}()
 getxyz(fl) = get!(()->get_XYZ(fl,df_flight;silent=true), xyz_cache, fl)
 
-function drms(traj, lat, lon; warm=600.0)
+# DRMS warm-up cut-off. The 600 s default excludes the cold-start transient
+# from every column alike; DRMS_WARM=0 scores the whole line instead, which is
+# the honest convention for a cold-start claim since the transient is part of
+# what the estimator has to deliver. Both are run because they answer different
+# questions and because the manuscript's Table tab:transient reports the
+# proposed estimator inside the window but carries no baseline columns, so
+# nobody has yet measured how the EKF and the NN filter fare there.
+const WARM = parse(Float64, get(ENV, "DRMS_WARM", "600"))
+const OUT_CSV = WARM == 600.0 ? "fgo_breadth_results.csv" :
+                "fgo_breadth_results_warm$(Int(WARM)).csv"
+
+function drms(traj, lat, lon; warm=WARM)
     m  = (traj.tt .- traj.tt[1]) .>= warm
     dn = dlat2dn.(lat[m] .- traj.lat[m], traj.lat[m])
     de = dlon2de.(lon[m] .- traj.lon[m], traj.lat[m])
@@ -110,11 +121,11 @@ for (fl,line) in LINES
         catch e; @warn("ekf_online failed for $fl $line $tag",e) end
         # strong causal baseline: reimplemented online EKF+TL+NN (Hager 2026),
         # same recipe as the validated 1007.06 reproduction, on every line
-        enn = NaN; t_enn = @elapsed (enn = ekf_tlnn_drms(traj,ins,mag,flux,itp))
+        enn = NaN; t_enn = @elapsed (enn = ekf_tlnn_drms(traj,ins,mag,flux,itp;warm=WARM))
         # fair particle-filter baseline: RBPF carrying online TL (MPF+TL)
         mpt = NaN
         t_mpt = @elapsed (mpt = mpf_online_drms(traj,ins,mag,flux,itp,zeros(nTL),
-                          P0,Qd,R;terms=TERMS,num_part=MPF_NP))
+                          P0,Qd,R;terms=TERMS,num_part=MPF_NP,warm=WARM))
         fgw = NaN; t_fgw = NaN
         try
             t_fgw = @elapsed begin
@@ -147,9 +158,10 @@ for (fl,line) in LINES
     end
 end
 
+println("\n=== DRMS warm-up = $(WARM) s -> $(OUT_CSV) ===")
 println("\n=== FGO breadth: window FGO vs causal EKF-online vs EKF+TL+NN, cold-start cabin mags ===")
 show(results;allrows=true,allcols=true); println()
-CSV.write(joinpath(@__DIR__,"fgo_breadth_results.csv"),results)
+CSV.write(joinpath(@__DIR__,OUT_CSV),results)
 fin  = filter(r->isfinite(r.EKF_online) && isfinite(r.FGO_win), results)
 wins = sum(fin.FGO_win .< fin.EKF_online)
 println("\nFGO-window beats causal EKF-online on $wins/$(nrow(fin)) mag-line cases",

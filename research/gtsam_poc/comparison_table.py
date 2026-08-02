@@ -172,6 +172,42 @@ def main():
     print("  At the wide prior both sit at the bound, so relinearization has nothing")
     print("  to recover; at the tight prior it recovers 47% and the rest is the prior.")
 
+    # F. the whole line, transient included. Ours is already available at every
+    # cut-off in the result files; the baselines need research/full_line_baselines.sh
+    # to produce the *_warm0.csv, since their committed numbers are warm=600 only.
+    bw0 = {}
+    for r in load_csv("fgo_breadth_results_warm0.csv"):
+        bw0[(f"{float(r['line']):.2f}".replace(".", "_"), r["mag"][-1])] = r
+    ew0 = {}
+    for r in load_csv("ekf_sig100_results_warm0.csv"):
+        if float(r["sigma_beta"]) == 100.0:
+            ew0[(r["line"].replace(".", "_"), r["mag"][-1])] = float(r["EKF_online"])
+    print()
+    print("=" * 78)
+    print("F. Whole line, transient INCLUDED (warm=0).  DRMS [m]")
+    print("=" * 78)
+    if not bw0 and not ew0:
+        print("  baselines not scored at warm=0 yet -- run research/full_line_baselines.sh")
+        print("  (our own warm=0 values are already in the ps100 result files, shown here)")
+    print(f"{'line':9s}{'mag':>4s}{'EKF':>8s}{'EKF+NN':>8s}{'causal':>9s}{'300 s':>8s}"
+          f"   {'vs warm=600':>12s}")
+    for r in rows:
+        k = (r["line"], str(r["mag"]))
+        full = read_result("ps100", r["line"], r["mag"], warm="warm=0s")
+        if full is None:
+            continue
+        sm0, rt0, _ = full
+        b = bw0.get(k, {})
+        print(f"{r['line']:9s}{r['mag']:>4d}"
+              f"{fmt(ew0.get(k))}"
+              f"{fmt(float(b['EKF_TLNN']) if b.get('EKF_TLNN') else float('nan'))}"
+              f"{fmt(rt0,9,2)}{fmt(sm0,8,2)}"
+              f"   causal {rt0/r['causal']:.2f}x  smoothed {sm0/r['smooth']:.2f}x")
+    print("  The last column is what including the transient costs each output.")
+    print("  The smoothed estimate barely notices it; the causal one pays 17-43%.")
+    print("  Whether that changes any ordering depends on the baseline columns,")
+    print("  which is the whole point of scoring them the same way.")
+
 
 if __name__ == "__main__":
     main()

@@ -44,7 +44,12 @@ df_nav = DataFrame(CSV.File(joinpath(df_dir,"df_nav.csv")))
 df_nav[!,:flight]   = Symbol.(df_nav[!,:flight])
 df_nav[!,:map_name] = Symbol.(df_nav[!,:map_name])
 
-function drms(traj, lat, lon; warm=600.0, div_thresh=1e4)
+# see fgo_breadth.jl: DRMS_WARM=0 scores the whole line, transient included
+const WARM = parse(Float64, get(ENV, "DRMS_WARM", "600"))
+const OUT_CSV = WARM == 600.0 ? "ekf_sig100_results.csv" :
+                "ekf_sig100_results_warm$(Int(WARM)).csv"
+
+function drms(traj, lat, lon; warm=WARM, div_thresh=1e4)
     m = (traj.tt .- traj.tt[1]) .>= warm
     d = sqrt(mean(dlat2dn.(lat[m] .- traj.lat[m], traj.lat[m]).^2 .+
                   dlon2de.(lon[m] .- traj.lon[m], traj.lat[m]).^2))
@@ -82,7 +87,7 @@ for (fl,line) in LINES
             push!(results,(fl,line,tag,sb,round(d_ekf,digits=1)))
             println("$fl $line $tag  sigma_beta=$sb  EKF-online=",
                     "$(round(d_ekf,digits=1)) m"); flush(stdout)
-            CSV.write(joinpath(@__DIR__,"ekf_sig100_results.csv"),results)
+            CSV.write(joinpath(@__DIR__,OUT_CSV),results)
         end
     end
 end
