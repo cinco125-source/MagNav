@@ -70,14 +70,25 @@ def drms(lat, lon, tlat, tlon, t, warm):
     return math.sqrt(np.mean(dn ** 2 + de ** 2))
 
 
-def kalman(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS):
-    """Plain extended Kalman filter on the decimated chain.
+def kalman(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS,
+           huber=0.0):
+    """Extended Kalman filter on the decimated chain.
 
     Same measurement Jacobian as the graph builds -- [dh/dlat, dh/dlon, 0..., A_s, 1]
     -- and the same relinearization point (the current estimate), so any
     difference against the graph's causal column is the graph's doing and not a
     modelling difference. Joseph form for the covariance because the TL block
     stays near-singular for the first minute.
+
+    huber = c applies the SAME M-estimator the graph is given, which
+    src/ekf_online.jl does not have: it has no robust kernel, no innovation
+    gating and no outlier rejection anywhere. That asymmetry is not controlled
+    by the norelin run -- that control keeps the kernel on both sides -- so
+    without this the graph carries a robust kernel into a comparison against a
+    filter that has none, and part of any margin is the kernel rather than the
+    formulation. GTSAM whitens the robust residual by the measurement sigma
+    alone, so this does too: w = min(1, c/|resid|/sigma), applied as R/w, which
+    is one IRLS step of exactly the weight fgo.jl's robust_weight computes.
     """
     M = A.shape[0]
     x = np.zeros(nx)
@@ -97,18 +108,24 @@ def kalman(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS):
         H[0, iTL] = A[s]
         H[0, iS] = 1.0
         h = grid.value(lat, lon) + A[s] @ x[iTL] + x[iS]
-        S = float((H @ P @ H.T)[0, 0]) + Rm
+        resid = meas[s] - h
+        Rw = Rm
+        if huber > 0.0:
+            e = abs(resid) / math.sqrt(Rm)
+            if e > huber:
+                Rw = Rm / max(huber / e, 1e-6)
+        S = float((H @ P @ H.T)[0, 0]) + Rw
         Kg = (P @ H.T / S).ravel()
-        x = x + Kg * (meas[s] - h)
+        x = x + Kg * resid
         KH = I - np.outer(Kg, H.ravel())
-        P = KH @ P @ KH.T + np.outer(Kg, Kg) * Rm
+        P = KH @ P @ KH.T + np.outer(Kg, Kg) * Rw
         P = (P + P.T) / 2
         out[s] = x
     return out
 
 
 def fgo(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS,
-        lag, dtK, norelin=False):
+        lag, dtK, norelin=False, huber=1.345):
     """The estimator under test: incremental fixed-lag smoother, unchanged.
 
     norelin=True freezes every linearization at the point a filter would pick
@@ -121,9 +138,9 @@ def fgo(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS,
     M = A.shape[0]
     dyn_nms = [gtsam.noiseModel.Gaussian.Covariance(QdK[s]) for s in range(M - 1)]
     prior_nm = gtsam.noiseModel.Gaussian.Covariance(P0)
-    meas_nm = gtsam.noiseModel.Robust.Create(
-        gtsam.noiseModel.mEstimator.Huber.Create(1.345),
-        gtsam.noiseModel.Isotropic.Sigma(1, math.sqrt(Rm)))
+    meas_base = gtsam.noiseModel.Isotropic.Sigma(1, math.sqrt(Rm))
+    meas_nm = meas_base if huber <= 0.0 else gtsam.noiseModel.Robust.Create(
+        gtsam.noiseModel.mEstimator.Huber.Create(huber), meas_base)
 
     def dyn_err(Phi_t):
         def f(this, values, J):
@@ -205,6 +222,11 @@ def main():
     # recorded line untouched and is deterministic, so one seed suffices.
     scale = float(arg("--scale", 1.0, float))
     norelin = "--norelin" in sys.argv
+    # --norobust drops the Huber kernel from the graph. Paired against the
+    # default run it says how much of the graph's margin is the kernel that
+    # src/ekf_online.jl never had, and the EKF_huber column below is the same
+    # question asked from the other side.
+    hub = 0.0 if "--norobust" in sys.argv else float(arg("--huber", 1.345, float))
     out_csv = os.path.join(HERE, arg("--out", "mc_1007_results.csv"))
 
     d = load(path)
@@ -262,9 +284,10 @@ def main():
     print(f"MC over the initial navigation error: {seeds} seeds, scale={scale:g}, "
           f"lag={lag:g}s K={K} mag={mag} sigma_beta={sig_TL:g} "
           f"scored from t={warm:g}s over {ti[-1]:.0f}s"
-          + ("  [NORELIN: linear fixed-lag smoothing control]" if norelin else ""),
+          + ("  [NORELIN]" if norelin else "")
+          + ("  [NOROBUST]" if hub <= 0 else f"  huber={hub:g}"),
           flush=True)
-    print(f"{'seed':>4s}{'|d0| pos':>10s}{'INS':>9s}{'EKF':>9s}"
+    print(f"{'seed':>4s}{'|d0| pos':>10s}{'INS':>9s}{'EKF':>9s}{'EKFhub':>9s}"
           f"{'FGOcaus':>9s}{'FGO300':>9s}{'c/EKF':>8s}{'s/EKF':>8s}", flush=True)
 
     rows = []
@@ -285,14 +308,17 @@ def main():
         xk = kalman(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid,
                     nx, iTL, iS)
         ekf_d = drms(ins_lat + xk[:, 0], ins_lon + xk[:, 1], tlat, tlon, ti, warm)
+        xh = kalman(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid,
+                    nx, iTL, iS, huber=1.345)
+        ekh_d = drms(ins_lat + xh[:, 0], ins_lon + xh[:, 1], tlat, tlon, ti, warm)
         est, est_rt = fgo(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid,
-                          nx, iTL, iS, lag, dtK, norelin)
+                          nx, iTL, iS, lag, dtK, norelin, hub)
         c_d = drms(ins_lat + est_rt[:, 0], ins_lon + est_rt[:, 1], tlat, tlon, ti, warm)
         s_d = drms(ins_lat + est[:, 0], ins_lon + est[:, 1], tlat, tlon, ti, warm)
         pos0 = math.hypot(xd[0, 0] * R_EARTH, xd[0, 1] * R_EARTH * math.cos(tlat[0]))
-        rows.append((sd, pos0, ins_d, ekf_d, c_d, s_d))
-        print(f"{sd:4d}{pos0:10.2f}{ins_d:9.1f}{ekf_d:9.1f}{c_d:9.1f}{s_d:9.1f}"
-              f"{c_d/ekf_d:8.3f}{s_d/ekf_d:8.3f}", flush=True)
+        rows.append((sd, pos0, ins_d, ekf_d, ekh_d, c_d, s_d))
+        print(f"{sd:4d}{pos0:10.2f}{ins_d:9.1f}{ekf_d:9.1f}{ekh_d:9.1f}"
+              f"{c_d:9.1f}{s_d:9.1f}{c_d/ekf_d:8.3f}{s_d/ekf_d:8.3f}", flush=True)
         if scale == 0.0:
             # the unperturbed run is the control: at warm = 300 s it must
             # reproduce the committed segment result (15.49 causal / 7.88
@@ -305,17 +331,21 @@ def main():
                       flush=True)
 
     with open(out_csv, "w") as f:
-        f.write("seed,pos0_m,INS,EKF,FGO_causal,FGO_smoothed\n")
+        f.write("seed,pos0_m,INS,EKF,EKF_huber,FGO_causal,FGO_smoothed\n")
         for r in rows:
-            f.write("%d,%.4f,%.4f,%.4f,%.4f,%.4f\n" % r)
+            f.write("%d,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n" % r)
 
-    a = np.array([[r[3], r[4], r[5]] for r in rows])
+    a = np.array([[r[3], r[5], r[6], r[4]] for r in rows])
     rc = a[:, 1] / a[:, 0]
     rs = a[:, 2] / a[:, 0]
     print()
     print(f"{seeds} seeds in {time.time()-t_start:.0f}s -> {out_csv}")
     print(f"  median DRMS   EKF {np.median(a[:,0]):.1f}   "
+          f"EKF+huber {np.median(a[:,3]):.1f}   "
           f"FGO causal {np.median(a[:,1]):.1f}   FGO 300 s {np.median(a[:,2]):.1f} m")
+    rh = a[:, 3] / a[:, 0]
+    print(f"  huber on the FILTER alone: geo-mean {math.exp(np.log(rh).mean()):.3f}  "
+          f"wins {int((rh < 1).sum())}/{rh.size}")
     for lbl, r in (("causal", rc), ("smoothed", rs)):
         wins = int((r < 1).sum())
         gm = math.exp(np.log(r).mean())
