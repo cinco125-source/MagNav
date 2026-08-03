@@ -51,10 +51,40 @@ the basin is in question. The tail is the price: the worst seed at scale 3 reads
 3.24 causal and 3.20 smoothed, so a few starts leave the graph worse off than
 the filter rather than better.
 
-CONSEQUENCE FOR THE MANUSCRIPT. The causal column should not be sold as an
-accuracy result. What survives is the smoother, and a cold-start robustness
-claim that is honest about where it applies -- it appears at initial errors
-several times the assumed prior, and it carries a tail.
+THE CONTROL, which is what actually decides the claim. Re-running the same
+thirty seeds with --norelin freezes every linearization where a filter would
+put it, leaving linear fixed-lag smoothing over the same model, lag and
+measurements. Paired seed by seed, relin over norelin:
+
+  scale       col    relin  norelin   ratio    win        p   worst
+    0.1    causal     40.0     40.6   0.991  23/30   0.0052    1.01
+    0.1  smoothed     10.4     10.6   0.966  26/30   0.0001    1.01
+    3.0    causal    201.2    217.0   0.878  26/30   0.0001    2.90
+    3.0  smoothed     42.8     62.1   0.713  17/30   0.5847    4.08
+
+At a realistic initial error the formulation is worth one to three percent.
+Consistent -- 23 and 26 seeds out of 30 -- but an effect that size is not a
+contribution, and it says the graph is, for practical purposes, the linear
+fixed-lag smoother that Section I already concedes is not new.
+
+At three times the assumed initial error the causal row is the one real result
+in this file: 12% with 26 of 30 seeds at p = 0.0001, and it is precisely what
+turns the causal column from 0.999 against the EKF with 12 wins (norelin, a
+dead tie) into 0.877 with 27 (relin, a win). The control isolates the
+mechanism rather than merely correlating with it.
+
+The smoothed row at that scale must NOT be read as a 29% gain. The geometric
+mean of 0.713 sits on 17 wins out of 30 at p = 0.58: a few seeds gain hugely,
+the median seed gains nothing, and the worst seed is 4.08x WORSE with
+relinearization than without. Heavy tails in both directions, no reliable
+effect.
+
+CONSEQUENCE FOR THE MANUSCRIPT. The accuracy framing is dead: at the operating
+point the manuscript reports, the graph and a linear smoother agree to within
+3%. What survives is narrow and specific -- relinearization matters for the
+CAUSAL output when the initial error is several times the assumed prior -- and
+it comes with a tail, since the worst seed there runs 2.90x worse than the
+frozen-linearization control on the same data.
 """
 import csv
 import math
