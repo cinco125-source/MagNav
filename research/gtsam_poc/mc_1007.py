@@ -108,8 +108,16 @@ def kalman(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS):
 
 
 def fgo(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS,
-        lag, dtK):
-    """The estimator under test: incremental fixed-lag smoother, unchanged."""
+        lag, dtK, norelin=False):
+    """The estimator under test: incremental fixed-lag smoother, unchanged.
+
+    norelin=True freezes every linearization at the point a filter would pick
+    (Phi times the previous causal estimate) and never revises it, which leaves
+    linear fixed-lag smoothing over the same window with the same model, lag and
+    measurements. The gap against the default run is the formulation's own share
+    of whatever margin exists; what is left is what smoothing alone would have
+    bought. Section I already concedes that smoothing per se is not a
+    contribution, so this control is what separates the two."""
     M = A.shape[0]
     dyn_nms = [gtsam.noiseModel.Gaussian.Covariance(QdK[s]) for s in range(M - 1)]
     prior_nm = gtsam.noiseModel.Gaussian.Covariance(P0)
@@ -147,6 +155,9 @@ def fgo(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS,
 
     params = gtsam.ISAM2Params()
     params.setFactorization("QR")
+    if norelin:
+        params.setRelinearizeThreshold(1e12)
+        params.relinearizeSkip = 10 ** 9
     sm = gtsam_unstable.IncrementalFixedLagSmoother(lag, params)
     KTM = gtsam_unstable.FixedLagSmootherKeyTimestampMap
     graph = gtsam.NonlinearFactorGraph()
@@ -193,6 +204,7 @@ def main():
     # does the graph's causal output separate from a filter's? c = 0 is the
     # recorded line untouched and is deterministic, so one seed suffices.
     scale = float(arg("--scale", 1.0, float))
+    norelin = "--norelin" in sys.argv
     out_csv = os.path.join(HERE, arg("--out", "mc_1007_results.csv"))
 
     d = load(path)
@@ -249,7 +261,9 @@ def main():
         seeds = 1
     print(f"MC over the initial navigation error: {seeds} seeds, scale={scale:g}, "
           f"lag={lag:g}s K={K} mag={mag} sigma_beta={sig_TL:g} "
-          f"scored from t={warm:g}s over {ti[-1]:.0f}s", flush=True)
+          f"scored from t={warm:g}s over {ti[-1]:.0f}s"
+          + ("  [NORELIN: linear fixed-lag smoothing control]" if norelin else ""),
+          flush=True)
     print(f"{'seed':>4s}{'|d0| pos':>10s}{'INS':>9s}{'EKF':>9s}"
           f"{'FGOcaus':>9s}{'FGO300':>9s}{'c/EKF':>8s}{'s/EKF':>8s}", flush=True)
 
@@ -272,7 +286,7 @@ def main():
                     nx, iTL, iS)
         ekf_d = drms(ins_lat + xk[:, 0], ins_lon + xk[:, 1], tlat, tlon, ti, warm)
         est, est_rt = fgo(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid,
-                          nx, iTL, iS, lag, dtK)
+                          nx, iTL, iS, lag, dtK, norelin)
         c_d = drms(ins_lat + est_rt[:, 0], ins_lon + est_rt[:, 1], tlat, tlon, ti, warm)
         s_d = drms(ins_lat + est[:, 0], ins_lon + est[:, 1], tlat, tlon, ti, warm)
         pos0 = math.hypot(xd[0, 0] * R_EARTH, xd[0, 1] * R_EARTH * math.cos(tlat[0]))
