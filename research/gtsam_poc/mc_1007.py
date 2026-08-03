@@ -71,7 +71,7 @@ def drms(lat, lon, tlat, tlon, t, warm):
 
 
 def kalman(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS,
-           huber=0.0):
+           huber=0.0, iters=1):
     """Extended Kalman filter on the decimated chain.
 
     Same measurement Jacobian as the graph builds -- [dh/dlat, dh/dlon, 0..., A_s, 1]
@@ -79,6 +79,17 @@ def kalman(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS,
     difference against the graph's causal column is the graph's doing and not a
     modelling difference. Joseph form for the covariance because the TL block
     stays near-singular for the first minute.
+
+    iters > 1 makes this an ITERATED EKF: the measurement update is re-solved
+    with the Jacobian and predicted measurement re-evaluated at the updated
+    estimate, which is the filter's own way of fixing a bad linearization. It
+    matters because relinearization is the only channel through which a window
+    can improve the CAUSAL state at all -- the marginal a filter carries is
+    already a sufficient statistic for the past, so the window adds no
+    information about the newest state, only a chance to revise the point the
+    past was linearized at. A reviewer will ask why the baseline is not an IEKF,
+    and if the cold-start margin survives one, that is the strongest sentence
+    the paper has; if it does not, the last claim goes with it.
 
     huber = c applies the SAME M-estimator the graph is given, which
     src/ekf_online.jl does not have: it has no robust kernel, no innovation
@@ -108,6 +119,28 @@ def kalman(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS,
         H[0, iTL] = A[s]
         H[0, iS] = 1.0
         h = grid.value(lat, lon) + A[s] @ x[iTL] + x[iS]
+        xi = x.copy()
+        for _ in range(max(1, iters) - 1):
+            lat_i, lon_i = ins_lat[s] + xi[0], ins_lon[s] + xi[1]
+            gl_, go_ = grid.grad(lat_i, lon_i)
+            Hi = np.zeros((1, nx))
+            Hi[0, 0] = gl_; Hi[0, 1] = go_
+            Hi[0, iTL] = A[s]; Hi[0, iS] = 1.0
+            hi = grid.value(lat_i, lon_i) + A[s] @ xi[iTL] + xi[iS]
+            Si = float((Hi @ P @ Hi.T)[0, 0]) + Rm
+            Ki = (P @ Hi.T / Si).ravel()
+            # IEKF: innovation taken about the relinearization point, with the
+            # prediction-to-iterate offset carried, per Bell & Cathey (1993)
+            xn = x + Ki * (meas[s] - hi - float(Hi @ (x - xi)))
+            if np.max(np.abs(xn - xi)) < 1e-12:
+                xi = xn
+                break
+            xi = xn
+        if iters > 1:
+            lat, lon = ins_lat[s] + xi[0], ins_lon[s] + xi[1]
+            glat_, glon_ = grid.grad(lat, lon)
+            H[0, 0] = glat_; H[0, 1] = glon_
+            h = grid.value(lat, lon) + A[s] @ xi[iTL] + xi[iS] + float(H @ (x - xi))
         resid = meas[s] - h
         Rw = Rm
         if huber > 0.0:
@@ -227,6 +260,7 @@ def main():
     # src/ekf_online.jl never had, and the EKF_huber column below is the same
     # question asked from the other side.
     hub = 0.0 if "--norobust" in sys.argv else float(arg("--huber", 1.345, float))
+    n_iekf = int(arg("--iekf", 5, int))
     out_csv = os.path.join(HERE, arg("--out", "mc_1007_results.csv"))
 
     d = load(path)
@@ -287,7 +321,7 @@ def main():
           + ("  [NORELIN]" if norelin else "")
           + ("  [NOROBUST]" if hub <= 0 else f"  huber={hub:g}"),
           flush=True)
-    print(f"{'seed':>4s}{'|d0| pos':>10s}{'INS':>9s}{'EKF':>9s}{'EKFhub':>9s}"
+    print(f"{'seed':>4s}{'|d0| pos':>10s}{'INS':>9s}{'EKF':>9s}{'EKFhub':>9s}{'IEKF':>9s}"
           f"{'FGOcaus':>9s}{'FGO300':>9s}{'c/EKF':>8s}{'s/EKF':>8s}", flush=True)
 
     rows = []
@@ -311,13 +345,16 @@ def main():
         xh = kalman(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid,
                     nx, iTL, iS, huber=1.345)
         ekh_d = drms(ins_lat + xh[:, 0], ins_lon + xh[:, 1], tlat, tlon, ti, warm)
+        xi_ = kalman(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid,
+                     nx, iTL, iS, iters=n_iekf)
+        iek_d = drms(ins_lat + xi_[:, 0], ins_lon + xi_[:, 1], tlat, tlon, ti, warm)
         est, est_rt = fgo(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid,
                           nx, iTL, iS, lag, dtK, norelin, hub)
         c_d = drms(ins_lat + est_rt[:, 0], ins_lon + est_rt[:, 1], tlat, tlon, ti, warm)
         s_d = drms(ins_lat + est[:, 0], ins_lon + est[:, 1], tlat, tlon, ti, warm)
         pos0 = math.hypot(xd[0, 0] * R_EARTH, xd[0, 1] * R_EARTH * math.cos(tlat[0]))
-        rows.append((sd, pos0, ins_d, ekf_d, ekh_d, c_d, s_d))
-        print(f"{sd:4d}{pos0:10.2f}{ins_d:9.1f}{ekf_d:9.1f}{ekh_d:9.1f}"
+        rows.append((sd, pos0, ins_d, ekf_d, ekh_d, iek_d, c_d, s_d))
+        print(f"{sd:4d}{pos0:10.2f}{ins_d:9.1f}{ekf_d:9.1f}{ekh_d:9.1f}{iek_d:9.1f}"
               f"{c_d:9.1f}{s_d:9.1f}{c_d/ekf_d:8.3f}{s_d/ekf_d:8.3f}", flush=True)
         if scale == 0.0:
             # the unperturbed run is the control: at warm = 300 s it must
@@ -331,11 +368,11 @@ def main():
                       flush=True)
 
     with open(out_csv, "w") as f:
-        f.write("seed,pos0_m,INS,EKF,EKF_huber,FGO_causal,FGO_smoothed\n")
+        f.write("seed,pos0_m,INS,EKF,EKF_huber,IEKF,FGO_causal,FGO_smoothed\n")
         for r in rows:
-            f.write("%d,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n" % r)
+            f.write("%d,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n" % r)
 
-    a = np.array([[r[3], r[5], r[6], r[4]] for r in rows])
+    a = np.array([[r[3], r[6], r[7], r[4], r[5]] for r in rows])
     rc = a[:, 1] / a[:, 0]
     rs = a[:, 2] / a[:, 0]
     print()
@@ -344,8 +381,14 @@ def main():
           f"EKF+huber {np.median(a[:,3]):.1f}   "
           f"FGO causal {np.median(a[:,1]):.1f}   FGO 300 s {np.median(a[:,2]):.1f} m")
     rh = a[:, 3] / a[:, 0]
+    ri = a[:, 4] / a[:, 0]
+    rci = a[:, 1] / a[:, 4]
     print(f"  huber on the FILTER alone: geo-mean {math.exp(np.log(rh).mean()):.3f}  "
           f"wins {int((rh < 1).sum())}/{rh.size}")
+    print(f"  IEKF ({n_iekf} iters) / EKF:  geo-mean {math.exp(np.log(ri).mean()):.3f}  "
+          f"wins {int((ri < 1).sum())}/{ri.size}   median {np.median(a[:,4]):.1f} m")
+    print(f"  ours causal / IEKF:       geo-mean {math.exp(np.log(rci).mean()):.3f}  "
+          f"wins {int((rci < 1).sum())}/{rci.size}   <- the one that matters")
     for lbl, r in (("causal", rc), ("smoothed", rs)):
         wins = int((r < 1).sum())
         gm = math.exp(np.log(r).mean())
