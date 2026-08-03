@@ -1,0 +1,318 @@
+#!/usr/bin/env python3
+"""Monte Carlo over the initial navigation error, on the real 1007.06 data.
+
+WHY THIS AND NOT A CLASSICAL MC. Line 1007.06 is one physical realization: the
+recorded INS drift, the map error and the cabin interference cannot be re-drawn
+without fabricating them, which is why the manuscript keeps its MC in
+simulation. But there is one quantity the estimator genuinely does not know and
+that a real deployment genuinely re-draws every flight -- the navigation error
+it starts from. That can be varied on recorded data without inventing a single
+measurement.
+
+The construction is exact rather than approximate. The error state obeys
+x_{s+1} = Phi_s x_s + w_s, so adding a homogeneous solution to it is still a
+valid error trajectory: draw d ~ N(0, P0) restricted to the seventeen inertial
+states, propagate it with the SAME Phi the data was exported with, and subtract
+its position components from the INS track. The recorded measurement, the map,
+the Tolles-Lawson regressor and the recorded process noise are all untouched --
+grid.value(ins' + x') evaluates at exactly the same latitude as before, because
+x' = x + d_propagated by construction. Only the error the estimator has to
+remove is different, and it is different in the way the filter's own prior says
+it should be.
+
+The draw is dominated by the velocity block (sigma = 1 m/s per axis against a
+0.1 m position prior), so over ten minutes it puts the initial error anywhere
+from tens to hundreds of metres. That is the point: it sweeps the transient
+severity, which is the regime the whole warm-up argument has been circling. The
+comparison is scored over the WHOLE segment, transient included, because that
+is what the last week of this argument concluded is the honest convention.
+
+WHAT IS PAIRED WITH WHAT. Every seed runs three estimators on identical data:
+  EKF        the same 37-state model, same decimation, same relinearization
+             point, causal -- a plain Kalman filter, which for this error model
+             is exactly what src/ekf_online.jl computes
+  FGO caus.  the incremental smoother's newest state, i.e. genuinely causal
+  FGO 300s   the same graph read out 300 s behind
+Because the seeds are common random numbers across estimators, the per-seed
+RATIO is the statistic with the variance removed, and a sign test on thirty
+paired ratios is a far sharper instrument than thirty unpaired distributions.
+
+Usage:
+  mc_1007.py <line.h5> [--seeds 30] [--lag 300] [--K 10] [--mag 5]
+             [--tl-sigma 100] [--warm 0] [--out mc_1007.csv]
+"""
+import math
+import os
+import sys
+import time
+
+import numpy as np
+import gtsam
+import gtsam_unstable
+from gtsam import symbol_shorthand
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from run_gtsam_decimated import Grid, load          # noqa: E402
+
+X = symbol_shorthand.X
+R_EARTH = 6378137.0
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def arg(flag, default, cast=str):
+    return cast(sys.argv[sys.argv.index(flag) + 1]) if flag in sys.argv else default
+
+
+def drms(lat, lon, tlat, tlon, t, warm):
+    m = t >= warm
+    dn = (lat[m] - tlat[m]) * R_EARTH
+    de = (lon[m] - tlon[m]) * R_EARTH * np.cos(tlat[m])
+    return math.sqrt(np.mean(dn ** 2 + de ** 2))
+
+
+def kalman(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS):
+    """Plain extended Kalman filter on the decimated chain.
+
+    Same measurement Jacobian as the graph builds -- [dh/dlat, dh/dlon, 0..., A_s, 1]
+    -- and the same relinearization point (the current estimate), so any
+    difference against the graph's causal column is the graph's doing and not a
+    modelling difference. Joseph form for the covariance because the TL block
+    stays near-singular for the first minute.
+    """
+    M = A.shape[0]
+    x = np.zeros(nx)
+    P = P0.copy()
+    out = np.zeros((M, nx))
+    I = np.eye(nx)
+    for s in range(M):
+        if s > 0:
+            x = PhiK[s - 1] @ x
+            P = PhiK[s - 1] @ P @ PhiK[s - 1].T + QdK[s - 1]
+            P = (P + P.T) / 2
+        lat, lon = ins_lat[s] + x[0], ins_lon[s] + x[1]
+        glat_, glon_ = grid.grad(lat, lon)
+        H = np.zeros((1, nx))
+        H[0, 0] = glat_
+        H[0, 1] = glon_
+        H[0, iTL] = A[s]
+        H[0, iS] = 1.0
+        h = grid.value(lat, lon) + A[s] @ x[iTL] + x[iS]
+        S = float((H @ P @ H.T)[0, 0]) + Rm
+        Kg = (P @ H.T / S).ravel()
+        x = x + Kg * (meas[s] - h)
+        KH = I - np.outer(Kg, H.ravel())
+        P = KH @ P @ KH.T + np.outer(Kg, Kg) * Rm
+        P = (P + P.T) / 2
+        out[s] = x
+    return out
+
+
+def fgo(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS,
+        lag, dtK):
+    """The estimator under test: incremental fixed-lag smoother, unchanged."""
+    M = A.shape[0]
+    dyn_nms = [gtsam.noiseModel.Gaussian.Covariance(QdK[s]) for s in range(M - 1)]
+    prior_nm = gtsam.noiseModel.Gaussian.Covariance(P0)
+    meas_nm = gtsam.noiseModel.Robust.Create(
+        gtsam.noiseModel.mEstimator.Huber.Create(1.345),
+        gtsam.noiseModel.Isotropic.Sigma(1, math.sqrt(Rm)))
+
+    def dyn_err(Phi_t):
+        def f(this, values, J):
+            xa = values.atVector(this.keys()[0])
+            xb = values.atVector(this.keys()[1])
+            if J is not None:
+                J[0] = -Phi_t
+                J[1] = np.eye(nx)
+            return xb - Phi_t @ xa
+        return f
+
+    def meas_err(s):
+        lat0, lon0, At, zt = ins_lat[s], ins_lon[s], A[s], meas[s]
+
+        def f(this, values, J):
+            x = values.atVector(this.keys()[0])
+            lat, lon = lat0 + x[0], lon0 + x[1]
+            h = grid.value(lat, lon) + At @ x[iTL] + x[iS]
+            if J is not None:
+                jac = np.zeros((1, nx))
+                glat_, glon_ = grid.grad(lat, lon)
+                jac[0, 0] = glat_
+                jac[0, 1] = glon_
+                jac[0, iTL] = At
+                jac[0, iS] = 1.0
+                J[0] = jac
+            return np.array([h - zt])
+        return f
+
+    params = gtsam.ISAM2Params()
+    params.setFactorization("QR")
+    sm = gtsam_unstable.IncrementalFixedLagSmoother(lag, params)
+    KTM = gtsam_unstable.FixedLagSmootherKeyTimestampMap
+    graph = gtsam.NonlinearFactorGraph()
+    vals = gtsam.Values()
+    ts = KTM()
+    est = np.zeros((M, nx))
+    est_rt = np.zeros((M, nx))
+    graph.push_back(gtsam.PriorFactorVector(X(0), np.zeros(nx), prior_nm))
+    graph.add(gtsam.CustomFactor(meas_nm, [X(0)], meas_err(0)))
+    vals.insert(X(0), np.zeros(nx))
+    ts.insert((X(0), 0.0))
+    lag_states = int(round(lag / dtK))
+    for s in range(1, M):
+        graph.add(gtsam.CustomFactor(dyn_nms[s - 1], [X(s - 1), X(s)],
+                                     dyn_err(PhiK[s - 1])))
+        graph.add(gtsam.CustomFactor(meas_nm, [X(s)], meas_err(s)))
+        vals.insert(X(s), PhiK[s - 1] @ est_rt[s - 1])
+        ts.insert((X(s), s * dtK))
+        sm.update(graph, vals, ts)
+        graph = gtsam.NonlinearFactorGraph()
+        vals = gtsam.Values()
+        ts = KTM()
+        cur = sm.calculateEstimate()
+        est_rt[s] = cur.atVector(X(s))
+        for k in range(max(0, s - lag_states), s + 1):
+            if cur.exists(X(k)):
+                est[k] = cur.atVector(X(k))
+    return est, est_rt
+
+
+def main():
+    path = sys.argv[1]
+    seeds = int(arg("--seeds", 30, int))
+    lag = float(arg("--lag", 300.0, float))
+    K = int(arg("--K", 10, int))
+    mag = arg("--mag", "5")
+    sig_TL = float(arg("--tl-sigma", 100.0, float))
+    warm = float(arg("--warm", 0.0, float))
+    # --scale c: multiply the drawn initial error by c. c = 1 draws from the
+    # prior the filter is handed, which is dominated by its 1 m/s per-axis
+    # velocity block and over ten minutes leaves an INS 600 m out -- an order
+    # above this line's recorded 52 m. Sweeping c is therefore not a knob for
+    # taste but the question itself: at which initial-error magnitude, if any,
+    # does the graph's causal output separate from a filter's? c = 0 is the
+    # recorded line untouched and is deterministic, so one seed suffices.
+    scale = float(arg("--scale", 1.0, float))
+    out_csv = os.path.join(HERE, arg("--out", "mc_1007_results.csv"))
+
+    d = load(path)
+    N = int(d["N"]); nx = int(d["nx"]); nTL = int(d["nTL"])
+    dt = float(d["dt"]); Rm = float(d["R"])
+    Phi = np.asarray(d["Phi"], dtype=float)
+    A_full = np.asarray(d["A"], dtype=float)
+    if A_full.shape[0] != N:                        # julia layout is [nTL, N]
+        A_full = A_full.T
+    key = f"meas_mag{mag}" if f"meas_mag{mag}" in d else "meas"
+    meas_full = np.asarray(d[key], dtype=float).ravel()
+    ins_lat_f = np.asarray(d["ins_lat"]).ravel()
+    ins_lon_f = np.asarray(d["ins_lon"]).ravel()
+    true_lat_f = np.asarray(d["true_lat"]).ravel()
+    true_lon_f = np.asarray(d["true_lon"]).ravel()
+    P0 = np.asarray(d["P0"], dtype=float)
+    Qd = np.asarray(d["Qd"], dtype=float) + 1e-20 * np.eye(nx)
+    gh = d["gh_rowmajor"] if "gh_rowmajor" in d else np.asarray(d["gh"])
+    grid = Grid(d["glat"], d["glon"], gh)
+
+    idx = np.arange(0, N, K)
+    M = idx.size
+    dtK = dt * K
+    PhiK = np.zeros((M - 1, nx, nx))
+    QdK = np.zeros((M - 1, nx, nx))
+    for s in range(M - 1):
+        P_ = np.eye(nx); Q_ = np.zeros((nx, nx))
+        for t in range(idx[s], min(idx[s + 1], N - 1)):
+            P_ = Phi[t] @ P_
+            Q_ = Phi[t] @ Q_ @ Phi[t].T + Qd
+        PhiK[s] = P_
+        QdK[s] = (Q_ + Q_.T) / 2
+
+    iTL = slice(17, 17 + nTL)
+    iS = nx - 1
+    P0 = P0.copy()
+    P0[iTL, iTL] = P0[iTL, iTL] * sig_TL ** 2
+
+    A = A_full[idx]
+    meas = meas_full[idx]
+    ins_lat0 = ins_lat_f[idx]; ins_lon0 = ins_lon_f[idx]
+    tlat = true_lat_f[idx]; tlon = true_lon_f[idx]
+    ti = idx * dt
+
+    # the draw covariance: the inertial block of the prior the filter is given.
+    # The compensation and disturbance states are NOT drawn -- they are
+    # properties of the installation and the map, and perturbing them would
+    # require perturbing the recorded measurement, which is the line this
+    # construction refuses to cross.
+    Pn = P0[:17, :17]
+    Ln = np.linalg.cholesky(Pn + 1e-24 * np.eye(17))
+
+    if scale == 0.0:
+        seeds = 1
+    print(f"MC over the initial navigation error: {seeds} seeds, scale={scale:g}, "
+          f"lag={lag:g}s K={K} mag={mag} sigma_beta={sig_TL:g} "
+          f"scored from t={warm:g}s over {ti[-1]:.0f}s", flush=True)
+    print(f"{'seed':>4s}{'|d0| pos':>10s}{'INS':>9s}{'EKF':>9s}"
+          f"{'FGOcaus':>9s}{'FGO300':>9s}{'c/EKF':>8s}{'s/EKF':>8s}", flush=True)
+
+    rows = []
+    t_start = time.time()
+    for sd in range(seeds):
+        rng = np.random.default_rng(1000 + sd)
+        dn = scale * (Ln @ rng.standard_normal(17))
+        xd = np.zeros((M, nx))
+        xd[0, :17] = dn
+        for s in range(1, M):
+            xd[s] = PhiK[s - 1] @ xd[s - 1]
+        # subtract the perturbation's position components from the INS track, so
+        # the true error becomes x + xd and every measurement stays valid
+        ins_lat = ins_lat0 - xd[:, 0]
+        ins_lon = ins_lon0 - xd[:, 1]
+
+        ins_d = drms(ins_lat, ins_lon, tlat, tlon, ti, warm)
+        xk = kalman(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid,
+                    nx, iTL, iS)
+        ekf_d = drms(ins_lat + xk[:, 0], ins_lon + xk[:, 1], tlat, tlon, ti, warm)
+        est, est_rt = fgo(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid,
+                          nx, iTL, iS, lag, dtK)
+        c_d = drms(ins_lat + est_rt[:, 0], ins_lon + est_rt[:, 1], tlat, tlon, ti, warm)
+        s_d = drms(ins_lat + est[:, 0], ins_lon + est[:, 1], tlat, tlon, ti, warm)
+        pos0 = math.hypot(xd[0, 0] * R_EARTH, xd[0, 1] * R_EARTH * math.cos(tlat[0]))
+        rows.append((sd, pos0, ins_d, ekf_d, c_d, s_d))
+        print(f"{sd:4d}{pos0:10.2f}{ins_d:9.1f}{ekf_d:9.1f}{c_d:9.1f}{s_d:9.1f}"
+              f"{c_d/ekf_d:8.3f}{s_d/ekf_d:8.3f}", flush=True)
+        if scale == 0.0:
+            # the unperturbed run is the control: at warm = 300 s it must
+            # reproduce the committed segment result (15.49 causal / 7.88
+            # smoothed) or the harness differs from the runner it claims to be
+            for wv in (60.0, 300.0):
+                print(f"      control warm={wv:g}s  ins {drms(ins_lat, ins_lon, tlat, tlon, ti, wv):8.2f}"
+                      f"  ekf {drms(ins_lat+xk[:,0], ins_lon+xk[:,1], tlat, tlon, ti, wv):8.2f}"
+                      f"  caus {drms(ins_lat+est_rt[:,0], ins_lon+est_rt[:,1], tlat, tlon, ti, wv):8.2f}"
+                      f"  smoo {drms(ins_lat+est[:,0], ins_lon+est[:,1], tlat, tlon, ti, wv):8.2f}",
+                      flush=True)
+
+    with open(out_csv, "w") as f:
+        f.write("seed,pos0_m,INS,EKF,FGO_causal,FGO_smoothed\n")
+        for r in rows:
+            f.write("%d,%.4f,%.4f,%.4f,%.4f,%.4f\n" % r)
+
+    a = np.array([[r[3], r[4], r[5]] for r in rows])
+    rc = a[:, 1] / a[:, 0]
+    rs = a[:, 2] / a[:, 0]
+    print()
+    print(f"{seeds} seeds in {time.time()-t_start:.0f}s -> {out_csv}")
+    print(f"  median DRMS   EKF {np.median(a[:,0]):.1f}   "
+          f"FGO causal {np.median(a[:,1]):.1f}   FGO 300 s {np.median(a[:,2]):.1f} m")
+    for lbl, r in (("causal", rc), ("smoothed", rs)):
+        wins = int((r < 1).sum())
+        gm = math.exp(np.log(r).mean())
+        # exact two-sided sign test against p = 1/2
+        n = r.size
+        k = min(wins, n - wins)
+        p = 2 * sum(math.comb(n, i) for i in range(k + 1)) / 2 ** n
+        lo, hi = np.percentile(r, [5, 95])
+        print(f"  ours {lbl:8s}/EKF: geo-mean {gm:.3f}  wins {wins}/{n}  "
+              f"p={min(p,1.0):.4f}  [{lo:.2f}, {hi:.2f}] over seeds")
+
+
+if __name__ == "__main__":
+    main()
