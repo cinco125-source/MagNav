@@ -237,6 +237,28 @@ def main():
         x0_TL[-1] = np.median(r_b)           # the ones-column of create_TL_A
         print(f"TL bias initialized from first {T_b:g}s: {x0_TL[-1]:.1f} nT "
               f"(interference spread {r_b.std():.1f} nT)", flush=True)
+    # --beta-from <npz>: second pass. Take the SMOOTHED compensation from a
+    # first pass, average it over the scored region, and hand it back as a
+    # tight prior so the second pass solves navigation with the compensation
+    # already known. Justified by measurement rather than hope: on this segment
+    # the smoothed beta moves by 0.2 to 1.8 percent of its own magnitude, and
+    # the difference between the time-varying compensation and a single frozen
+    # mean is 2.86 nT rms against a 12 nT measurement sigma -- a quarter of the
+    # noise. If beta is constant, carrying it as nineteen free states per epoch
+    # is nineteen nuisance dimensions competing with two position states for one
+    # scalar residual, and the projected bound says that costs 1.2x (1.69 vs
+    # 1.45 m per nT). This is the operationally honest version too: calibrate on
+    # one line, fly the next with the compensation fixed.
+    if "--beta-from" in sys.argv:
+        zf = np.load(sys.argv[sys.argv.index("--beta-from") + 1])
+        te = zf["idx"] * dt
+        keep = te >= float(arg_warm) if False else te >= 300.0
+        x0_TL = zf["est"][keep, 17:17 + nTL].mean(axis=0)
+        P0 = P0.copy(); P0[iTL, iTL] = np.eye(nTL) * 1e-12
+        for s_ in range(M - 1):
+            QdK[s_][iTL, iTL] = np.eye(nTL) * 1e-16
+        print(f"beta frozen from first pass: |beta|max={np.abs(x0_TL).max():.1f}",
+              flush=True)
     if "--tl-init" in sys.argv:
         T_init = float(sys.argv[sys.argv.index("--tl-init") + 1])
         n_init = min(N, int(round(T_init / dt)))
