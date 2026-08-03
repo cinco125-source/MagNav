@@ -261,6 +261,17 @@ def main():
     # question asked from the other side.
     hub = 0.0 if "--norobust" in sys.argv else float(arg("--huber", 1.345, float))
     n_iekf = int(arg("--iekf", 5, int))
+    # --pos-sigma X: initial horizontal position uncertainty in metres, applied
+    # to BOTH the prior the estimators are given and the error actually drawn.
+    # The export ships 0.1 m, which puts every run in the TRACKING regime: one
+    # mode of the map likelihood inside the prior, so the posterior is unimodal,
+    # an EKF is optimal, a particle filter has nothing to represent, and
+    # relinearization has nothing to fix. That is why nothing separates. The map
+    # here is 40 x 24 km with a 202 nT rms anomaly on a 200 m grid, so at
+    # kilometre-scale uncertainty the likelihood is genuinely multimodal and the
+    # estimator question becomes real -- which is also the operationally honest
+    # cold start, INS having drifted before the map is switched on.
+    pos_sigma = float(arg("--pos-sigma", 0.1, float))
     out_csv = os.path.join(HERE, arg("--out", "mc_1007_results.csv"))
 
     d = load(path)
@@ -312,11 +323,19 @@ def main():
     # construction refuses to cross.
     Pn = P0[:17, :17]
     Ln = np.linalg.cholesky(Pn + 1e-24 * np.eye(17))
+    # the position draw is kept separate from --scale so the two knobs isolate:
+    # --scale moves the inertial states, --pos-sigma moves where you think you are
+    sig_pos_rad = pos_sigma / R_EARTH
+    if pos_sigma != 0.1:
+        P0 = P0.copy()
+        P0[0, 0] = sig_pos_rad ** 2
+        P0[1, 1] = (pos_sigma / (R_EARTH * math.cos(float(tlat[0])))) ** 2
 
     if scale == 0.0:
         seeds = 1
     print(f"MC over the initial navigation error: {seeds} seeds, scale={scale:g}, "
           f"lag={lag:g}s K={K} mag={mag} sigma_beta={sig_TL:g} "
+          f"pos_sigma={pos_sigma:g}m "
           f"scored from t={warm:g}s over {ti[-1]:.0f}s"
           + ("  [NORELIN]" if norelin else "")
           + ("  [NOROBUST]" if hub <= 0 else f"  huber={hub:g}"),
@@ -331,6 +350,10 @@ def main():
         dn = scale * (Ln @ rng.standard_normal(17))
         xd = np.zeros((M, nx))
         xd[0, :17] = dn
+        if pos_sigma != 0.1:
+            xd[0, 0] += sig_pos_rad * rng.standard_normal()
+            xd[0, 1] += (pos_sigma / (R_EARTH * math.cos(float(tlat[0])))) \
+                * rng.standard_normal()
         for s in range(1, M):
             xd[s] = PhiK[s - 1] @ xd[s - 1]
         # subtract the perturbation's position components from the INS track, so
