@@ -28,9 +28,25 @@
 #   C  as A but --norelin                 -- the linear fixed-lag smoother
 #   D  as B but --norelin                 -- the same, without compensation
 # A vs B says whether the TL states are doing anything on a sensor that does not
-# need them; if B is much worse than A the coefficients were absorbing map error
-# rather than interference, which would also cast the cabin results in a
-# different light. A vs C and B vs D are the contribution test.
+# need them. On a CABIN sensor the answer is already known and is reassuring:
+# the same 2x2 on the 1007.06 segment (Mag 5, warm=300) reads
+#   A  TL + relin        7.88 /  15.49
+#   B  TL frozen     10352.67 / 10166.06
+#   C  TL + norelin      8.31 /  15.28
+#   D  frozen+norelin 23093.96 / 22207.50
+# Freezing the compensation diverges past 10 km, so the nineteen coefficients
+# are genuinely compensating interference rather than quietly absorbing map
+# error -- had they only been fitting the map, freezing them would have cost a
+# little, not a factor of a thousand. Whether the same holds on a sensor with no
+# interference to compensate is exactly what column B here answers.
+#
+# That segment 2x2 also gives the third independent confirmation of what
+# relinearization is for. It buys 1.06x when the problem is well conditioned
+# (A/C), 1.86x at the tight compensation prior, and 2.21x when the compensation
+# is removed entirely (B/D): the payoff scales with how badly conditioned the
+# problem is. A clean sensor is the best-conditioned case available, so the
+# prediction for C and D below is that they land on A and B. If they do not,
+# that is the more interesting outcome and worth knowing either way.
 set -e
 cd /mnt/c/Users/cin64/Desktop/MagNav
 PY=~/gtsam_env/bin/python
