@@ -158,7 +158,7 @@ def kalman(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS,
 
 
 def fgo(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS,
-        lag, dtK, norelin=False, huber=1.345):
+        lag, dtK, norelin=False, huber=1.345, fullrelin=False):
     """The estimator under test: incremental fixed-lag smoother, unchanged.
 
     norelin=True freezes every linearization at the point a filter would pick
@@ -208,6 +208,14 @@ def fgo(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid, nx, iTL, iS,
     if norelin:
         params.setRelinearizeThreshold(1e12)
         params.relinearizeSkip = 10 ** 9
+    elif fullrelin:
+        # the policy the MATLAB reference uses: every factor in the window is
+        # re-linearized at every step. Affordable there at nine nodes; here it
+        # is the expensive end of the same knob. Worth testing only because the
+        # 1 km probe suggested our relinearization budget, not the formulation,
+        # is what leaves the causal output behind an iterated filter.
+        params.setRelinearizeThreshold(0.0)
+        params.relinearizeSkip = 1
     sm = gtsam_unstable.IncrementalFixedLagSmoother(lag, params)
     KTM = gtsam_unstable.FixedLagSmootherKeyTimestampMap
     graph = gtsam.NonlinearFactorGraph()
@@ -261,6 +269,7 @@ def main():
     # question asked from the other side.
     hub = 0.0 if "--norobust" in sys.argv else float(arg("--huber", 1.345, float))
     n_iekf = int(arg("--iekf", 5, int))
+    fullrelin = "--full-relin" in sys.argv
     # --pos-sigma X: initial horizontal position uncertainty in metres, applied
     # to BOTH the prior the estimators are given and the error actually drawn.
     # The export ships 0.1 m, which puts every run in the TRACKING regime: one
@@ -338,6 +347,7 @@ def main():
           f"pos_sigma={pos_sigma:g}m "
           f"scored from t={warm:g}s over {ti[-1]:.0f}s"
           + ("  [NORELIN]" if norelin else "")
+          + ("  [FULL-RELIN]" if fullrelin else "")
           + ("  [NOROBUST]" if hub <= 0 else f"  huber={hub:g}"),
           flush=True)
     print(f"{'seed':>4s}{'|d0| pos':>10s}{'INS':>9s}{'EKF':>9s}{'EKFhub':>9s}{'IEKF':>9s}"
@@ -372,7 +382,7 @@ def main():
                      nx, iTL, iS, iters=n_iekf)
         iek_d = drms(ins_lat + xi_[:, 0], ins_lon + xi_[:, 1], tlat, tlon, ti, warm)
         est, est_rt = fgo(PhiK, QdK, P0, Rm, A, meas, ins_lat, ins_lon, grid,
-                          nx, iTL, iS, lag, dtK, norelin, hub)
+                          nx, iTL, iS, lag, dtK, norelin, hub, fullrelin)
         c_d = drms(ins_lat + est_rt[:, 0], ins_lon + est_rt[:, 1], tlat, tlon, ti, warm)
         s_d = drms(ins_lat + est[:, 0], ins_lon + est[:, 1], tlat, tlon, ti, warm)
         pos0 = math.hypot(xd[0, 0] * R_EARTH, xd[0, 1] * R_EARTH * math.cos(tlat[0]))
