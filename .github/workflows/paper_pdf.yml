@@ -38,7 +38,7 @@ jobs:
           args: -pdf -bibtex -interaction=nonstopmode -halt-on-error
 
       - name: Upload PDF artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: taes-fgo-magnav-pdf
           path: paper/taes_incremental.pdf
