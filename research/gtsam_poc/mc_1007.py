@@ -281,6 +281,14 @@ def main():
     # estimator question becomes real -- which is also the operationally honest
     # cold start, INS having drifted before the map is switched on.
     pos_sigma = float(arg("--pos-sigma", 0.1, float))
+    # --vel-sigma / --fogm-tau: the two other places our export disagrees with
+    # the values Hager confirmed by email. Ours ships 1 m/s and 180 s; theirs
+    # are 0.01 m/s and 600 s, i.e. a hundredfold tighter velocity prior and the
+    # MagNav.jl default correlation time we somehow did not inherit. The
+    # process-noise densities match exactly, so these priors are the whole
+    # disagreement in the linear model.
+    vel_sigma = float(arg("--vel-sigma", -1.0, float))
+    fogm_tau = float(arg("--fogm-tau", -1.0, float))
     out_csv = os.path.join(HERE, arg("--out", "mc_1007_results.csv"))
 
     d = load(path)
@@ -318,6 +326,14 @@ def main():
     iS = nx - 1
     P0 = P0.copy()
     P0[iTL, iTL] = P0[iTL, iTL] * sig_TL ** 2
+    if vel_sigma > 0:
+        for i in (3, 4, 5):
+            P0[i, i] = vel_sigma ** 2
+    if fogm_tau > 0:
+        old = -dtK / math.log(PhiK[0, iS, iS])
+        for s_ in range(M - 1):
+            PhiK[s_][iS, iS] = math.exp(-dtK / fogm_tau)
+            QdK[s_][iS, iS] = QdK[s_][iS, iS] * (old / fogm_tau)
 
     A = A_full[idx]
     meas = meas_full[idx]
@@ -345,7 +361,9 @@ def main():
     print(f"MC over the initial navigation error: {seeds} seeds, scale={scale:g}, "
           f"lag={lag:g}s K={K} mag={mag} sigma_beta={sig_TL:g} "
           f"pos_sigma={pos_sigma:g}m "
-          f"scored from t={warm:g}s over {ti[-1]:.0f}s"
+          + (f"vel_sigma={vel_sigma:g} " if vel_sigma > 0 else "")
+          + (f"fogm_tau={fogm_tau:g}s " if fogm_tau > 0 else "")
+          + f"scored from t={warm:g}s over {ti[-1]:.0f}s"
           + ("  [NORELIN]" if norelin else "")
           + ("  [FULL-RELIN]" if fullrelin else "")
           + ("  [NOROBUST]" if hub <= 0 else f"  huber={hub:g}"),
