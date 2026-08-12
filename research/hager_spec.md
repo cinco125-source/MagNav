@@ -75,6 +75,31 @@ not raw accuracy.
    their best = 5.
 5. Our R = 144 nT² with map de-trust; theirs R = 10 nT² with gating.
 
+## Answered by the authors (email reply, 2026-08)
+
+They sent their P0 and Qd. **Every number is a MagNav.jl `create_model` default**:
+
+| quantity | their reply | `create_model` default | ours |
+|---|---|---|---|
+| position prior | 3 m | 3.0 | 0.1 |
+| velocity prior | 0.01 m/s | 0.01 | 1.0 |
+| FOGM tau | 600 s | 600.0 | 180.0 |
+| sqrt(Qd) velocity | 7.52622e-05 | `0.000238*sqrt(dt)` | same |
+| sqrt(Qd) tilt | 1.83728e-07 | `5.81e-07*sqrt(dt)` | same |
+| sqrt(Qd) accel bias | 1.82612e-06 | `2.45e-04*sqrt(2dt/3600)` | same |
+| sqrt(Qd) gyro bias | 5.41874e-11 | `7.27e-09*sqrt(2dt/3600)` | same |
+
+Their Q figures are per-step standard deviations, i.e. the square root of the
+diagonal of `create_Qd(0.1)` at the library's tau = 3600 s. So the process noise
+was never a difference between the two implementations -- both inherited the same
+package defaults. Only the three priors differed, and all three deviations were
+**ours**: position tightened 30x, velocity loosened 100x, FOGM correlation time
+shortened. Those were our tuning choices and they are what the P0-matched re-run
+moved (EKF whole-line 40.8 -> 20.4 m; the causal FGO/EKF tie was untouched,
+0.978 -> 1.010).
+
+The faithful build is `research/hager_impl.jl`.
+
 ## Open questions for the faithful build
 
 - Exact baro-loop formulation (they cite Gnadt's thesis) — copy from

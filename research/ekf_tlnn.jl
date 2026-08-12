@@ -1,4 +1,17 @@
-##* Reusable cold-start online EKF+TL+NN baseline (Hager et al. 2026 reimplementation)
+##* Reusable cold-start online EKF+TL+NN baseline (recipe-level, NOT the paper's filter)
+#
+# ⚠ THIS IS NOT A REIMPLEMENTATION OF HAGER ET AL. 2026. It was labelled as one;
+# the audit against the preprint says otherwise, in eight places, two of them
+# architectural: the NN here has NO Tolles-Lawson states beside it (it sits in
+# MagNav.jl's TL slot and REPLACES the linear model, where the paper's design is
+# additive TL + NN-residual), and its input is 3 permanent direction cosines
+# where theirs is 4 (the vector components AND the uncompensated scalar). Also
+# hidden 8 vs 5, Q_NN 3e-3 vs 1e-20, P0_NN sigma 0.3 vs 1, data-driven output
+# scaling vs a fixed 400 nT, R 12^2 vs their value, and no chi-square gate.
+#
+# The faithful build is research/hager_impl.jl. Keep this one as what it honestly
+# is -- a strong, tuned, MagNav.jl-native online NN baseline -- and do not cite it
+# as the paper's method.
 #
 # Factors the validated line-1007.06 reproduction of research/paper_impl.jl into a
 # single function so the *strong* causal baseline can be run across every breadth
